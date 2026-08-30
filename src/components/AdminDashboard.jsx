@@ -57,6 +57,7 @@ export default function AdminDashboard({ userSession, setUserSession }) {
   const [showReportModal, setShowReportModal] = useState(false);
   const [editingReport, setEditingReport] = useState(null);
   const [isDocxExtracting, setIsDocxExtracting] = useState(false);
+  const [docxProgress, setDocxProgress] = useState(0);
   const [docxSuccessMsg, setDocxSuccessMsg] = useState("");
 
   const [showBlogModal, setShowBlogModal] = useState(false);
@@ -218,22 +219,33 @@ export default function AdminDashboard({ userSession, setUserSession }) {
     if (!file) return;
 
     setIsDocxExtracting(true);
+    setDocxProgress(15);
     setDocxSuccessMsg("");
 
+    const progressInterval = setInterval(() => {
+      setDocxProgress((prev) => {
+        if (prev >= 90) return prev;
+        return prev + 15;
+      });
+    }, 200);
+
     const formData = new FormData();
-    formData.append("file", file);
+    formData.append("docxFile", file);
 
     try {
-      const res = await fetch("/api/docx-extract", {
+      const res = await fetch("/api/reports/extract-docx", {
         method: "POST",
         body: formData,
       });
+      clearInterval(progressInterval);
+      setDocxProgress(100);
+
       const json = await res.json();
       if (json.success) {
         setEditingReport((prev) => ({
           ...prev,
           title: json.title || prev.title,
-          content: json.text || prev.content,
+          content: json.rawText || prev.content,
           summary: json.summary || prev.summary || json.text.slice(0, 200),
         }));
         setDocxSuccessMsg("✓ ওয়ার্ড ফাইল (.docx) থেকে টেক্সট সফলভাবে এক্সট্রাক্ট করা হয়েছে!");
@@ -241,9 +253,14 @@ export default function AdminDashboard({ userSession, setUserSession }) {
         alert("Extraction error: " + (json.error || "Failed to parse .docx"));
       }
     } catch (err) {
+      clearInterval(progressInterval);
       alert("Error reading .docx file: " + err.message);
     } finally {
-      setIsDocxExtracting(false);
+      setTimeout(() => {
+        setIsDocxExtracting(false);
+        setDocxProgress(0);
+      }, 500);
+      e.target.value = "";
     }
   };
 
@@ -540,8 +557,8 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center space-x-2 px-4 py-3 border-b-2 font-bold text-xs whitespace-nowrap transition-all cursor-pointer ${activeTab === tab.id
-                    ? "border-amber-600 text-amber-700 bg-amber-50/60"
-                    : "border-transparent text-stone-600 hover:text-amber-700 hover:bg-stone-50"
+                  ? "border-amber-600 text-amber-700 bg-amber-50/60"
+                  : "border-transparent text-stone-600 hover:text-amber-700 hover:bg-stone-50"
                   }`}
               >
                 <span>{tab.icon}</span>
@@ -1664,8 +1681,8 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                 <button
                   onClick={() => setVolFilter("all")}
                   className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "all"
-                      ? "bg-amber-600 text-white border-amber-600"
-                      : "bg-white text-stone-600 border-stone-200"
+                    ? "bg-amber-600 text-white border-amber-600"
+                    : "bg-white text-stone-600 border-stone-200"
                     }`}
                 >
                   সব ({volunteers.length})
@@ -1673,8 +1690,8 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                 <button
                   onClick={() => setVolFilter("pending")}
                   className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "pending"
-                      ? "bg-amber-600 text-white border-amber-600"
-                      : "bg-white text-stone-600 border-stone-200"
+                    ? "bg-amber-600 text-white border-amber-600"
+                    : "bg-white text-stone-600 border-stone-200"
                     }`}
                 >
                   অপেক্ষমান ({pendingVolunteersCount})
@@ -1682,8 +1699,8 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                 <button
                   onClick={() => setVolFilter("approved")}
                   className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "approved"
-                      ? "bg-amber-600 text-white border-amber-600"
-                      : "bg-white text-stone-600 border-stone-200"
+                    ? "bg-amber-600 text-white border-amber-600"
+                    : "bg-white text-stone-600 border-stone-200"
                     }`}
                 >
                   অনুমোদিত ({approvedVolunteersCount})
@@ -1705,10 +1722,10 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                           <h4 className="font-extrabold text-stone-900 text-base">{vol.name}</h4>
                           <span
                             className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${vol.status === "approved"
-                                ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
-                                : vol.status === "rejected"
-                                  ? "bg-red-100 text-red-900 border border-red-200"
-                                  : "bg-amber-100 text-amber-900 border border-amber-200"
+                              ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
+                              : vol.status === "rejected"
+                                ? "bg-red-100 text-red-900 border border-red-200"
+                                : "bg-amber-100 text-amber-900 border border-amber-200"
                               }`}
                           >
                             {vol.status}
@@ -1736,8 +1753,8 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                         <button
                           onClick={() => handleUpdateVolunteer(vol.id, vol.status, !vol.isDdbmpbs)}
                           className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${vol.isDdbmpbs
-                              ? "bg-indigo-600 text-white border-indigo-700"
-                              : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
+                            ? "bg-indigo-600 text-white border-indigo-700"
+                            : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
                             }`}
                         >
                           {vol.isDdbmpbs ? "✓ DDBMPBS যুক্ত" : "+ DDBMPBS যুক্ত করুন"}
@@ -1816,25 +1833,50 @@ export default function AdminDashboard({ userSession, setUserSession }) {
                 কম্পিউটার থেকে যেকোনো .docx রিপোর্ট ফাইল নির্বাচন করুন। সিস্টেম স্বয়ংক্রিয়ভাবে বাংলা টেক্সট পড়ে নিচের ফর্মে পূর্ণ করে দেবে।
               </p>
 
-              <div className="flex items-center space-x-3 pt-1">
-                <label className="cursor-pointer inline-flex items-center space-x-2 bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all">
-                  <Upload className="w-4 h-4 text-amber-600" />
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
+                <label
+                  className={`inline-flex items-center space-x-2 border font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all ${isDocxExtracting
+                    ? "bg-stone-100 border-stone-300 text-stone-400 cursor-not-allowed opacity-75"
+                    : "bg-white hover:bg-amber-50 text-amber-900 border-amber-300 cursor-pointer"
+                    }`}
+                >
+                  <Upload className={`w-4 h-4 ${isDocxExtracting ? "text-stone-400 animate-spin" : "text-amber-600"}`} />
                   <span>{isDocxExtracting ? "এক্সট্রাক্ট হচ্ছে..." : ".docx ফাইল আপলোড করুন"}</span>
                   <input
                     type="file"
                     accept=".docx"
+                    disabled={isDocxExtracting}
                     onChange={handleDocxUpload}
                     className="hidden"
                   />
                 </label>
 
-                {docxSuccessMsg && (
-                  <span className="text-xs text-emerald-800 font-bold bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200 flex items-center space-x-1">
+                {docxSuccessMsg && !isDocxExtracting && (
+                  <span className="text-xs text-emerald-800 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center space-x-1">
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
                     <span>{docxSuccessMsg}</span>
                   </span>
                 )}
               </div>
+
+              {/* Extraction Progress Bar */}
+              {isDocxExtracting && (
+                <div className="space-y-1.5 pt-2">
+                  <div className="flex items-center justify-between text-xs font-bold text-amber-900">
+                    <span className="flex items-center space-x-1.5">
+                      <RefreshCw className="w-3.5 h-3.5 text-amber-600 animate-spin" />
+                      <span>ডকুমেন্ট এক্সট্রাক্ট করা হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন</span>
+                    </span>
+                    <span>{docxProgress}%</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-amber-100 rounded-full overflow-hidden border border-amber-200">
+                    <div
+                      className="h-full bg-amber-500 rounded-full transition-all duration-300 ease-out shadow-xs"
+                      style={{ width: `${docxProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Report Form */}

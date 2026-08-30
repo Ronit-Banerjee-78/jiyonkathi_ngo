@@ -66,10 +66,7 @@ export default function PortalSection({ userSession, setUserSession, setActiveTa
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
           {/* Header */}
           <div className="text-center max-w-2xl mx-auto space-y-3">
-            <div className="inline-flex items-center space-x-2 bg-amber-50 text-amber-800 border border-amber-200 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-              <span>নিরাপদ অ্যাডমিন পোর্টাল</span>
-            </div>
+
             <h1 className="text-3xl sm:text-4xl font-black text-stone-900 tracking-tight">
               জিয়নকাঠি কেন্দ্রীয় নিয়ন্ত্রণ ব্যবস্থা
             </h1>
@@ -93,11 +90,11 @@ export default function PortalSection({ userSession, setUserSession, setActiveTa
                   এই ড্যাশবোর্ডের মাধ্যমে আপনি গবেষণার .docx ফাইল আপলোড করে অটো-এক্সট্রাক্ট, চার মূল স্তম্ভের খাদ্য নিরাপত্তা পদ্ধতি সম্পাদন ও স্বেচ্ছাসেবী আবেদন নিয়ন্ত্রণ করতে পারেন।
                 </p>
 
-                <div className="bg-amber-50/80 p-3.5 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1.5 font-medium">
+                {/* <div className="bg-amber-50/80 p-3.5 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1.5 font-medium">
                   <div className="font-bold text-amber-950">ডেমো লগইন তথ্য:</div>
                   <div>ইমেইল: <span className="font-mono font-bold select-all">admin@jiyonkathi.org</span></div>
                   <div>পাসওয়ার্ড: <span className="font-mono font-bold select-all">admin123</span></div>
-                </div>
+                </div> */}
               </div>
 
               <div className="text-[11px] text-stone-400 font-medium pt-4 border-t border-stone-200">
@@ -162,7 +159,7 @@ export default function PortalSection({ userSession, setUserSession, setActiveTa
                       }}
                       className="text-[11px] font-bold text-amber-700 hover:underline"
                     >
-                      অটোফিল ডেমো একাউন্ট
+                      Show Demo Login
                     </button>
                   </div>
                   <div className="relative">

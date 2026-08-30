@@ -14,13 +14,16 @@ let memoryReports = [
   {
     id: "rep-1",
     title: "দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ গবেষণা প্রতিবেদন",
-    titleEnglish: "Research Report on Indigenous Paddy Seed Preservation & Chemical-Free Farming",
+    titleEnglish:
+      "Research Report on Indigenous Paddy Seed Preservation & Chemical-Free Farming",
     topic: "বীজ সংরক্ষণ ও দেশীয় ধান",
     topicEnglish: "Seed Conservation & Indigenous Crops",
     author: "জিয়নকাঠি কৃষি গবেষণা ও বীজ ব্যাংক দল",
     publishedDate: "২০২৬-০৮-১৫",
-    summary: "রাসায়নিক সার ও কীটনাশক মুক্ত উপায়ে ১২০+ দেশীয় ধানের প্রজাতি সংরক্ষণ, ভূগর্ভস্থ জল অপচয় রোধ এবং স্থানীয় চাষিদের মাঝে বিনামূল্যে দেশীয় বীজ বিতরণের বিস্তারিত ফলাফল।",
-    summaryEnglish: "A detailed analysis of preserving 120+ indigenous paddy varieties without synthetic fertilizers or pesticides, preventing groundwater depletion, and field seed-exchange dynamics.",
+    summary:
+      "রাসায়নিক সার ও কীটনাশক মুক্ত উপায়ে ১২০+ দেশীয় ধানের প্রজাতি সংরক্ষণ, ভূগর্ভস্থ জল অপচয় রোধ এবং স্থানীয় চাষিদের মাঝে বিনামূল্যে দেশীয় বীজ বিতরণের বিস্তারিত ফলাফল।",
+    summaryEnglish:
+      "A detailed analysis of preserving 120+ indigenous paddy varieties without synthetic fertilizers or pesticides, preventing groundwater depletion, and field seed-exchange dynamics.",
     content: `## ভূমিকা ও প্রেক্ষাপট
 জলবায়ু সংকট ও আধুনিক রাসায়নিক কৃষির মারাত্মক ক্ষতিকর প্রভাব থেকে মাটির উর্বরতা ও ঐতিহ্যবাহী বীজসম্পদ রক্ষা করতে জিয়নকাঠি গত তেরো বছর ধরে নিরবচ্ছিন্নভাবে কাজ করে চলেছে। রাসায়নিক সার ও বিষমুক্ত উপায়ে দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ আমাদের সবচেয়ে গুরুত্বপূর্ণ গবেষণাক্ষেত্র।
 
@@ -49,26 +52,29 @@ To combat the climate crisis and soil degradation caused by heavy petrochemical 
       "প্রাকৃতিক বৃষ্টি নির্ভর বীজতলা প্রস্তুতি",
       "হাতে নিড়ানো ও জৈব মালচিং পদ্ধতি",
       "পুকুরের জল ও সৌর পাম্পিং ব্যবস্থা",
-      "ঐতিহ্যবাহী ঢেঁকিতে প্রক্রিয়াকরণ"
+      "ঐতিহ্যবাহী ঢেঁকিতে প্রক্রিয়াকরণ",
     ],
     findings: [
       "মাটির উর্বরতা বৃদ্ধি ও কেঁচোর সংখ্যা বৃদ্ধি",
       "খরচ ৭০% কমে যাওয়া",
-      "বীজের অঙ্কুরোদগম ক্ষমতা ৯২% এর বেশি বজায় রাখা"
+      "বীজের অঙ্কুরোদগম ক্ষমতা ৯২% এর বেশি বজায় রাখা",
     ],
     views: 148,
-    createdAt: "2026-08-15T09:00:00Z"
+    createdAt: "2026-08-15T09:00:00Z",
   },
   {
     id: "rep-2",
     title: "সহায়ক শিক্ষা কেন্দ্র ও গ্রামীণ শিশু প্রকৃতি পাঠ পর্যালোচনা",
-    titleEnglish: "Study on Rural Auxiliary Education & Environmental Nature Literacy",
+    titleEnglish:
+      "Study on Rural Auxiliary Education & Environmental Nature Literacy",
     topic: "সহায়ক শিক্ষা ও প্রকৃতি পাঠ",
     topicEnglish: "Auxiliary Education & Nature Literacy",
     author: "শিক্ষা ও সমাজ কল্যাণ শাখা, জিয়নকাঠি",
     publishedDate: "২০২৬-০৮-০১",
-    summary: "গ্রামীণ শিশুদের জন্য বিনামূল্যে সহায়ক পাঠদান, প্রকৃতি পরিচয়, লোকসংস্কৃতি চর্চা ও সর্প সচেতনতার শিক্ষামূলক প্রভাব ও সামাজিক অগ্রগতি।",
-    summaryEnglish: "Evaluating the community impact of free remedial schooling, nature excursions, snakebite awareness, and folk traditions for village children.",
+    summary:
+      "গ্রামীণ শিশুদের জন্য বিনামূল্যে সহায়ক পাঠদান, প্রকৃতি পরিচয়, লোকসংস্কৃতি চর্চা ও সর্প সচেতনতার শিক্ষামূলক প্রভাব ও সামাজিক অগ্রগতি।",
+    summaryEnglish:
+      "Evaluating the community impact of free remedial schooling, nature excursions, snakebite awareness, and folk traditions for village children.",
     content: `## গ্রামীণ শিক্ষার বাস্তব রূপরেখা
 আউশগ্রাম অঞ্চলের পিছিয়ে পড়া পরিবারের শিশুদের জন্য নিয়মিত সহায়ক শিক্ষা কেন্দ্র পরিচালনা করছে জিয়নকাঠি। এখানে পাঠ্যবইয়ের পাশাপাশি শিশুদের প্রকৃতির সাথে সরাসরি পরিচয় করিয়ে দেওয়া হয়।
 
@@ -91,26 +97,29 @@ Jiyonkathi runs an open-air auxiliary learning center for rural children in Aush
     methodology: [
       "মুক্তাঙ্গন আনন্দময় পাঠদান",
       "বিজ্ঞানভিত্তিক সচেতনতামূলক নাটিকা",
-      "নিয়মিত স্বাস্থ্য পরীক্ষা ও পুষ্টি বিতরণ"
+      "নিয়মিত স্বাস্থ্য পরীক্ষা ও পুষ্টি বিতরণ",
     ],
     findings: [
       "শিশুদের পরিবেশ চেতনা ও বিজ্ঞানে আগ্রহ বৃদ্ধি",
       "গ্রামে সর্পদংশনে মৃত্যুর হার শূন্যে নামিয়ে আনা",
-      "অভিভাবকদের সম্পৃক্ততা বৃদ্ধি"
+      "অভিভাবকদের সম্পৃক্ততা বৃদ্ধি",
     ],
     views: 96,
-    createdAt: "2026-08-01T10:30:00Z"
+    createdAt: "2026-08-01T10:30:00Z",
   },
   {
     id: "rep-3",
     title: "সর্প সচেতনতা ও গ্রামীণ স্বাস্থ্য শিবির প্রতিবেদন",
-    titleEnglish: "Field Report: Snakebite Awareness, First Aid & Preventive Rural Healthcare",
+    titleEnglish:
+      "Field Report: Snakebite Awareness, First Aid & Preventive Rural Healthcare",
     topic: "গ্রামীণ স্বাস্থ্য ও সর্প সচেতনতা",
     topicEnglish: "Rural Health & Snakebite Mitigation",
     author: "চিকিৎসা বিশেষজ্ঞ ও স্বেচ্ছাসেবক দল (DDBMPBS সহযোগে)",
     publishedDate: "২০২৬-০৭-২০",
-    summary: "সর্পদংশন প্রতিরোধে বিজ্ঞানসম্মত প্রাথমিক চিকিৎসা প্রশিক্ষণ, ওঝা-তান্ত্রিক নির্ভরতা দূরীকরণ এবং প্রান্তিক মানুষের মাঝে বিনামূল্যে চিকিৎসা পরিষেবা।",
-    summaryEnglish: "A comprehensive report on empirical snakebite first aid training, countering unscientific quackery, and delivering free medical checkups in rural Bengal.",
+    summary:
+      "সর্পদংশন প্রতিরোধে বিজ্ঞানসম্মত প্রাথমিক চিকিৎসা প্রশিক্ষণ, ওঝা-তান্ত্রিক নির্ভরতা দূরীকরণ এবং প্রান্তিক মানুষের মাঝে বিনামূল্যে চিকিৎসা পরিষেবা।",
+    summaryEnglish:
+      "A comprehensive report on empirical snakebite first aid training, countering unscientific quackery, and delivering free medical checkups in rural Bengal.",
     content: `## সর্প সচেতনতার আবশ্যকতা
 বর্ষাকালে গ্রামাঞ্চলে সর্পদংশন একটি গুরুতর জনস্বাস্থ্য সংকট। সঠিক সচেতনতার অভাবে বহু মানুষ হাসপাতালে না গিয়ে ওঝার কাছে গিয়ে মূল্যবান সময় নষ্ট করেন।
 
@@ -129,26 +138,29 @@ Snakebites remain a prominent hazard during monsoons in rural Bengal. Lack of sc
     methodology: [
       "বিশেষজ্ঞ চিকিৎসকদের সরাসরি পরামর্শ",
       "গ্রাম পঞ্চায়েত ও যুবকদের সমন্বয়ে সচেতনতা দল",
-      "জরুরি অ্যাম্বুলেন্স নেটওয়ার্ক সংযোগ"
+      "জরুরি অ্যাম্বুলেন্স নেটওয়ার্ক সংযোগ",
     ],
     findings: [
       "হাসপাতালে দ্রুত পৌঁছানোর হার ৮৫% বৃদ্ধি",
       "ওঝার কাছে যাওয়ার প্রবণতা উল্লেখযোগ্যভাবে হ্রাস",
-      "৫০০+ গ্রামবাসীকে জরুরি স্বাস্থ্য পরামর্শ প্রদান"
+      "৫০০+ গ্রামবাসীকে জরুরি স্বাস্থ্য পরামর্শ প্রদান",
     ],
     views: 112,
-    createdAt: "2026-07-20T14:15:00Z"
+    createdAt: "2026-07-20T14:15:00Z",
   },
   {
     id: "rep-4",
     title: "জীবনের জন্য খাদ্য নিরাপত্তা ও বিষমুক্ত ফল-সবজি চাষ পদ্ধতি",
-    titleEnglish: "Practicing Food Security for Life: Sustainable Fruit & Vegetable Farming Methods",
+    titleEnglish:
+      "Practicing Food Security for Life: Sustainable Fruit & Vegetable Farming Methods",
     topic: "সবজি ও ফল চাষ (খাদ্য নিরাপত্তা)",
     topicEnglish: "Food Security & Fruit/Vegetable Farming",
     author: "জিয়নকাঠি জৈব চাষ ও বাগান বিশেষজ্ঞ দল",
     publishedDate: "২০২৬-০৭-০৫",
-    summary: "বহুবর্ষজীবী ফল চাষ, মাচা ভিত্তিক বিষমুক্ত সবজি উৎপাদন, প্রাকৃতিক জৈব বালাইনাশক প্রয়োগ এবং পরিবারের পুষ্টি নিরাপত্তা নিশ্চিতকরণের বাস্তবায়ন。",
-    summaryEnglish: "A dedicated research methodology detailing multi-tier fruit orchards, trellis organic vegetable cultivation, bio-pest repellents, and family nutrition security.",
+    summary:
+      "বহুবর্ষজীবী ফল চাষ, মাচা ভিত্তিক বিষমুক্ত সবজি উৎপাদন, প্রাকৃতিক জৈব বালাইনাশক প্রয়োগ এবং পরিবারের পুষ্টি নিরাপত্তা নিশ্চিতকরণের বাস্তবায়ন。",
+    summaryEnglish:
+      "A dedicated research methodology detailing multi-tier fruit orchards, trellis organic vegetable cultivation, bio-pest repellents, and family nutrition security.",
     content: `## জীবনের জন্য খাদ্য নিরাপত্তা
 খাদ্য নিরাপত্তা মানে কেবল পেট ভরানো নয়, বিষমুক্ত পুষ্টিকর খাবারের সুনিশ্চিত যোগান। জিয়নকাঠি বিশ্বাস করে যে প্রতিটি পরিবার নিজেদের বসতভিটার আশেপাশের অব্যবহৃত জমিতে পুষ্টিকর ফল ও সবজি চাষ করতে পারে।
 
@@ -170,16 +182,16 @@ True food security entails chemical-free, nutrient-dense sustained yields. Jiyon
       "মাটি পরীক্ষা ও জৈব সার সংমিশ্রণ",
       "ড্রিপ ও মালচিং নির্ভর জল ব্যবস্থাপনা",
       "দেশি বীজ ও চারার কলম প্রস্তুতি",
-      "দশপর্ণী অর্ক বালাই দমন"
+      "দশপর্ণী অর্ক বালাই দমন",
     ],
     findings: [
       "প্রতিটি পরিবার সারা বছর টাটকা বিষমুক্ত সবজির চাহিদা পূরণ করতে সক্ষম",
       "বাজারে কীটনাশকযুক্ত সবজি কেনার খরচ শূন্যে নামানো",
-      "স্থানীয় জীববৈচিত্র্য ও মৌমাছির পরাগায়ন বৃদ্ধি"
+      "স্থানীয় জীববৈচিত্র্য ও মৌমাছির পরাগায়ন বৃদ্ধি",
     ],
     views: 204,
-    createdAt: "2026-07-05T08:00:00Z"
-  }
+    createdAt: "2026-07-05T08:00:00Z",
+  },
 ];
 
 // GET /api/reports - Fetch all reports with optional topic filtering & sort
@@ -193,7 +205,7 @@ router.get("/", async (req, res) => {
     if (isDbConnected) {
       try {
         const result = await pool.query(
-          "SELECT * FROM research_reports ORDER BY published_date DESC, id DESC"
+          "SELECT * FROM research_reports ORDER BY published_date DESC, id DESC",
         );
         if (result.rows && result.rows.length > 0) {
           reports = result.rows.map((r) => ({
@@ -212,20 +224,23 @@ router.get("/", async (req, res) => {
             methodology: Array.isArray(r.methodology)
               ? r.methodology
               : typeof r.methodology === "string"
-              ? JSON.parse(r.methodology || "[]")
-              : [],
+                ? JSON.parse(r.methodology || "[]")
+                : [],
             findings: Array.isArray(r.findings)
               ? r.findings
               : typeof r.findings === "string"
-              ? JSON.parse(r.findings || "[]")
-              : [],
+                ? JSON.parse(r.findings || "[]")
+                : [],
             views: Number(r.views) || 0,
             downloadUrl: r.download_url,
             createdAt: r.created_at,
           }));
         }
       } catch (err) {
-        console.warn("DB query for reports failed, using memory fallback:", err.message);
+        console.warn(
+          "DB query for reports failed, using memory fallback:",
+          err.message,
+        );
       }
     }
 
@@ -234,7 +249,8 @@ router.get("/", async (req, res) => {
       reports = reports.filter(
         (r) =>
           (r.topic && r.topic.toLowerCase().includes(topic.toLowerCase())) ||
-          (r.topicEnglish && r.topicEnglish.toLowerCase().includes(topic.toLowerCase()))
+          (r.topicEnglish &&
+            r.topicEnglish.toLowerCase().includes(topic.toLowerCase())),
       );
     }
 
@@ -242,10 +258,15 @@ router.get("/", async (req, res) => {
     if (sort === "views") {
       reports.sort((a, b) => (b.views || 0) - (a.views || 0));
     } else if (sort === "oldest") {
-      reports.sort((a, b) => new Date(a.publishedDate) - new Date(b.publishedDate));
+      reports.sort(
+        (a, b) => new Date(a.publishedDate) - new Date(b.publishedDate),
+      );
     } else {
       // Default: newest first
-      reports.sort((a, b) => new Date(b.publishedDate || 0) - new Date(a.publishedDate || 0));
+      reports.sort(
+        (a, b) =>
+          new Date(b.publishedDate || 0) - new Date(a.publishedDate || 0),
+      );
     }
 
     res.json({ success: true, reports });
@@ -261,7 +282,9 @@ router.get("/:id", async (req, res) => {
     const { id } = req.params;
     const report = memoryReports.find((r) => String(r.id) === String(id));
     if (!report) {
-      return res.status(404).json({ success: false, error: "Report not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Report not found" });
     }
     res.json({ success: true, report });
   } catch (error) {
@@ -284,7 +307,7 @@ router.post("/:id/view", async (req, res) => {
       try {
         await pool.query(
           "UPDATE research_reports SET views = COALESCE(views, 0) + 1 WHERE id = $1",
-          [id]
+          [id],
         );
       } catch (e) {
         console.warn("DB update views error:", e.message);
@@ -301,7 +324,9 @@ router.post("/:id/view", async (req, res) => {
 router.post("/extract-docx", upload.single("docxFile"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ success: false, error: "No .docx file uploaded" });
+      return res
+        .status(400)
+        .json({ success: false, error: "No .docx file uploaded" });
     }
 
     const { buffer, originalname } = req.file;
@@ -316,7 +341,10 @@ router.post("/extract-docx", upload.single("docxFile"), async (req, res) => {
     const extractedHtml = htmlResult.value || "";
 
     // Clean up lines and attempt smart title / summary detection if available
-    const lines = extractedText.split("\n").map((l) => l.trim()).filter(Boolean);
+    const lines = extractedText
+      .split("\n")
+      .map((l) => l.trim())
+      .filter(Boolean);
     const inferredTitle = lines[0] || originalname.replace(/\.[^/.]+$/, "");
     const inferredSummary = lines.slice(1, 4).join(" ") || "";
 
@@ -333,7 +361,8 @@ router.post("/extract-docx", upload.single("docxFile"), async (req, res) => {
     console.error("Error extracting .docx:", error);
     res.status(500).json({
       success: false,
-      error: "Failed to extract text from .docx file. Please verify the document format.",
+      error:
+        "Failed to extract text from .docx file. Please verify the document format.",
     });
   }
 });
@@ -359,7 +388,9 @@ router.post("/", async (req, res) => {
     } = req.body;
 
     if (!title || !content) {
-      return res.status(400).json({ success: false, error: "Title and Content are required" });
+      return res
+        .status(400)
+        .json({ success: false, error: "Title and Content are required" });
     }
 
     const newReport = {
@@ -371,7 +402,9 @@ router.post("/", async (req, res) => {
       author: author || "জিয়নকাঠি গবেষণা দল",
       publishedDate: publishedDate || new Date().toISOString().split("T")[0],
       summary: summary || content.slice(0, 160) + "...",
-      summaryEnglish: summaryEnglish || (contentEnglish ? contentEnglish.slice(0, 160) + "..." : ""),
+      summaryEnglish:
+        summaryEnglish ||
+        (contentEnglish ? contentEnglish.slice(0, 160) + "..." : ""),
       content,
       contentEnglish: contentEnglish || "",
       image: image || "/images/farming-collage.jpg",
@@ -407,7 +440,7 @@ router.post("/", async (req, res) => {
             JSON.stringify(newReport.findings),
             newReport.downloadUrl,
             0,
-          ]
+          ],
         );
       } catch (dbErr) {
         console.warn("DB insert report error:", dbErr.message);
@@ -428,7 +461,9 @@ router.put("/:id", async (req, res) => {
     const index = memoryReports.findIndex((r) => String(r.id) === String(id));
 
     if (index === -1) {
-      return res.status(404).json({ success: false, error: "Report not found" });
+      return res
+        .status(404)
+        .json({ success: false, error: "Report not found" });
     }
 
     const updated = {
@@ -444,7 +479,7 @@ router.put("/:id", async (req, res) => {
     if (isDbConnected) {
       try {
         await pool.query(
-          `UPDATE research_reports 
+          `UPDATE research_reports
            SET title=$1, title_english=$2, topic=$3, topic_english=$4, author=$5, published_date=$6, summary=$7, summary_english=$8, content=$9, content_english=$10, image=$11, methodology=$12, findings=$13, download_url=$14
            WHERE id=$15`,
           [
@@ -463,7 +498,7 @@ router.put("/:id", async (req, res) => {
             JSON.stringify(updated.findings || []),
             updated.downloadUrl || "",
             id,
-          ]
+          ],
         );
       } catch (dbErr) {
         console.warn("DB update report error:", dbErr.message);
@@ -499,4 +534,5 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
+export const defaultReports = memoryReports;
 export { router as reportRoutes };
