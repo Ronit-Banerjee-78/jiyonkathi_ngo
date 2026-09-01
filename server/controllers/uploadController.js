@@ -14,8 +14,8 @@ import { strictUploadLimiter } from "../middlewares/rateLimiterMiddleware.js";
 const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 100 * 1024 * 1024 },
-}); // 100MB limit for media
+  limits: { fileSize: 120 * 1024 * 1024 },
+}); // 120MB limit for media
 
 const memoryFiles = new Map();
 let nextFileId = 1;
@@ -27,15 +27,13 @@ router.post(
     upload.single("file")(req, res, (err) => {
       if (err) {
         console.error("Multer error:", err);
-        return res
-          .status(400)
-          .json({
-            success: false,
-            error:
-              err.message === "File too large"
-                ? "File exceeds maximum allowed size (100MB)"
-                : err.message,
-          });
+        return res.status(400).json({
+          success: false,
+          error:
+            err.message === "File too large"
+              ? "File exceeds maximum allowed size (120MB)"
+              : err.message,
+        });
       }
       next();
     });

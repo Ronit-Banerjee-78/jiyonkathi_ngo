@@ -35,7 +35,8 @@ async function startServer() {
 
   // Security Headers & Payload Size Limits
   app.use(securityHeaders);
-  app.use(express.json({ limit: "2mb" }));
+  app.use(express.json({ limit: "50mb" }));
+  app.use(express.urlencoded({ limit: "50mb", extended: true }));
   app.use(inputSanitizer);
 
   // Apply logger and rate limiting middleware

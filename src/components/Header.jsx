@@ -119,11 +119,11 @@ export default function Header({
           >
             <div className="relative flex items-center justify-center p-1.5 bg-amber-50 rounded-2xl border border-amber-200 shadow-2xs group-hover:border-amber-300 transition-colors">
               <img
-                src="/images/logo.svg"
+                src={siteData?.general?.logoImage || "/images/logo.svg"}
                 alt="Jiyonkathi (জিয়নকাঠি) Logo"
                 className="h-10 w-10 sm:h-11 sm:w-11 object-contain transition-transform group-hover:scale-105"
                 onError={(e) => {
-                  e.target.src = "/logo.svg";
+                  e.currentTarget.src = "/logo.svg";
                 }}
               />
             </div>
@@ -154,13 +154,12 @@ export default function Header({
                     key={item.id}
                     id={`admin-nav-${item.id}`}
                     onClick={() => handleTabClick(item.id)}
-                    className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
-                      activeTab === item.id || (item.id === "admin" && activeTab === "portal")
-                        ? item.isPrimary
-                          ? "bg-amber-600 text-white shadow-xs"
-                          : "bg-white text-amber-800 shadow-2xs border border-amber-200"
-                        : "text-stone-700 hover:text-amber-700 hover:bg-white/80"
-                    }`}
+                    className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === item.id || (item.id === "admin" && activeTab === "portal")
+                      ? item.isPrimary
+                        ? "bg-amber-600 text-white shadow-xs"
+                        : "bg-white text-amber-800 shadow-2xs border border-amber-200"
+                      : "text-stone-700 hover:text-amber-700 hover:bg-white/80"
+                      }`}
                   >
                     {item.icon}
                     <span>{item.label}</span>
@@ -174,11 +173,10 @@ export default function Header({
                     key={item.id}
                     id={`nav-${item.id}`}
                     onClick={() => handleTabClick(item.id)}
-                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all duration-150 ${
-                      activeTab === item.id
-                        ? "bg-amber-100/80 text-amber-900 shadow-2xs border border-amber-200"
-                        : "text-stone-700 hover:text-amber-700 hover:bg-amber-50/60"
-                    }`}
+                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all duration-150 ${activeTab === item.id
+                      ? "bg-amber-100/80 text-amber-900 shadow-2xs border border-amber-200"
+                      : "text-stone-700 hover:text-amber-700 hover:bg-amber-50/60"
+                      }`}
                   >
                     {item.icon}
                     <span>{item.label}</span>
@@ -191,11 +189,10 @@ export default function Header({
                     id="nav-more-dropdown"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all ${
-                      moreItems.some((item) => item.id === activeTab)
-                        ? "bg-amber-100/80 text-amber-900 shadow-2xs border border-amber-200"
-                        : "text-stone-700 hover:text-amber-700 hover:bg-amber-50/60"
-                    }`}
+                    className={`flex items-center space-x-1 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all ${moreItems.some((item) => item.id === activeTab)
+                      ? "bg-amber-100/80 text-amber-900 shadow-2xs border border-amber-200"
+                      : "text-stone-700 hover:text-amber-700 hover:bg-amber-50/60"
+                      }`}
                   >
                     <span>{language === "bn" ? "আরও" : "More"}</span>
                     <ChevronDown
@@ -213,11 +210,10 @@ export default function Header({
                           key={item.id}
                           id={`dropdown-${item.id}`}
                           onClick={() => handleTabClick(item.id)}
-                          className={`flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-xs font-bold transition-colors ${
-                            activeTab === item.id
-                              ? "bg-amber-50 text-amber-900 font-extrabold"
-                              : "text-stone-700 hover:text-amber-700 hover:bg-stone-50"
-                          }`}
+                          className={`flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-xs font-bold transition-colors ${activeTab === item.id
+                            ? "bg-amber-50 text-amber-900 font-extrabold"
+                            : "text-stone-700 hover:text-amber-700 hover:bg-stone-50"
+                            }`}
                         >
                           <span className="text-amber-600">{item.icon}</span>
                           <span>{item.label}</span>
@@ -317,11 +313,10 @@ export default function Header({
                   key={item.id}
                   id={`mobile-admin-nav-${item.id}`}
                   onClick={() => handleTabClick(item.id)}
-                  className={`flex items-center space-x-3 w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === item.id || (item.id === "admin" && activeTab === "portal")
-                      ? "bg-amber-600 text-white shadow-xs"
-                      : "text-stone-700 hover:bg-amber-50"
-                  }`}
+                  className={`flex items-center space-x-3 w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === item.id || (item.id === "admin" && activeTab === "portal")
+                    ? "bg-amber-600 text-white shadow-xs"
+                    : "text-stone-700 hover:bg-amber-50"
+                    }`}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -346,11 +341,10 @@ export default function Header({
                   key={item.id}
                   id={`mobile-nav-${item.id}`}
                   onClick={() => handleTabClick(item.id)}
-                  className={`flex items-center space-x-3 w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === item.id
-                      ? "bg-amber-100 text-amber-900 shadow-2xs border border-amber-200"
-                      : "text-stone-700 hover:bg-amber-50/70"
-                  }`}
+                  className={`flex items-center space-x-3 w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === item.id
+                    ? "bg-amber-100 text-amber-900 shadow-2xs border border-amber-200"
+                    : "text-stone-700 hover:bg-amber-50/70"
+                    }`}
                 >
                   <span className="text-amber-600">{item.icon}</span>
                   <span>{item.label}</span>
@@ -365,11 +359,10 @@ export default function Header({
                   key={item.id}
                   id={`mobile-more-${item.id}`}
                   onClick={() => handleTabClick(item.id)}
-                  className={`flex items-center space-x-3 w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
-                    activeTab === item.id
-                      ? "bg-amber-100 text-amber-900 font-bold"
-                      : "text-stone-700 hover:bg-amber-50"
-                  }`}
+                  className={`flex items-center space-x-3 w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${activeTab === item.id
+                    ? "bg-amber-100 text-amber-900 font-bold"
+                    : "text-stone-700 hover:bg-amber-50"
+                    }`}
                 >
                   <span className="text-amber-600">{item.icon}</span>
                   <span>{item.label}</span>

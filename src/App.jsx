@@ -12,8 +12,10 @@ export default function App() {
   const handleSetUserSession = (session) => {
     if (session) {
       saveSession(session);
+      setActiveTab("admin");
     } else {
       clearSession();
+      setActiveTab("home");
     }
     setUserSessionState(session);
   };

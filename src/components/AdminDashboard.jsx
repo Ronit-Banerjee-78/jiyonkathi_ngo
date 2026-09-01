@@ -42,13 +42,17 @@ import {
   Mail,
   MapPin,
   Globe,
-  Quote
+  Quote,
+  Menu,
+  ChevronRight,
+  LogOut
 } from "lucide-react";
 
-export default function AdminDashboard({ userSession, setUserSession }) {
+export default function AdminDashboard({ userSession, setUserSession, onLogout, setActiveTab: setMainTabFromProps }) {
   const { siteData, setSiteData: saveSiteData, language, setActiveTab: setMainActiveTab } = useContext(SiteContext);
 
   const [activeTab, setActiveTab] = useState("analytics");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [data, setData] = useState(() => siteData || {});
   const [saved, setSaved] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -59,6 +63,9 @@ export default function AdminDashboard({ userSession, setUserSession }) {
   const [isDocxExtracting, setIsDocxExtracting] = useState(false);
   const [docxProgress, setDocxProgress] = useState(0);
   const [docxSuccessMsg, setDocxSuccessMsg] = useState("");
+
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [videoUploadMsg, setVideoUploadMsg] = useState("");
 
   const [showBlogModal, setShowBlogModal] = useState(false);
   const [editingBlog, setEditingBlog] = useState(null);
@@ -185,7 +192,49 @@ export default function AdminDashboard({ userSession, setUserSession }) {
     }
   };
 
-  // Auto-sync uploaded image to gallery
+  // Video embed helper
+  const getYouTubeEmbedUrl = (url) => {
+    if (!url) return null;
+    if (url.includes("youtube.com/embed/")) return url;
+    const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+    if (ytMatch && ytMatch[1]) {
+      return `https://www.youtube.com/embed/${ytMatch[1]}`;
+    }
+    const vimeoMatch = url.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)/);
+    if (vimeoMatch && vimeoMatch[1]) {
+      return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+    }
+    return null;
+  };
+
+  // Video Upload Handler with Auto-Save
+  const handleVideoUploadWithSave = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setVideoUploading(true);
+    setVideoUploadMsg("ভিডিও ক্লাউডিনারিতে আপলোড হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন।");
+
+    try {
+      const url = await handleFileUpload(file);
+      if (url) {
+        const updated = {
+          ...data,
+          homepageVideo: { ...(data.homepageVideo || {}), url },
+        };
+        setData(updated);
+        await handleSaveGlobal(updated);
+        setVideoUploadMsg("✓ ভিডিও সফলভাবে ক্লাউডিনারিতে আপলোড ও হোমপেজের জন্য সেভ হয়েছে!");
+        setTimeout(() => setVideoUploadMsg(""), 5000);
+      }
+    } catch (err) {
+      alert("ভিডিও আপলোড ত্রুটি: " + err.message);
+      setVideoUploadMsg("");
+    } finally {
+      setVideoUploading(false);
+      e.target.value = "";
+    }
+  };
   const autoAddImageToGallery = async (url, file, customTitle = "", customCategory = "events") => {
     if (!url) return;
     const fileNameClean = file?.name
@@ -230,10 +279,10 @@ export default function AdminDashboard({ userSession, setUserSession }) {
     }, 200);
 
     const formData = new FormData();
-    formData.append("docxFile", file);
+    formData.append("file", file);
 
     try {
-      const res = await fetch("/api/reports/extract-docx", {
+      const res = await fetch("/api/docx-extract", {
         method: "POST",
         body: formData,
       });
@@ -245,7 +294,7 @@ export default function AdminDashboard({ userSession, setUserSession }) {
         setEditingReport((prev) => ({
           ...prev,
           title: json.title || prev.title,
-          content: json.rawText || prev.content,
+          content: json.text || prev.content,
           summary: json.summary || prev.summary || json.text.slice(0, 200),
         }));
         setDocxSuccessMsg("✓ ওয়ার্ড ফাইল (.docx) থেকে টেক্সট সফলভাবে এক্সট্রাক্ট করা হয়েছে!");
@@ -495,1303 +544,1999 @@ export default function AdminDashboard({ userSession, setUserSession }) {
   const pendingVolunteersCount = volunteers.filter((v) => v.status === "pending").length;
   const approvedVolunteersCount = volunteers.filter((v) => v.status === "approved").length;
 
+  const navSections = [
+    {
+      group: "পর্যবেক্ষণ ও মূল মিডিয়া",
+      items: [
+        { id: "analytics", label: "অ্যানালিটিক্স ওভারভিউ", icon: <BarChart3 className="w-4 h-4" /> },
+        { id: "homepage_media", label: "হোমপেজ ছবি ও ভিডিও", icon: <ImageIcon className="w-4 h-4" /> },
+        { id: "general", label: "সংস্থার তথ্য ও বাণী", icon: <Settings className="w-4 h-4" /> },
+      ],
+    },
+    {
+      group: "কার্যক্রম ও প্রকাশনা",
+      items: [
+        { id: "reports", label: "গবেষণা ও রিপোর্ট (.docx)", icon: <BookOpen className="w-4 h-4" /> },
+        { id: "pillars", label: "৪ মূল স্তম্ভ ও নিরাপত্তা", icon: <Compass className="w-4 h-4" /> },
+        { id: "blogs", label: "ব্লগ ও দ্বিভাষিক বার্তা", icon: <FileText className="w-4 h-4" /> },
+        { id: "gallery", label: "ফটো ও ভিডিও গ্যালারি", icon: <FolderUp className="w-4 h-4" /> },
+      ],
+    },
+    {
+      group: "দল ও সমাজ",
+      items: [
+        { id: "members", label: "নির্বাহী সদস্যবৃন্দ", icon: <Users className="w-4 h-4" /> },
+        {
+          id: "volunteers",
+          label: "স্বেচ্ছাসেবী আবেদন",
+          icon: <HeartHandshake className="w-4 h-4" />,
+          badge: pendingVolunteersCount > 0 ? pendingVolunteersCount : null,
+        },
+      ],
+    },
+  ];
+
+  const activeTabMeta = navSections.flatMap((s) => s.items).find((i) => i.id === activeTab);
+
   return (
-    <div className="bg-[#faf7f0] min-h-screen pb-24 text-stone-800">
-      {/* Top Header Bar */}
-      <div className="bg-white border-b border-stone-200 sticky top-20 z-40 shadow-2xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between py-4 gap-4">
-            <div>
-              <div className="flex items-center space-x-2">
-                <span className="bg-amber-100 text-amber-900 font-extrabold text-[11px] px-2.5 py-0.5 rounded-full border border-amber-200 uppercase tracking-wider">
-                  Admin Control Panel
-                </span>
-                <span className="text-xs text-stone-500 font-medium">
-                  {userSession?.username ? `Logged in as ${userSession.username}` : "জিয়নকাঠি পূর্ণ নিয়ন্ত্রণ কেন্দ্র"}
-                </span>
-              </div>
-              <h1 className="text-2xl font-black text-stone-900 mt-1">
-                জিয়নকাঠি ড্যাশবোর্ড ও কন্টেন্ট নিয়ন্ত্রণ
-              </h1>
-            </div>
+    <div className="bg-[#faf8f5] min-h-screen text-stone-800 flex flex-col font-sans">
+      {/* Mobile Sidebar Backdrop */}
+      {sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-stone-950/60 backdrop-blur-xs z-40 lg:hidden"
+        />
+      )}
 
-            {/* Quick Actions */}
+      {/* Fixed Left Sidebar Navigation */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-[#f4f7f4] text-stone-800 border-r border-emerald-200/80 flex flex-col justify-between transition-transform duration-300 ease-in-out shadow-xs ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          }`}
+      >
+        {/* Brand / Logo */}
+        <div className="p-5 border-b border-emerald-200/70 bg-white/80 backdrop-blur-xs">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
-              <button
-                onClick={() => handleSaveGlobal()}
-                disabled={saveLoading}
-                className="flex items-center space-x-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
-              >
-                {saveLoading ? (
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                ) : (
-                  <Save className="w-4 h-4" />
-                )}
-                <span>{saved ? "সংরক্ষিত হয়েছে!" : "সকল পরিবর্তন সংরক্ষণ (Save All)"}</span>
-              </button>
-
-              <button
-                onClick={() => setMainActiveTab && setMainActiveTab("home")}
-                className="flex items-center space-x-1.5 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs px-3.5 py-2.5 rounded-xl border border-stone-200 transition-all cursor-pointer"
-              >
-                <Eye className="w-4 h-4 text-stone-500" />
-                <span>ওয়েবসাইট দেখুন</span>
-              </button>
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 to-emerald-800 flex items-center justify-center text-white shadow-xs font-black text-lg">
+                জ
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-black text-stone-900 tracking-tight">জিয়নকাঠি কন্ট্রোল</span>
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="সক্রিয় সেশন" />
+                </div>
+                <p className="text-[11px] text-emerald-800/80 font-semibold">কেন্দ্রীয় অ্যাডমিন প্যানেল</p>
+              </div>
             </div>
-          </div>
-
-          {/* Navigation Tabs (Clear, Professional, No Donation) */}
-          <div className="flex space-x-1 overflow-x-auto pt-2 border-t border-stone-100 no-scrollbar">
-            {[
-              { id: "analytics", label: "অ্যানালিটিক্স", icon: <BarChart3 className="w-4 h-4" /> },
-              { id: "homepage_video", label: "হোমপেজ ভিডিও ও মিডিয়া", icon: <Video className="w-4 h-4" /> },
-              { id: "general", label: "সাধারণ তথ্য ও বাণী", icon: <Settings className="w-4 h-4" /> },
-              { id: "reports", label: "গবেষণা ও রিপোর্ট (.docx)", icon: <BookOpen className="w-4 h-4" /> },
-              { id: "pillars", label: "৪ মূল স্তম্ভ ও খাদ্য নিরাপত্তা", icon: <Compass className="w-4 h-4" /> },
-              { id: "blogs", label: "ব্লগ ও দ্বিভাষিক বার্তা", icon: <FileText className="w-4 h-4" /> },
-              { id: "members", label: "নির্বাহী সদস্য ও অগ্রাধিকার", icon: <Users className="w-4 h-4" /> },
-              { id: "gallery", label: "গ্যালারি ও মিডিয়া প্রকাশ", icon: <ImageIcon className="w-4 h-4" /> },
-              { id: "volunteers", label: `স্বেচ্ছাসেবী আবেদন (${pendingVolunteersCount})`, icon: <HeartHandshake className="w-4 h-4" /> },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center space-x-2 px-4 py-3 border-b-2 font-bold text-xs whitespace-nowrap transition-all cursor-pointer ${activeTab === tab.id
-                  ? "border-amber-600 text-amber-700 bg-amber-50/60"
-                  : "border-transparent text-stone-600 hover:text-amber-700 hover:bg-stone-50"
-                  }`}
-              >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden p-1.5 rounded-lg text-stone-500 hover:text-stone-800 hover:bg-stone-100"
+            >
+              <X className="w-5 h-5" />
+            </button>
           </div>
         </div>
-      </div>
 
-      {/* Main Tab Content Area */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-
-        {/* TAB 1: ANALYTICS */}
-        {activeTab === "analytics" && (
-          <div className="space-y-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between text-amber-700">
-                  <span className="text-xs font-bold uppercase tracking-wider">মোট প্রতিবেদন পাঠ</span>
-                  <Eye className="w-5 h-5" />
-                </div>
-                <div className="text-3xl font-black text-stone-900">{totalReportViews} বার</div>
-                <p className="text-[11px] text-stone-500 font-medium">ওয়েবসাইটে ভিজিটরদের বাস্তব পাঠ সংখ্যা</p>
+        {/* Navigation Menu (Grouped & Scrollable) */}
+        <div className="flex-1 overflow-y-auto py-5 px-3.5 space-y-6">
+          {navSections.map((section, idx) => (
+            <div key={idx} className="space-y-1">
+              <div className="px-3 text-[10px] font-black uppercase tracking-wider text-emerald-900/70">
+                {section.group}
               </div>
-
-              <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between text-emerald-700">
-                  <span className="text-xs font-bold uppercase tracking-wider">গবেষণা ও রিপোর্ট</span>
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div className="text-3xl font-black text-stone-900">{reports.length} টি</div>
-                <p className="text-[11px] text-stone-500 font-medium">ডাটাবেজে সংরক্ষিত মোট ফিল্ড রিপোর্ট</p>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between text-orange-700">
-                  <span className="text-xs font-bold uppercase tracking-wider">অপেক্ষমান স্বেচ্ছাসেবী</span>
-                  <HeartHandshake className="w-5 h-5" />
-                </div>
-                <div className="text-3xl font-black text-stone-900">{pendingVolunteersCount} জন</div>
-                <p className="text-[11px] text-stone-500 font-medium">রিভিউ এবং অনুমোদনের অপেক্ষায়</p>
-              </div>
-
-              <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between text-amber-700">
-                  <span className="text-xs font-bold uppercase tracking-wider">অনুমোদিত স্বেচ্ছাসেবী</span>
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div className="text-3xl font-black text-stone-900">{approvedVolunteersCount} জন</div>
-                <p className="text-[11px] text-stone-500 font-medium">সক্রিয় সামাজিক সংহতি দল</p>
-              </div>
-            </div>
-
-            {/* Most Read Reports Table */}
-            <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-2xs space-y-4">
-              <div className="flex items-center justify-between border-b border-stone-100 pb-4">
-                <div>
-                  <h3 className="font-extrabold text-stone-900 text-lg">সর্বাধিক পঠিত গবেষণা রিপোর্ট তালিকা</h3>
-                  <p className="text-xs text-stone-500">ভিজিটরদের আগ্রহ ও পাঠ সংখ্যা অনুযায়ী র্যাংক</p>
-                </div>
-                <button
-                  onClick={() => setActiveTab("reports")}
-                  className="text-xs font-bold text-amber-700 hover:text-amber-800"
-                >
-                  সকল রিপোর্ট দেখুন →
-                </button>
-              </div>
-
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-stone-50 text-stone-600 font-bold border-b border-stone-200">
-                    <tr>
-                      <th className="p-3">ক্রম</th>
-                      <th className="p-3">শিরোনাম (Title)</th>
-                      <th className="p-3">বিষয়</th>
-                      <th className="p-3">লেখক/টিম</th>
-                      <th className="p-3">তারিখ</th>
-                      <th className="p-3 text-right">ভিউ সংখ্যা</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100">
-                    {topReports.slice(0, 5).map((rep, idx) => (
-                      <tr key={rep.id} className="hover:bg-amber-50/40">
-                        <td className="p-3 font-bold text-stone-500">#{idx + 1}</td>
-                        <td className="p-3">
-                          <div className="font-bold text-stone-900 max-w-sm">{rep.title}</div>
-                          {rep.titleEnglish && (
-                            <div className="text-[11px] text-stone-500 italic truncate max-w-xs">{rep.titleEnglish}</div>
-                          )}
-                        </td>
-                        <td className="p-3">
-                          <span className="bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-emerald-200">
-                            {rep.topic}
-                          </span>
-                        </td>
-                        <td className="p-3 text-stone-600">{rep.author}</td>
-                        <td className="p-3 text-stone-500">{rep.publishedDate}</td>
-                        <td className="p-3 text-right">
-                          <span className="font-black text-amber-700 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200 inline-block">
-                            {rep.views || 0} বার
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className="space-y-1 mt-1">
+                {section.items.map((item) => {
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        setSidebarOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${isActive
+                          ? "bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-xs font-black"
+                          : "text-stone-700 hover:text-emerald-950 hover:bg-emerald-100/70 font-semibold"
+                        }`}
+                    >
+                      <div className="flex items-center space-x-2.5">
+                        <span className={isActive ? "text-white" : "text-emerald-700"}>
+                          {item.icon}
+                        </span>
+                        <span>{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-black ${isActive
+                              ? "bg-white text-emerald-900 shadow-2xs"
+                              : "bg-amber-100 text-amber-900 border border-amber-300"
+                            }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
-          </div>
-        )}
+          ))}
+        </div>
 
-        {/* TAB 2: HOMEPAGE VIDEO & MEDIA SELECTION */}
-        {activeTab === "homepage_video" && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-6">
-            <div className="border-b border-stone-200 pb-4">
-              <span className="text-xs font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
-                Homepage Video Control
-              </span>
-              <h3 className="text-xl font-black text-stone-900 mt-2">
-                হোমপেজ ভিডিও ও ফিল্ড ভিজ্যুয়াল নির্বাচন
-              </h3>
-              <p className="text-xs text-stone-500 mt-0.5">
-                হোমপেজে যে ভিডিও প্রদর্শিত হবে তা এখানে পরিবর্তন করুন বা নতুন ভিডিও ফাইল আপলোড করুন।
-              </p>
-            </div>
+        {/* Sidebar Footer Dock */}
+        <div className="p-4 border-t border-emerald-200/80 bg-white/90 space-y-2.5">
+          {/* Quick Global Save Button */}
+          <button
+            onClick={() => handleSaveGlobal()}
+            disabled={saveLoading}
+            className="w-full flex items-center justify-center space-x-2 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-700 hover:to-emerald-800 text-white font-bold text-xs py-2.5 px-4 rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+          >
+            {saveLoading ? (
+              <RefreshCw className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+            <span>{saved ? "সংরক্ষিত হয়েছে!" : "সকল পরিবর্তন সংরক্ষণ করুন"}</span>
+          </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              {/* Left Video Form */}
-              <div className="lg:col-span-7 space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-stone-700">ভিডিও URL (Direct Video Link) *</label>
-                  <div className="flex gap-3">
-                    <input
-                      type="text"
-                      value={data.homepageVideo?.url || ""}
-                      onChange={(e) =>
-                        setData({
-                          ...data,
-                          homepageVideo: { ...(data.homepageVideo || {}), url: e.target.value },
-                        })
-                      }
-                      placeholder="/images/sample-video.mp4 বা https://..."
-                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium"
-                    />
-                    <label className="cursor-pointer bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs px-4 py-2.5 rounded-xl border border-stone-200 shrink-0 flex items-center space-x-1">
-                      <Upload className="w-4 h-4 text-stone-600" />
-                      <span>ভিডিও আপলোড</span>
-                      <input
-                        type="file"
-                        accept="video/*"
-                        onChange={async (e) => {
-                          const url = await handleFileUpload(e.target.files[0]);
-                          if (url) {
-                            setData({
-                              ...data,
-                              homepageVideo: { ...(data.homepageVideo || {}), url },
-                            });
-                          }
-                        }}
-                        className="hidden"
-                      />
-                    </label>
-                  </div>
-                </div>
+          {/* Go to Website Button */}
+          <button
+            onClick={() => {
+              if (setMainTabFromProps) {
+                setMainTabFromProps("home");
+              } else if (setMainActiveTab) {
+                setMainActiveTab("home");
+              }
+            }}
+            className="w-full flex items-center justify-center space-x-2 bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-900 font-bold text-xs py-2 px-3 rounded-xl border border-stone-200/90 transition-all cursor-pointer"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-emerald-700" />
+            <span>মূল ওয়েবসাইটে ফিরে যান</span>
+          </button>
 
-                <ImageSelectorField
-                  label="পোস্টার ইমেজ (Poster Image URL)"
-                  value={data.homepageVideo?.poster || ""}
-                  onChange={(url) =>
-                    setData({
-                      ...data,
-                      homepageVideo: { ...(data.homepageVideo || {}), poster: url },
-                    })
-                  }
-                  galleryItems={data.gallery || []}
-                  category="farming"
-                  onUploadAutoAddToGallery={(url, file) => {
-                    autoAddImageToGallery(url, file, data.homepageVideo?.title || "ভিডিও পোস্টার", "farming");
-                  }}
-                  helperText="হোমপেজ ভিডিওর কভার হিসেবে যে ছবিটি প্রদর্শিত হবে।"
-                />
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-stone-700">ভিডিও শিরোনাম (বাংলা)</label>
-                    <input
-                      type="text"
-                      value={data.homepageVideo?.title || ""}
-                      onChange={(e) =>
-                        setData({
-                          ...data,
-                          homepageVideo: { ...(data.homepageVideo || {}), title: e.target.value },
-                        })
-                      }
-                      placeholder="মাটির টানে, মানুষের সাথে জিয়নকাঠি"
-                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-stone-700">Video Title (English)</label>
-                    <input
-                      type="text"
-                      value={data.homepageVideo?.titleEnglish || ""}
-                      onChange={(e) =>
-                        setData({
-                          ...data,
-                          homepageVideo: { ...(data.homepageVideo || {}), titleEnglish: e.target.value },
-                        })
-                      }
-                      placeholder="Living with Nature: Jiyonkathi in Action"
-                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-stone-700">বর্ণনা (বাংলা)</label>
-                  <textarea
-                    rows={3}
-                    value={data.homepageVideo?.description || ""}
-                    onChange={(e) =>
-                      setData({
-                        ...data,
-                        homepageVideo: { ...(data.homepageVideo || {}), description: e.target.value },
-                      })
-                    }
-                    placeholder="আউশগ্রাম ও বীরভূমের প্রত্যন্ত পল্লীতে দেশীয় ধান চাষের প্রদর্শনী খামার..."
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs leading-relaxed"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-stone-700">Description (English)</label>
-                  <textarea
-                    rows={3}
-                    value={data.homepageVideo?.descriptionEnglish || ""}
-                    onChange={(e) =>
-                      setData({
-                        ...data,
-                        homepageVideo: { ...(data.homepageVideo || {}), descriptionEnglish: e.target.value },
-                      })
-                    }
-                    placeholder="A window into our decentralized ecological seedbed nursery..."
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs leading-relaxed"
-                  />
-                </div>
-
-                <button
-                  onClick={() => handleSaveGlobal()}
-                  className="flex items-center space-x-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-xs cursor-pointer"
-                >
-                  <Save className="w-4 h-4" />
-                  <span>ভিডিও সেটিংস সংরক্ষণ করুন</span>
-                </button>
+          {/* User & Logout */}
+          <div className="pt-2 border-t border-emerald-100 flex items-center justify-between">
+            <div className="flex items-center space-x-2.5 overflow-hidden">
+              <div className="w-7 h-7 rounded-lg bg-emerald-100 border border-emerald-200 flex items-center justify-center text-emerald-800 font-bold text-xs shrink-0">
+                <ShieldCheck className="w-4 h-4" />
               </div>
-
-              {/* Right Video Live Preview */}
-              <div className="lg:col-span-5 space-y-4">
-                <div className="text-xs font-black text-stone-600 uppercase tracking-wider">
-                  হোমপেজ ভিডিও প্রিভিউ (Live Preview)
+              <div className="truncate">
+                <div className="text-[11px] font-bold text-stone-900 truncate">
+                  {userSession?.username || "admin@jiyonkathi.org"}
                 </div>
-                <div className="bg-stone-900 rounded-2xl overflow-hidden aspect-video border border-stone-300 relative flex items-center justify-center shadow-md">
-                  {data.homepageVideo?.url ? (
-                    <video
-                      src={data.homepageVideo.url}
-                      poster={data.homepageVideo.poster}
-                      controls
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="text-center p-6 text-stone-400 space-y-2">
-                      <Video className="w-8 h-8 mx-auto text-amber-500" />
-                      <p className="text-xs font-bold">ভিডিও URL প্রবেশ করান</p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
-                  <div className="text-xs font-black text-amber-900">
-                    {data.homepageVideo?.title || "মাটির টানে, মানুষের সাথে জিয়নকাঠি"}
-                  </div>
-                  <p className="text-xs text-amber-800 leading-relaxed font-medium">
-                    {data.homepageVideo?.description || "আউশগ্রাম ও বীরভূমের প্রত্যন্ত পল্লীতে মাঠ কার্যক্রম..."}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 3: GENERAL SITE INFO, QUOTES & METRICS */}
-        {activeTab === "general" && (
-          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-8">
-            <div>
-              <span className="text-xs font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
-                Global Information
-              </span>
-              <h3 className="text-xl font-black text-stone-900 mt-2">সাধারণ তথ্য, স্লোগান ও পরিসংখ্যান</h3>
-              <p className="text-xs text-stone-500 mt-0.5">
-                সংস্থার নাম, ব্যানার লেখা, হোমপেজ বাণী, যোগাযোগ ও পরিসংখ্যান আপডেট করুন।
-              </p>
-            </div>
-
-            {/* Section A: Organization Brand & Slogan */}
-            <div className="space-y-4 pt-2">
-              <h4 className="font-extrabold text-stone-900 text-sm flex items-center space-x-2 border-b border-stone-100 pb-2">
-                <Globe className="w-4 h-4 text-amber-600" />
-                <span>সংস্থার নাম ও শিরোনাম</span>
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">সংস্থার নাম (Title / Logo Text)</label>
-                  <input
-                    type="text"
-                    value={data.general?.title || "জিয়নকাঠি (Jiyonkathi)"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), title: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">স্লোগান / ট্যাগলাইন</label>
-                  <input
-                    type="text"
-                    value={data.general?.subTitle || "A Sustainable Living Community"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), subTitle: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Section B: Hero Banner Texts */}
-            <div className="space-y-4 pt-2">
-              <h4 className="font-extrabold text-stone-900 text-sm flex items-center space-x-2 border-b border-stone-100 pb-2">
-                <Sparkles className="w-4 h-4 text-amber-600" />
-                <span>হোমপেজ ব্যানার সাব-টাইটেল</span>
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">ব্যানার বিবরণ (বাংলা)</label>
-                  <textarea
-                    rows={3}
-                    value={data.general?.bannerSubtitleBengali || "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ১২০+ বিলুপ্তপ্রায় দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), bannerSubtitleBengali: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs leading-relaxed"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">Banner Description (English)</label>
-                  <textarea
-                    rows={3}
-                    value={data.general?.bannerSubtitle || "Dedicated to pesticide-free organic farming, conserving 120+ indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal."}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), bannerSubtitle: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs leading-relaxed"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Section C: Required Homepage Quote & Ideology */}
-            <div className="space-y-4 pt-2 bg-amber-50/70 p-5 rounded-2xl border border-amber-200">
-              <h4 className="font-extrabold text-amber-900 text-sm flex items-center space-x-2">
-                <Quote className="w-4 h-4 text-amber-700" />
-                <span>হোমপেজ আদর্শ ও উদ্ধৃতি (Ideology Quote Box)</span>
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">মূল বাণী (বাংলা)</label>
-                  <textarea
-                    rows={3}
-                    value={data.general?.quoteBengali || "পরিবেশের এই চরম সংকটকালে বিশ্বব্যাপী হুমকির সামনে আমরা স্থানীয় স্তরে একজোট হয়ে প্রকৃতি, মানুষ ও জীবজগতকে রক্ষা করার যে প্রচেষ্টা চালাচ্ছি... তার নামই জিয়নকাঠি।"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), quoteBengali: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs leading-relaxed font-serif"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">Quote (English)</label>
-                  <textarea
-                    rows={3}
-                    value={data.general?.quoteEnglish || "In this era of extreme environmental crisis and global threats, our collective effort at the local level to protect nature, humanity, and all living beings... is Jiyonkathi."}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), quoteEnglish: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs leading-relaxed font-serif"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">বাণীর উৎস / লেখক (বাংলা)</label>
-                  <input
-                    type="text"
-                    value={data.general?.quoteAuthorBengali || "জিয়নকাঠির লক্ষ্য ও আদর্শ"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), quoteAuthorBengali: e.target.value } })
-                    }
-                    className="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs font-bold"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">Quote Attribution (English)</label>
-                  <input
-                    type="text"
-                    value={data.general?.quoteAuthorEnglish || "Goal & Ideology of Jiyonkathi"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), quoteAuthorEnglish: e.target.value } })
-                    }
-                    className="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs font-bold"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Section D: Impact Numbers */}
-            <div className="space-y-4 pt-2">
-              <h4 className="font-extrabold text-stone-900 text-sm flex items-center space-x-2 border-b border-stone-100 pb-2">
-                <Tag className="w-4 h-4 text-amber-600" />
-                <span>মাঠের মূল পরিসংখ্যান (Hero Impact Metrics)</span>
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">বীজ সংরক্ষণ সংখ্যা</label>
-                  <input
-                    type="text"
-                    value={data.general?.statSeeds || "১২০+"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), statSeeds: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-amber-700"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">অভিজ্ঞতার বছর</label>
-                  <input
-                    type="text"
-                    value={data.general?.statYears || "১৩+"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), statYears: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-emerald-700"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">কৃষক পরিবার সংখ্যা</label>
-                  <input
-                    type="text"
-                    value={data.general?.statFamilies || "৩৫০+"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), statFamilies: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-orange-700"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Section E: Contact Information */}
-            <div className="space-y-4 pt-2">
-              <h4 className="font-extrabold text-stone-900 text-sm flex items-center space-x-2 border-b border-stone-100 pb-2">
-                <Phone className="w-4 h-4 text-amber-600" />
-                <span>যোগাযোগ ও ঠিকানা</span>
-              </h4>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">ফোন নম্বর</label>
-                  <input
-                    type="text"
-                    value={data.general?.phone || "+91 94340 12345 / 98000 54321"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), phone: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-bold text-stone-700">ইমেইল</label>
-                  <input
-                    type="email"
-                    value={data.general?.email || "contact@jiyonkathi.org"}
-                    onChange={(e) =>
-                      setData({ ...data, general: { ...(data.general || {}), email: e.target.value } })
-                    }
-                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-bold text-stone-700">মাঠ ও কার্যালয়ের ঠিকানা (বাংলা)</label>
-                <input
-                  type="text"
-                  value={data.general?.address || "প্লট নং ১৯৪২, গ্রাম ও ডাকঘর: প্রতাপপুর, থানা: আউশগ্রাম, জেলা: পূর্ব বর্ধমান"}
-                  onChange={(e) =>
-                    setData({ ...data, general: { ...(data.general || {}), address: e.target.value } })
-                  }
-                  className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium"
-                />
+                <div className="text-[10px] text-stone-500">অ্যাডমিন একাউন্ট</div>
               </div>
             </div>
 
             <button
-              onClick={() => handleSaveGlobal()}
-              className="flex items-center space-x-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-xs cursor-pointer"
+              onClick={() => {
+                if (onLogout) {
+                  onLogout();
+                } else if (setUserSession) {
+                  setUserSession(null);
+                }
+              }}
+              title="লগআউট"
+              className="p-1.5 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
             >
-              <Save className="w-4 h-4" />
-              <span>সকল তথ্য সংরক্ষণ করুন</span>
+              <LogOut className="w-4 h-4" />
             </button>
           </div>
-        )}
+        </div>
+      </aside>
 
-        {/* TAB 4: RESEARCH REPORTS MANAGER (.DOCX UPLOAD, CRUD & RANK) */}
-        {activeTab === "reports" && (
-          <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 gap-4 shadow-2xs">
-              <div>
-                <h3 className="text-xl font-black text-stone-900">গবেষণা ও প্রতিবেদন ব্যবস্থাপনা</h3>
-                <p className="text-xs text-stone-500 mt-0.5">
-                  নতুন প্রতিবেদন লিখুন অথবা .docx ফাইল আপলোড করে এক ক্লিকে টেক্সট এক্সট্রাক্ট করুন
+      {/* Main Dashboard Content Area */}
+      <div className="lg:pl-72 flex flex-col flex-1 min-h-screen">
+        {/* Clean Dashboard Top Bar */}
+        <header className="bg-white/95 backdrop-blur-xs border-b border-stone-200/90 sticky top-0 z-30 px-4 sm:px-8 py-3.5 flex items-center justify-between shadow-2xs">
+          <div className="flex items-center space-x-3">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden p-2 rounded-xl text-stone-600 hover:bg-stone-100 border border-stone-200"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <div>
+              <div className="flex items-center space-x-2 text-[11px] font-bold text-stone-400">
+                <span>অ্যাডমিন ড্যাশবোর্ড</span>
+                <ChevronRight className="w-3 h-3 text-stone-400" />
+                <span className="text-emerald-800 font-bold">{activeTabMeta?.label || "ড্যাশবোর্ড"}</span>
+              </div>
+              <h2 className="text-base sm:text-lg font-black text-stone-900 leading-none mt-0.5">
+                {activeTabMeta?.label || "ড্যাশবোর্ড"}
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            {saved ? (
+              <span className="inline-flex items-center space-x-1 text-xs font-bold text-emerald-800 bg-emerald-100/80 px-3 py-1.5 rounded-full border border-emerald-300 shadow-2xs">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-700" />
+                <span>সকল তথ্য সংরক্ষিত</span>
+              </span>
+            ) : (
+              <span className="hidden sm:inline-flex items-center space-x-1 text-xs font-semibold text-emerald-800 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200/60">
+                <span>লাইভ ডাটাবেজ সিঙ্ক সক্রিয়</span>
+              </span>
+            )}
+
+            <button
+              onClick={() => handleSaveGlobal()}
+              disabled={saveLoading}
+              className="flex items-center space-x-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs transition-all active:scale-95 disabled:opacity-50 cursor-pointer"
+            >
+              {saveLoading ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Save className="w-3.5 h-3.5" />
+              )}
+              <span>সংরক্ষণ (Save)</span>
+            </button>
+          </div>
+        </header>
+
+        {/* Main Content Workspace */}
+        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-20">
+
+          {/* TAB 1: ANALYTICS */}
+          {activeTab === "analytics" && (
+            <div className="space-y-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between text-amber-700">
+                    <span className="text-xs font-bold uppercase tracking-wider">মোট প্রতিবেদন পাঠ</span>
+                    <Eye className="w-5 h-5" />
+                  </div>
+                  <div className="text-3xl font-black text-stone-900">{totalReportViews} বার</div>
+                  <p className="text-[11px] text-stone-500 font-medium">ওয়েবসাইটে ভিজিটরদের বাস্তব পাঠ সংখ্যা</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between text-emerald-700">
+                    <span className="text-xs font-bold uppercase tracking-wider">গবেষণা ও রিপোর্ট</span>
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div className="text-3xl font-black text-stone-900">{reports.length} টি</div>
+                  <p className="text-[11px] text-stone-500 font-medium">ডাটাবেজে সংরক্ষিত মোট ফিল্ড রিপোর্ট</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between text-orange-700">
+                    <span className="text-xs font-bold uppercase tracking-wider">অপেক্ষমান স্বেচ্ছাসেবী</span>
+                    <HeartHandshake className="w-5 h-5" />
+                  </div>
+                  <div className="text-3xl font-black text-stone-900">{pendingVolunteersCount} জন</div>
+                  <p className="text-[11px] text-stone-500 font-medium">রিভিউ এবং অনুমোদনের অপেক্ষায়</p>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs space-y-2">
+                  <div className="flex items-center justify-between text-amber-700">
+                    <span className="text-xs font-bold uppercase tracking-wider">অনুমোদিত স্বেচ্ছাসেবী</span>
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                  <div className="text-3xl font-black text-stone-900">{approvedVolunteersCount} জন</div>
+                  <p className="text-[11px] text-stone-500 font-medium">সক্রিয় সামাজিক সংহতি দল</p>
+                </div>
+              </div>
+
+              {/* Most Read Reports Table */}
+              <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-2xs space-y-4">
+                <div className="flex items-center justify-between border-b border-stone-100 pb-4">
+                  <div>
+                    <h3 className="font-extrabold text-stone-900 text-lg">সর্বাধিক পঠিত গবেষণা রিপোর্ট তালিকা</h3>
+                    <p className="text-xs text-stone-500">ভিজিটরদের আগ্রহ ও পাঠ সংখ্যা অনুযায়ী র্যাংক</p>
+                  </div>
+                  <button
+                    onClick={() => setActiveTab("reports")}
+                    className="text-xs font-bold text-amber-700 hover:text-amber-800"
+                  >
+                    সকল রিপোর্ট দেখুন →
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-stone-50 text-stone-600 font-bold border-b border-stone-200">
+                      <tr>
+                        <th className="p-3">ক্রম</th>
+                        <th className="p-3">শিরোনাম (Title)</th>
+                        <th className="p-3">বিষয়</th>
+                        <th className="p-3">লেখক/টিম</th>
+                        <th className="p-3">তারিখ</th>
+                        <th className="p-3 text-right">ভিউ সংখ্যা</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100">
+                      {topReports.slice(0, 5).map((rep, idx) => (
+                        <tr key={rep.id} className="hover:bg-amber-50/40">
+                          <td className="p-3 font-bold text-stone-500">#{idx + 1}</td>
+                          <td className="p-3">
+                            <div className="font-bold text-stone-900 max-w-sm">{rep.title}</div>
+                            {rep.titleEnglish && (
+                              <div className="text-[11px] text-stone-500 italic truncate max-w-xs">{rep.titleEnglish}</div>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <span className="bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded-full text-[10px] font-bold border border-emerald-200">
+                              {rep.topic}
+                            </span>
+                          </td>
+                          <td className="p-3 text-stone-600">{rep.author}</td>
+                          <td className="p-3 text-stone-500">{rep.publishedDate}</td>
+                          <td className="p-3 text-right">
+                            <span className="font-black text-amber-700 bg-amber-50 px-3 py-1 rounded-lg border border-amber-200 inline-block">
+                              {rep.views || 0} বার
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: HOMEPAGE HERO PICTURE & VIDEO CONTROL */}
+          {activeTab === "homepage_media" && (
+            <div className="space-y-8">
+              {/* Header description */}
+              <div className="bg-white p-6 rounded-3xl border border-stone-200 shadow-2xs">
+                <span className="text-xs font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
+                  Homepage Visuals & Media Control
+                </span>
+                <h3 className="text-xl font-black text-stone-900 mt-2">
+                  হোমপেজের মূল ছবি (Hero Photo) ও ভিডিও নিয়ন্ত্রণ
+                </h3>
+                <p className="text-xs text-stone-500 mt-1">
+                  হোমপেজের উপরের প্রধান ব্যানার ছবি, অবস্থান ট্যাগ এবং হোমপেজ ভিডিও প্লেয়ার এখানে পরিবর্তন করুন।
                 </p>
               </div>
 
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => {
-                    setEditingReport({
-                      id: "new",
-                      title: "",
-                      titleEnglish: "",
-                      topic: "বীজ সংরক্ষণ ও দেশীয় ধান",
-                      topicEnglish: "Seed Conservation",
-                      author: "জিয়নকাঠি গবেষণা দল",
-                      publishedDate: new Date().toISOString().split("T")[0],
-                      summary: "",
-                      summaryEnglish: "",
-                      content: "",
-                      contentEnglish: "",
-                      image: "/images/farming-collage.jpg",
-                      rank: (reports.length || 0) + 1,
-                    });
-                    setShowReportModal(true);
-                  }}
-                  className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>নতুন প্রতিবেদন যোগ করুন (Modal)</span>
-                </button>
-              </div>
-            </div>
-
-            {/* List of Reports */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {reports.map((report, rIdx) => (
-                <div
-                  key={report.id}
-                  className="bg-white rounded-2xl p-6 border border-stone-200 shadow-2xs flex flex-col justify-between space-y-4"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">
-                        {report.topic || "কৃষি গবেষণা"}
-                      </span>
-                      <span className="text-[11px] font-bold text-stone-400">
-                        {report.publishedDate}
-                      </span>
-                    </div>
-
-                    <h4 className="font-extrabold text-stone-900 text-base leading-snug">
-                      {report.title}
+              {/* SECTION 1: HOMEPAGE HERO BANNER PICTURE */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-6">
+                <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-base font-black text-stone-900 flex items-center space-x-2">
+                      <ImageIcon className="w-5 h-5 text-amber-600" />
+                      <span>১. হোমপেজ প্রধান ব্যানার ছবি (Hero Banner Picture)</span>
                     </h4>
-
-                    {report.titleEnglish && (
-                      <p className="text-xs text-stone-500 italic leading-normal">
-                        {report.titleEnglish}
-                      </p>
-                    )}
-
-                    <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed font-medium">
-                      {report.summary || report.content?.slice(0, 140)}
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      হোমপেজের ডানদিকের মূল ব্যানার ছবি ও টেক্সট পরিবর্তন করুন
                     </p>
                   </div>
+                  <button
+                    onClick={() => handleSaveGlobal()}
+                    disabled={saveLoading}
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs cursor-pointer flex items-center space-x-1.5"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>ছবি সংরক্ষণ করুন</span>
+                  </button>
+                </div>
 
-                  <div className="pt-4 border-t border-stone-100 flex items-center justify-between text-xs">
-                    <div className="text-stone-500 font-semibold flex items-center space-x-1">
-                      <Eye className="w-3.5 h-3.5 text-amber-600" />
-                      <span>{report.views || 0} ভিউ</span>
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Form controls */}
+                  <div className="lg:col-span-7 space-y-4">
+                    <ImageSelectorField
+                      label="হোমপেজ প্রধান ছবি (Hero Picture URL) *"
+                      value={data.general?.heroImage || "/images/paddy-harvesting.jpg"}
+                      onChange={(url) =>
+                        setData({
+                          ...data,
+                          general: { ...(data.general || {}), heroImage: url },
+                        })
+                      }
+                      galleryItems={data.gallery || []}
+                      category="farming"
+                      onUploadAutoAddToGallery={(url, file) => {
+                        autoAddImageToGallery(url, file, "হোমপেজ ব্যানার ছবি", "farming");
+                      }}
+                      helperText="গ্যালারি থেকে পছন্দ করুন অথবা সরাসরি আপনার কম্পিউটার থেকে নতুন ছবি আপলোড করুন।"
+                    />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-700">ছবির ব্যাজ ট্যাগ (বাংলা)</label>
+                        <input
+                          type="text"
+                          value={data.general?.heroBadgeBengali || "প্রাকৃতিক উপায়ে বীজতলা"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              general: { ...(data.general || {}), heroBadgeBengali: e.target.value },
+                            })
+                          }
+                          className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-amber-900"
+                          placeholder="যেমন: প্রাকৃতিক উপায়ে বীজতলা"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-700">Badge Tag (English)</label>
+                        <input
+                          type="text"
+                          value={data.general?.heroBadgeEnglish || "Natural Seed Bank"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              general: { ...(data.general || {}), heroBadgeEnglish: e.target.value },
+                            })
+                          }
+                          className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
+                          placeholder="e.g. Natural Seed Bank"
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-700">অবস্থান / লোকেশন (বাংলা)</label>
+                        <input
+                          type="text"
+                          value={data.general?.heroLocationBengali || "স্থান: আউশগ্রাম, বর্ধমান"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              general: { ...(data.general || {}), heroLocationBengali: e.target.value },
+                            })
+                          }
+                          className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
+                          placeholder="যেমন: স্থান: আউশগ্রাম, বর্ধমান"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-700">Location (English)</label>
+                        <input
+                          type="text"
+                          value={data.general?.heroLocationEnglish || "Location: Aushgram, Burdwan"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              general: { ...(data.general || {}), heroLocationEnglish: e.target.value },
+                            })
+                          }
+                          className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
+                          placeholder="e.g. Location: Aushgram, Burdwan"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700">ছবির শিরোনাম ও বিবরণ (বাংলা)</label>
+                      <input
+                        type="text"
+                        value={data.general?.heroTitleBengali || "রাসায়নিক সার ও কীটনাশকমুক্ত দেশীয় ধান ও ফল-সবজি উৎপাদনের মডেল"}
+                        onChange={(e) =>
+                          setData({
+                            ...data,
+                            general: { ...(data.general || {}), heroTitleBengali: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
+                        placeholder="যেমন: রাসায়নিক সার ও কীটনাশকমুক্ত দেশীয় ধান..."
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700">Title & Caption (English)</label>
+                      <input
+                        type="text"
+                        value={data.general?.heroTitleEnglish || "Heirloom Agro-Ecology & Sustainable Food Sovereignty"}
+                        onChange={(e) =>
+                          setData({
+                            ...data,
+                            general: { ...(data.general || {}), heroTitleEnglish: e.target.value },
+                          })
+                        }
+                        className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
+                        placeholder="e.g. Heirloom Agro-Ecology..."
+                      />
+                    </div>
+                  </div>
+
+                  {/* Live Preview of Hero Card */}
+                  <div className="lg:col-span-5 space-y-2">
+                    <span className="text-xs font-black text-stone-600 uppercase tracking-wider block">
+                      হোমপেজ ব্যানার প্রিভিউ (Live Card Preview)
+                    </span>
+                    <div className="bg-white p-3 sm:p-4 rounded-3xl border border-amber-300 shadow-md relative">
+                      <div className="aspect-4/3 rounded-2xl overflow-hidden bg-stone-100 relative">
+                        <img
+                          src={data.general?.heroImage || "/images/paddy-harvesting.jpg"}
+                          alt="Hero Preview"
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.src = "/images/seedbed.jpg";
+                          }}
+                        />
+                        <div className="absolute top-3 left-3 bg-stone-900/80 backdrop-blur-xs text-amber-300 text-[11px] font-black px-3 py-1 rounded-full flex items-center space-x-1.5 shadow-xs">
+                          <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                          <span>{data.general?.heroBadgeBengali || "প্রাকৃতিক উপায়ে বীজতলা"}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 space-y-1.5">
+                        <div className="flex items-center justify-between text-xs text-stone-500 font-semibold">
+                          <span>{data.general?.heroLocationBengali || "স্থান: আউশগ্রাম, বর্ধমান"}</span>
+                          <span className="text-amber-700 font-bold">মাঠ গবেষণা কেন্দ্র</span>
+                        </div>
+                        <h3 className="text-sm font-black text-stone-900 leading-snug">
+                          {data.general?.heroTitleBengali || "রাসায়নিক সার ও কীটনাশকমুক্ত দেশীয় ধান ও ফল-সবজি উৎপাদনের মডেল"}
+                        </h3>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 2: HOMEPAGE VIDEO SHOWCASE */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-6">
+                <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-base font-black text-stone-900 flex items-center space-x-2">
+                      <Video className="w-5 h-5 text-amber-600" />
+                      <span>২. হোমপেজ ভিডিও ও ফিল্ড ভিজ্যুয়াল (Homepage Video Player)</span>
+                    </h4>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      ক্লাউডিনারিতে ভিডিও ফাইল আপলোড করুন অথবা ইউটিউব / ডিরেক্ট ভিডিও লিঙ্ক দিন
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleSaveGlobal()}
+                    disabled={saveLoading}
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs cursor-pointer flex items-center space-x-1.5"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>ভিডিও সংরক্ষণ করুন</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                  {/* Left Video Form */}
+                  <div className="lg:col-span-7 space-y-5">
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-bold text-stone-700">
+                        ভিডিও লিঙ্ক (Direct Video / Cloudinary / YouTube URL) *
+                      </label>
+                      <div className="flex flex-col sm:flex-row gap-2.5">
+                        <input
+                          type="text"
+                          value={data.homepageVideo?.url || ""}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              homepageVideo: { ...(data.homepageVideo || {}), url: e.target.value },
+                            })
+                          }
+                          placeholder="https://res.cloudinary.com/... বা https://www.youtube.com/watch?v=..."
+                          className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium"
+                        />
+                        <label
+                          className={`cursor-pointer font-bold text-xs px-4 py-2.5 rounded-xl border shrink-0 flex items-center justify-center space-x-1.5 transition-all ${videoUploading
+                              ? "bg-amber-100 border-amber-300 text-amber-900 cursor-not-allowed opacity-80"
+                              : "bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
+                            }`}
+                        >
+                          <Upload className={`w-4 h-4 ${videoUploading ? "animate-spin text-amber-600" : "text-amber-700"}`} />
+                          <span>{videoUploading ? "আপলোড হচ্ছে..." : "ভিডিও আপলোড"}</span>
+                          <input
+                            type="file"
+                            accept="video/*"
+                            disabled={videoUploading}
+                            onChange={handleVideoUploadWithSave}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+
+                      {videoUploadMsg && (
+                        <p
+                          className={`text-xs font-bold p-2 rounded-lg border ${videoUploadMsg.startsWith("✓")
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                              : "bg-amber-50 text-amber-800 border-amber-200"
+                            }`}
+                        >
+                          {videoUploadMsg}
+                        </p>
+                      )}
+                    </div>
+
+                    <ImageSelectorField
+                      label="ভিডিও পোস্টার ইমেজ (Video Cover Image)"
+                      value={data.homepageVideo?.poster || ""}
+                      onChange={(url) =>
+                        setData({
+                          ...data,
+                          homepageVideo: { ...(data.homepageVideo || {}), poster: url },
+                        })
+                      }
+                      galleryItems={data.gallery || []}
+                      category="farming"
+                      onUploadAutoAddToGallery={(url, file) => {
+                        autoAddImageToGallery(url, file, data.homepageVideo?.title || "ভিডিও পোস্টার", "farming");
+                      }}
+                      helperText="ভিডিও প্লে হওয়ার আগে যে কভার ছবিটি দেখা যাবে।"
+                    />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-700">ভিডিও শিরোনাম (বাংলা)</label>
+                        <input
+                          type="text"
+                          value={data.homepageVideo?.title || ""}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              homepageVideo: { ...(data.homepageVideo || {}), title: e.target.value },
+                            })
+                          }
+                          placeholder="মাটির টানে, মানুষের সাথে জিয়নকাঠি"
+                          className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-700">Video Title (English)</label>
+                        <input
+                          type="text"
+                          value={data.homepageVideo?.titleEnglish || ""}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              homepageVideo: { ...(data.homepageVideo || {}), titleEnglish: e.target.value },
+                            })
+                          }
+                          placeholder="Living with Nature: Jiyonkathi in Action"
+                          className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700">ভিডিওর বিবরণ (বাংলা)</label>
+                      <textarea
+                        rows={3}
+                        value={data.homepageVideo?.description || ""}
+                        onChange={(e) =>
+                          setData({
+                            ...data,
+                            homepageVideo: { ...(data.homepageVideo || {}), description: e.target.value },
+                          })
+                        }
+                        placeholder="আউশগ্রাম ও বীরভূমের প্রত্যন্ত পল্লীতে দেশীয় ধান চাষের প্রদর্শনী খামার..."
+                        className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs leading-relaxed"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-xs font-bold text-stone-700">Description (English)</label>
+                      <textarea
+                        rows={3}
+                        value={data.homepageVideo?.descriptionEnglish || ""}
+                        onChange={(e) =>
+                          setData({
+                            ...data,
+                            homepageVideo: { ...(data.homepageVideo || {}), descriptionEnglish: e.target.value },
+                          })
+                        }
+                        placeholder="A window into our decentralized ecological seedbed nursery..."
+                        className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs leading-relaxed"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Right Video Live Preview */}
+                  <div className="lg:col-span-5 space-y-4">
+                    <div className="text-xs font-black text-stone-600 uppercase tracking-wider">
+                      হোমপেজ ভিডিও প্রিভিউ (Live Video Preview)
+                    </div>
+                    <div className="bg-stone-900 rounded-2xl overflow-hidden aspect-video border border-stone-300 relative flex items-center justify-center shadow-md">
+                      {(() => {
+                        const videoUrl = data.homepageVideo?.url?.trim();
+                        if (!videoUrl) {
+                          return (
+                            <div className="text-center p-6 text-stone-400 space-y-2">
+                              <Video className="w-8 h-8 mx-auto text-amber-500" />
+                              <p className="text-xs font-bold">ভিডিও ফাইল আপলোড করুন বা লিঙ্ক দিন</p>
+                            </div>
+                          );
+                        }
+
+                        const embedUrl = getYouTubeEmbedUrl(videoUrl);
+                        if (embedUrl) {
+                          return (
+                            <iframe
+                              src={embedUrl}
+                              title="Preview Video"
+                              className="w-full h-full border-0 aspect-video"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          );
+                        }
+
+                        return (
+                          <video
+                            key={videoUrl}
+                            src={videoUrl}
+                            poster={data.homepageVideo?.poster}
+                            controls
+                            playsInline
+                            preload="metadata"
+                            className="w-full h-full object-cover"
+                          >
+                            <source src={videoUrl} />
+                            Your browser does not support the video tag.
+                          </video>
+                        );
+                      })()}
+                    </div>
+
+                    <div className="p-4 bg-amber-50 rounded-2xl border border-amber-200 space-y-2">
+                      <div className="text-xs font-black text-amber-900">
+                        {data.homepageVideo?.title || "মাটির টানে, মানুষের সাথে জিয়নকাঠি"}
+                      </div>
+                      <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                        {data.homepageVideo?.description || "আউশগ্রাম ও বীরভূমের প্রত্যন্ত পল্লীতে মাঠ কার্যক্রম..."}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 3: ABOUT US 3 FIELD ARCHIVE PICTURES */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-6">
+                <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-base font-black text-stone-900 flex items-center space-x-2">
+                      <ImageIcon className="w-5 h-5 text-emerald-600" />
+                      <span>৩. &quot;আমাদের কথা&quot; (About Us) পেজের ৩টি ফিল্ড চিত্র ও বিবরণ</span>
+                    </h4>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      আমাদের কথা পেজে প্রদর্শিত তিনটি মূল ক্ষেত্রভিত্তিক আলোকচিত্র (কৃষি ও বীজ, সামাজিক শিক্ষা, ও জীববৈচিত্র্য) পরিবর্তন করুন।
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleSaveGlobal()}
+                    disabled={saveLoading}
+                    className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs cursor-pointer flex items-center space-x-1.5"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>তথ্য ও ছবি সংরক্ষণ</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* 3.1: Indigenous Farming & Seed Bank */}
+                  <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-3 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="text-xs font-black text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-lg inline-block">
+                        ১. দেশীয় ধান ও বীজ সংরক্ষণ
+                      </div>
+                      <ImageSelectorField
+                        label="ছবির লিঙ্ক (Image URL)"
+                        value={data.about?.farmingImage || "/images/farming-collage.jpg"}
+                        onChange={(url) =>
+                          setData({
+                            ...data,
+                            about: { ...(data.about || {}), farmingImage: url },
+                          })
+                        }
+                        galleryItems={data.gallery || []}
+                        category="farming"
+                        onUploadAutoAddToGallery={(url, file) => {
+                          autoAddImageToGallery(url, file, "বীজ সংরক্ষণ চিত্রমালা", "farming");
+                        }}
+                        helperText="গ্যালারি থেকে নিন বা ডিভাইস থেকে সরাসরি আপলোড করুন।"
+                      />
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-stone-700">শিরোনাম (বাংলা)</label>
+                        <input
+                          type="text"
+                          value={data.about?.farmingTitleBn || "দেশীয় ধান ও বীজ সংরক্ষণ প্রক্রিয়া"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              about: { ...(data.about || {}), farmingTitleBn: e.target.value },
+                            })
+                          }
+                          className="w-full p-2 bg-white border border-stone-300 rounded-xl text-xs font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-stone-700">Title (English)</label>
+                        <input
+                          type="text"
+                          value={data.about?.farmingTitleEn || "Indigenous Paddy & Seed Processing"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              about: { ...(data.about || {}), farmingTitleEn: e.target.value },
+                            })
+                          }
+                          className="w-full p-2 bg-white border border-stone-300 rounded-xl text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-stone-700">সংক্ষিপ্ত বিবরণ (বাংলা)</label>
+                        <textarea
+                          rows={2}
+                          value={data.about?.farmingDescBn || "বীজতলা, নিড়ানো, ধান কাটা, ঢেঁকিতে প্রক্রিয়াজাতকরণ ও প্রজাতি সংরক্ষণ।"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              about: { ...(data.about || {}), farmingDescBn: e.target.value },
+                            })
+                          }
+                          className="w-full p-2 bg-white border border-stone-300 rounded-xl text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3.2: Community Education & Culture */}
+                  <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-3 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="text-xs font-black text-amber-900 bg-amber-100 px-2.5 py-1 rounded-lg inline-block">
+                        ২. সামাজিক শিক্ষা ও সংস্কৃতি
+                      </div>
+                      <ImageSelectorField
+                        label="ছবির লিঙ্ক (Image URL)"
+                        value={data.about?.communityImage || "/images/community-collage.jpg"}
+                        onChange={(url) =>
+                          setData({
+                            ...data,
+                            about: { ...(data.about || {}), communityImage: url },
+                          })
+                        }
+                        galleryItems={data.gallery || []}
+                        category="events"
+                        onUploadAutoAddToGallery={(url, file) => {
+                          autoAddImageToGallery(url, file, "সামাজিক শিক্ষা ও সাংস্কৃতিক সমাবেশ", "events");
+                        }}
+                        helperText="গ্যালারি থেকে নিন বা ডিভাইস থেকে সরাসরি আপলোড করুন।"
+                      />
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-stone-700">শিরোনাম (বাংলা)</label>
+                        <input
+                          type="text"
+                          value={data.about?.communityTitleBn || "সামাজিক শিক্ষা ও সাংস্কৃতিক মেলবন্ধন"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              about: { ...(data.about || {}), communityTitleBn: e.target.value },
+                            })
+                          }
+                          className="w-full p-2 bg-white border border-stone-300 rounded-xl text-xs font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-stone-700">Title (English)</label>
+                        <input
+                          type="text"
+                          value={data.about?.communityTitleEn || "Community Education & Festival"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              about: { ...(data.about || {}), communityTitleEn: e.target.value },
+                            })
+                          }
+                          className="w-full p-2 bg-white border border-stone-300 rounded-xl text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-stone-700">সংক্ষিপ্ত বিবরণ (বাংলা)</label>
+                        <textarea
+                          rows={2}
+                          value={data.about?.communityDescBn || "সহায়ক শিক্ষা কেন্দ্র, বসন্ত উৎসব, সর্প সচেতনতা ও স্বাস্থ্য শিবির।"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              about: { ...(data.about || {}), communityDescBn: e.target.value },
+                            })
+                          }
+                          className="w-full p-2 bg-white border border-stone-300 rounded-xl text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3.3: Ecology & Biodiversity */}
+                  <div className="bg-stone-50 p-4 rounded-2xl border border-stone-200 space-y-3 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      <div className="text-xs font-black text-emerald-900 bg-emerald-100 px-2.5 py-1 rounded-lg inline-block">
+                        ৩. বিষমুক্ত ফসল ও জীববৈচিত্র্য
+                      </div>
+                      <ImageSelectorField
+                        label="ছবির লিঙ্ক (Image URL)"
+                        value={data.about?.ecologyImage || "/images/ecology-collage.jpg"}
+                        onChange={(url) =>
+                          setData({
+                            ...data,
+                            about: { ...(data.about || {}), ecologyImage: url },
+                          })
+                        }
+                        galleryItems={data.gallery || []}
+                        category="farming"
+                        onUploadAutoAddToGallery={(url, file) => {
+                          autoAddImageToGallery(url, file, "বিষমুক্ত জীববৈচিত্র্য ফসল", "farming");
+                        }}
+                        helperText="গ্যালারি থেকে নিন বা ডিভাইস থেকে সরাসরি আপলোড করুন।"
+                      />
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-stone-700">শিরোনাম (বাংলা)</label>
+                        <input
+                          type="text"
+                          value={data.about?.ecologyTitleBn || "বিষমুক্ত ফসল ও প্রাকৃতিক জীববৈচিত্র্য"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              about: { ...(data.about || {}), ecologyTitleBn: e.target.value },
+                            })
+                          }
+                          className="w-full p-2 bg-white border border-stone-300 rounded-xl text-xs font-bold"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-stone-700">Title (English)</label>
+                        <input
+                          type="text"
+                          value={data.about?.ecologyTitleEn || "Organic Produce & Biodiversity"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              about: { ...(data.about || {}), ecologyTitleEn: e.target.value },
+                            })
+                          }
+                          className="w-full p-2 bg-white border border-stone-300 rounded-xl text-xs"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-stone-700">সংক্ষিপ্ত বিবরণ (বাংলা)</label>
+                        <textarea
+                          rows={2}
+                          value={data.about?.ecologyDescBn || "বিষমুক্ত ফল, বীজ সংরক্ষণের কাঁচের বোতল, স্থানীয় মৎস্য ও বাস্তুতন্ত্র।"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              about: { ...(data.about || {}), ecologyDescBn: e.target.value },
+                            })
+                          }
+                          className="w-full p-2 bg-white border border-stone-300 rounded-xl text-xs"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 4: WEBSITE LOGO & BRAND IMAGE */}
+              <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-6">
+                <div className="border-b border-stone-200 pb-3 flex items-center justify-between">
+                  <div>
+                    <h4 className="text-base font-black text-stone-900 flex items-center space-x-2">
+                      <Sparkles className="w-5 h-5 text-amber-600" />
+                      <span>৪. সংস্থার প্রধান লোগো চিত্র (Website Logo)</span>
+                    </h4>
+                    <p className="text-xs text-stone-500 mt-0.5">
+                      হেডার এবং ওয়েবসাইটের মূল লোগো পরিবর্তন বা নতুন আপলোড করুন।
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => handleSaveGlobal()}
+                    disabled={saveLoading}
+                    className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs cursor-pointer flex items-center space-x-1.5"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>লোগো সংরক্ষণ</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+                  <div>
+                    <ImageSelectorField
+                      label="লোগো ছবির লিঙ্ক (Logo Image URL)"
+                      value={data.general?.logoImage || "/images/logo.svg"}
+                      onChange={(url) =>
+                        setData({
+                          ...data,
+                          general: { ...(data.general || {}), logoImage: url },
+                        })
+                      }
+                      galleryItems={data.gallery || []}
+                      category="branding"
+                      onUploadAutoAddToGallery={(url, file) => {
+                        autoAddImageToGallery(url, file, "অফিসিয়াল লোগো", "branding");
+                      }}
+                      helperText="SVG, PNG বা JPG ফরম্যাটের পরিচ্ছন্ন ব্যাকগ্রাউন্ডের লোগো ব্যবহার করুন।"
+                    />
+                  </div>
+                  <div className="p-6 bg-stone-100 rounded-2xl border border-stone-200 flex flex-col items-center justify-center space-y-2">
+                    <span className="text-[11px] font-bold text-stone-500">লোগো প্রিভিউ (Live Preview)</span>
+                    <div className="p-3 bg-white rounded-2xl border border-stone-200 shadow-xs flex items-center space-x-3">
+                      <img
+                        src={data.general?.logoImage || "/images/logo.svg"}
+                        alt="Logo Preview"
+                        className="h-12 w-12 object-contain"
+                        onError={(e) => {
+                          e.currentTarget.src = "/images/logo.svg";
+                        }}
+                      />
+                      <div>
+                        <div className="text-sm font-black text-stone-900">{data.general?.title || "Jiyonkathi (জিয়নকাঠি)"}</div>
+                        <div className="text-[10px] text-amber-700 font-bold">{data.general?.subTitle || "A Sustainable Living Community"}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: GENERAL SITE INFO, QUOTES & METRICS */}
+          {activeTab === "general" && (
+            <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-8">
+              <div>
+                <span className="text-xs font-black uppercase tracking-wider text-amber-700 bg-amber-100 px-3 py-1 rounded-full">
+                  Global Information
+                </span>
+                <h3 className="text-xl font-black text-stone-900 mt-2">সাধারণ তথ্য, স্লোগান ও পরিসংখ্যান</h3>
+                <p className="text-xs text-stone-500 mt-0.5">
+                  সংস্থার নাম, ব্যানার লেখা, হোমপেজ বাণী, যোগাযোগ ও পরিসংখ্যান আপডেট করুন।
+                </p>
+              </div>
+
+              {/* Section A: Organization Brand & Slogan */}
+              <div className="space-y-4 pt-2">
+                <h4 className="font-extrabold text-stone-900 text-sm flex items-center space-x-2 border-b border-stone-100 pb-2">
+                  <Globe className="w-4 h-4 text-amber-600" />
+                  <span>সংস্থার নাম ও শিরোনাম</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">সংস্থার নাম (Title / Logo Text)</label>
+                    <input
+                      type="text"
+                      value={data.general?.title || "জিয়নকাঠি (Jiyonkathi)"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), title: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">স্লোগান / ট্যাগলাইন</label>
+                    <input
+                      type="text"
+                      value={data.general?.subTitle || "A Sustainable Living Community"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), subTitle: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
+                    />
+                  </div>
+                </div>
+
+                {/* Logo control in General Tab */}
+                <div className="pt-2">
+                  <ImageSelectorField
+                    label="সংস্থার লোগো ছবি (Website Logo Image)"
+                    value={data.general?.logoImage || "/images/logo.svg"}
+                    onChange={(url) =>
+                      setData({
+                        ...data,
+                        general: { ...(data.general || {}), logoImage: url },
+                      })
+                    }
+                    galleryItems={data.gallery || []}
+                    category="branding"
+                    onUploadAutoAddToGallery={(url, file) => {
+                      autoAddImageToGallery(url, file, "লোগো", "branding");
+                    }}
+                    helperText="হেডারের লোগো প্রতিস্থাপন করতে পছন্দের ছবি দিন বা সরাসরি আপলোড করুন।"
+                  />
+                </div>
+              </div>
+
+              {/* Section B: Hero Banner Texts */}
+              <div className="space-y-4 pt-2">
+                <h4 className="font-extrabold text-stone-900 text-sm flex items-center space-x-2 border-b border-stone-100 pb-2">
+                  <Sparkles className="w-4 h-4 text-amber-600" />
+                  <span>হোমপেজ ব্যানার সাব-টাইটেল</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">ব্যানার বিবরণ (বাংলা)</label>
+                    <textarea
+                      rows={3}
+                      value={data.general?.bannerSubtitleBengali || "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ১২০+ বিলুপ্তপ্রায় দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), bannerSubtitleBengali: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">Banner Description (English)</label>
+                    <textarea
+                      rows={3}
+                      value={data.general?.bannerSubtitle || "Dedicated to pesticide-free organic farming, conserving 120+ indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal."}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), bannerSubtitle: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs leading-relaxed"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section C: Required Homepage Quote & Ideology */}
+              <div className="space-y-4 pt-2 bg-amber-50/70 p-5 rounded-2xl border border-amber-200">
+                <h4 className="font-extrabold text-amber-900 text-sm flex items-center space-x-2">
+                  <Quote className="w-4 h-4 text-amber-700" />
+                  <span>হোমপেজ আদর্শ ও উদ্ধৃতি (Ideology Quote Box)</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">মূল বাণী (বাংলা)</label>
+                    <textarea
+                      rows={3}
+                      value={data.general?.quoteBengali || "পরিবেশের এই চরম সংকটকালে বিশ্বব্যাপী হুমকির সামনে আমরা স্থানীয় স্তরে একজোট হয়ে প্রকৃতি, মানুষ ও জীবজগতকে রক্ষা করার যে প্রচেষ্টা চালাচ্ছি... তার নামই জিয়নকাঠি।"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), quoteBengali: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs leading-relaxed font-serif"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">Quote (English)</label>
+                    <textarea
+                      rows={3}
+                      value={data.general?.quoteEnglish || "In this era of extreme environmental crisis and global threats, our collective effort at the local level to protect nature, humanity, and all living beings... is Jiyonkathi."}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), quoteEnglish: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-white border border-stone-200 rounded-xl text-xs leading-relaxed font-serif"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">বাণীর উৎস / লেখক (বাংলা)</label>
+                    <input
+                      type="text"
+                      value={data.general?.quoteAuthorBengali || "জিয়নকাঠির লক্ষ্য ও আদর্শ"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), quoteAuthorBengali: e.target.value } })
+                      }
+                      className="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">Quote Attribution (English)</label>
+                    <input
+                      type="text"
+                      value={data.general?.quoteAuthorEnglish || "Goal & Ideology of Jiyonkathi"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), quoteAuthorEnglish: e.target.value } })
+                      }
+                      className="w-full p-2 bg-white border border-stone-200 rounded-lg text-xs font-bold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section D: Impact Numbers */}
+              <div className="space-y-4 pt-2">
+                <h4 className="font-extrabold text-stone-900 text-sm flex items-center space-x-2 border-b border-stone-100 pb-2">
+                  <Tag className="w-4 h-4 text-amber-600" />
+                  <span>মাঠের মূল পরিসংখ্যান (Hero Impact Metrics)</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">বীজ সংরক্ষণ সংখ্যা</label>
+                    <input
+                      type="text"
+                      value={data.general?.statSeeds || "১২০+"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), statSeeds: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-amber-700"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">অভিজ্ঞতার বছর</label>
+                    <input
+                      type="text"
+                      value={data.general?.statYears || "১৩+"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), statYears: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-emerald-700"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">কৃষক পরিবার সংখ্যা</label>
+                    <input
+                      type="text"
+                      value={data.general?.statFamilies || "৩৫০+"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), statFamilies: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-orange-700"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Section E: Contact Information */}
+              <div className="space-y-4 pt-2">
+                <h4 className="font-extrabold text-stone-900 text-sm flex items-center space-x-2 border-b border-stone-100 pb-2">
+                  <Phone className="w-4 h-4 text-amber-600" />
+                  <span>যোগাযোগ ও ঠিকানা</span>
+                </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">ফোন নম্বর</label>
+                    <input
+                      type="text"
+                      value={data.general?.phone || "+91 94340 12345 / 98000 54321"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), phone: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">ইমেইল</label>
+                    <input
+                      type="email"
+                      value={data.general?.email || "contact@jiyonkathi.org"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), email: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="text-xs font-bold text-stone-700">মাঠ ও কার্যালয়ের ঠিকানা (বাংলা)</label>
+                  <input
+                    type="text"
+                    value={data.general?.address || "প্লট নং ১৯৪২, গ্রাম ও ডাকঘর: প্রতাপপুর, থানা: আউশগ্রাম, জেলা: পূর্ব বর্ধমান"}
+                    onChange={(e) =>
+                      setData({ ...data, general: { ...(data.general || {}), address: e.target.value } })
+                    }
+                    className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-medium"
+                  />
+                </div>
+              </div>
+
+              <button
+                onClick={() => handleSaveGlobal()}
+                className="flex items-center space-x-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-xs cursor-pointer"
+              >
+                <Save className="w-4 h-4" />
+                <span>সকল তথ্য সংরক্ষণ করুন</span>
+              </button>
+            </div>
+          )}
+
+          {/* TAB 4: RESEARCH REPORTS MANAGER (.DOCX UPLOAD, CRUD & RANK) */}
+          {activeTab === "reports" && (
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 gap-4 shadow-2xs">
+                <div>
+                  <h3 className="text-xl font-black text-stone-900">গবেষণা ও প্রতিবেদন ব্যবস্থাপনা</h3>
+                  <p className="text-xs text-stone-500 mt-0.5">
+                    নতুন প্রতিবেদন লিখুন অথবা .docx ফাইল আপলোড করে এক ক্লিকে টেক্সট এক্সট্রাক্ট করুন
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <button
+                    onClick={() => {
+                      setEditingReport({
+                        id: "new",
+                        title: "",
+                        titleEnglish: "",
+                        topic: "বীজ সংরক্ষণ ও দেশীয় ধান",
+                        topicEnglish: "Seed Conservation",
+                        author: "জিয়নকাঠি গবেষণা দল",
+                        publishedDate: new Date().toISOString().split("T")[0],
+                        summary: "",
+                        summaryEnglish: "",
+                        content: "",
+                        contentEnglish: "",
+                        image: "/images/farming-collage.jpg",
+                        rank: (reports.length || 0) + 1,
+                      });
+                      setShowReportModal(true);
+                    }}
+                    className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>নতুন প্রতিবেদন যোগ করুন (Modal)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* List of Reports */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {reports.map((report, rIdx) => (
+                  <div
+                    key={report.id}
+                    className="bg-white rounded-2xl p-6 border border-stone-200 shadow-2xs flex flex-col justify-between space-y-4"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">
+                          {report.topic || "কৃষি গবেষণা"}
+                        </span>
+                        <span className="text-[11px] font-bold text-stone-400">
+                          {report.publishedDate}
+                        </span>
+                      </div>
+
+                      <h4 className="font-extrabold text-stone-900 text-base leading-snug">
+                        {report.title}
+                      </h4>
+
+                      {report.titleEnglish && (
+                        <p className="text-xs text-stone-500 italic leading-normal">
+                          {report.titleEnglish}
+                        </p>
+                      )}
+
+                      <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed font-medium">
+                        {report.summary || report.content?.slice(0, 140)}
+                      </p>
+                    </div>
+
+                    <div className="pt-4 border-t border-stone-100 flex items-center justify-between text-xs">
+                      <div className="text-stone-500 font-semibold flex items-center space-x-1">
+                        <Eye className="w-3.5 h-3.5 text-amber-600" />
+                        <span>{report.views || 0} ভিউ</span>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingReport(report);
+                            setShowReportModal(true);
+                          }}
+                          className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg font-bold flex items-center space-x-1 border border-amber-200 cursor-pointer"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>সম্পাদনা</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteReport(report.id)}
+                          className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
+                          title="Delete Report"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: 4 CORE PILLARS & INITIATIVES */}
+          {activeTab === "pillars" && (
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
+                <div>
+                  <h3 className="text-xl font-black text-stone-900">৪টি মূল স্তম্ভ ও টেকসই কর্মসূচি</h3>
+                  <p className="text-xs text-stone-500">
+                    স্তম্ভের শিরোনাম, বিবরণ ও বাস্তব রূপরেখা সম্পাদনা করুন
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setEditingPillar({
+                      isNew: true,
+                      titleBn: "নতুন স্তম্ভের শিরোনাম",
+                      titleEn: "New Guiding Pillar Title",
+                      taglineBn: "স্তম্ভের সংক্ষিপ্ত সারসংক্ষেপ...",
+                      taglineEn: "Short summary in English...",
+                      methodology: "মাঠ পর্যায়ের কাজের রূপরেখা...",
+                      icon: "Leaf",
+                      colorTheme: "amber",
+                    });
+                    setShowPillarModal(true);
+                  }}
+                  className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>নতুন স্তম্ভ যোগ করুন</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {(data.pillars || []).map((pillar, pIdx) => (
+                  <div
+                    key={pillar.id || pIdx}
+                    className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4 flex flex-col justify-between"
+                  >
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="bg-amber-100 text-amber-900 text-xs font-black px-3 py-1 rounded-full">
+                          স্তম্ভ ০{pIdx + 1}
+                        </span>
+                        <div className="flex items-center space-x-1">
+                          <button
+                            onClick={() => handleMoveItem("pillars", pIdx, -1)}
+                            disabled={pIdx === 0}
+                            className="p-1.5 text-stone-500 hover:bg-stone-100 disabled:opacity-30 rounded cursor-pointer"
+                          >
+                            <ArrowUp className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleMoveItem("pillars", pIdx, 1)}
+                            disabled={pIdx === (data.pillars?.length || 0) - 1}
+                            className="p-1.5 text-stone-500 hover:bg-stone-100 disabled:opacity-30 rounded cursor-pointer"
+                          >
+                            <ArrowDown className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <h4 className="font-extrabold text-stone-900 text-base">{pillar.titleBn}</h4>
+                      <p className="text-xs text-stone-500 italic">{pillar.titleEn}</p>
+                      <p className="text-xs text-stone-600 leading-relaxed font-medium">{pillar.taglineBn}</p>
+                    </div>
+
+                    <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
                       <button
                         onClick={() => {
-                          setEditingReport(report);
-                          setShowReportModal(true);
+                          setEditingPillar({ ...pillar, index: pIdx });
+                          setShowPillarModal(true);
                         }}
-                        className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg font-bold flex items-center space-x-1 border border-amber-200 cursor-pointer"
+                        className="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>সম্পাদনা করুন</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (!confirm("Remove this pillar?")) return;
+                          const filtered = (data.pillars || []).filter((_, i) => i !== pIdx);
+                          const updated = { ...data, pillars: filtered };
+                          setData(updated);
+                          handleSaveGlobal(updated);
+                        }}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 6: BLOGS & BILINGUAL CONTENT */}
+          {activeTab === "blogs" && (
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
+                <div>
+                  <h3 className="text-xl font-black text-stone-900">ব্লগ ও দ্বিভাষিক বার্তা ব্যবস্থাপনা</h3>
+                  <p className="text-xs text-stone-500">বাংলা, ইংরেজি বা উভয় ভাষায় সহজ ব্লগ প্রকাশনা ও র্যাংক</p>
+                </div>
+
+                <button
+                  onClick={() => {
+                    setEditingBlog({
+                      isNew: true,
+                      title: "",
+                      titleBengali: "",
+                      titleEnglish: "",
+                      category: "লোকসংস্কৃতি ও উৎসব",
+                      excerpt: "",
+                      excerptBengali: "",
+                      excerptEnglish: "",
+                      content: "",
+                      contentBengali: "",
+                      contentEnglish: "",
+                      image: "/images/community-collage.jpg",
+                      author: "জিয়নকাঠি প্রচার দল",
+                      date: new Date().toLocaleDateString("bn-IN", { month: "long", year: "numeric" }),
+                      readTime: "৫ মিনিট পাঠ",
+                      rank: (data.blogs?.length || 0) + 1,
+                    });
+                    setBlogLangMode("both");
+                    setShowBlogModal(true);
+                  }}
+                  className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>নতুন ব্লগ যোগ করুন (Bilingual Modal)</span>
+                </button>
+              </div>
+
+              <div className="space-y-4">
+                {(data.blogs || []).map((blog, bIdx) => (
+                  <div
+                    key={blog.id || bIdx}
+                    className="bg-white rounded-2xl p-6 border border-stone-200 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4"
+                  >
+                    <div className="flex items-center space-x-4 w-full md:w-auto">
+                      <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-200">
+                        #{bIdx + 1}
+                      </span>
+
+                      <div className="w-16 h-16 rounded-xl bg-stone-100 overflow-hidden shrink-0 border border-stone-200">
+                        {blog.image ? (
+                          <img src={blog.image} alt={blog.title} className="w-full h-full object-cover" />
+                        ) : (
+                          <FileText className="w-full h-full p-4 text-stone-400" />
+                        )}
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="bg-stone-100 text-stone-700 px-2 py-0.5 rounded text-[10px] font-bold">
+                            {blog.category || "ব্লগ"}
+                          </span>
+                          <span className="text-[11px] text-stone-400">{blog.date}</span>
+                        </div>
+                        <h4 className="font-extrabold text-stone-900 text-sm sm:text-base">
+                          {blog.titleBengali || blog.title}
+                        </h4>
+                        {blog.titleEnglish && (
+                          <p className="text-xs text-stone-500 italic truncate max-w-md">
+                            {blog.titleEnglish}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center space-x-2 self-end md:self-auto shrink-0">
+                      <button
+                        onClick={() => handleMoveItem("blogs", bIdx, -1)}
+                        disabled={bIdx === 0}
+                        className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
+                        title="Move Up"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => handleMoveItem("blogs", bIdx, 1)}
+                        disabled={bIdx === (data.blogs?.length || 0) - 1}
+                        className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
+                        title="Move Down"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setEditingBlog({ ...blog });
+                          setBlogLangMode(blog.titleEnglish ? "both" : "bn");
+                          setShowBlogModal(true);
+                        }}
+                        className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
                       >
                         <Edit className="w-3.5 h-3.5" />
                         <span>সম্পাদনা</span>
                       </button>
 
                       <button
-                        onClick={() => handleDeleteReport(report.id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
-                        title="Delete Report"
+                        onClick={() => {
+                          if (!confirm("Are you sure you want to delete this blog?")) return;
+                          const filtered = (data.blogs || []).filter((_, i) => i !== bIdx);
+                          const updated = { ...data, blogs: filtered };
+                          setData(updated);
+                          handleSaveGlobal(updated);
+                        }}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-xl border border-red-200 cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 5: 4 CORE PILLARS & INITIATIVES */}
-        {activeTab === "pillars" && (
-          <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
-              <div>
-                <h3 className="text-xl font-black text-stone-900">৪টি মূল স্তম্ভ ও টেকসই কর্মসূচি</h3>
-                <p className="text-xs text-stone-500">
-                  স্তম্ভের শিরোনাম, বিবরণ ও বাস্তব রূপরেখা সম্পাদনা করুন
-                </p>
+                ))}
               </div>
-
-              <button
-                onClick={() => {
-                  setEditingPillar({
-                    isNew: true,
-                    titleBn: "নতুন স্তম্ভের শিরোনাম",
-                    titleEn: "New Guiding Pillar Title",
-                    taglineBn: "স্তম্ভের সংক্ষিপ্ত সারসংক্ষেপ...",
-                    taglineEn: "Short summary in English...",
-                    methodology: "মাঠ পর্যায়ের কাজের রূপরেখা...",
-                    icon: "Leaf",
-                    colorTheme: "amber",
-                  });
-                  setShowPillarModal(true);
-                }}
-                className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>নতুন স্তম্ভ যোগ করুন</span>
-              </button>
             </div>
+          )}
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {(data.pillars || []).map((pillar, pIdx) => (
-                <div
-                  key={pillar.id || pIdx}
-                  className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4 flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="bg-amber-100 text-amber-900 text-xs font-black px-3 py-1 rounded-full">
-                        স্তম্ভ ০{pIdx + 1}
-                      </span>
-                      <div className="flex items-center space-x-1">
-                        <button
-                          onClick={() => handleMoveItem("pillars", pIdx, -1)}
-                          disabled={pIdx === 0}
-                          className="p-1.5 text-stone-500 hover:bg-stone-100 disabled:opacity-30 rounded cursor-pointer"
-                        >
-                          <ArrowUp className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleMoveItem("pillars", pIdx, 1)}
-                          disabled={pIdx === (data.pillars?.length || 0) - 1}
-                          className="p-1.5 text-stone-500 hover:bg-stone-100 disabled:opacity-30 rounded cursor-pointer"
-                        >
-                          <ArrowDown className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <h4 className="font-extrabold text-stone-900 text-base">{pillar.titleBn}</h4>
-                    <p className="text-xs text-stone-500 italic">{pillar.titleEn}</p>
-                    <p className="text-xs text-stone-600 leading-relaxed font-medium">{pillar.taglineBn}</p>
-                  </div>
-
-                  <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
-                    <button
-                      onClick={() => {
-                        setEditingPillar({ ...pillar, index: pIdx });
-                        setShowPillarModal(true);
-                      }}
-                      className="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>সম্পাদনা করুন</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (!confirm("Remove this pillar?")) return;
-                        const filtered = (data.pillars || []).filter((_, i) => i !== pIdx);
-                        const updated = { ...data, pillars: filtered };
-                        setData(updated);
-                        handleSaveGlobal(updated);
-                      }}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+          {/* TAB 7: EXECUTIVE MEMBERS & PRIORITY RANKING */}
+          {activeTab === "members" && (
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
+                <div>
+                  <h3 className="text-xl font-black text-stone-900">নির্বাহী সদস্যবৃন্দ ও অগ্রাধিকার ক্রম</h3>
+                  <p className="text-xs text-stone-500">
+                    তালিকায় ওপরে বা নিচে স্থানান্তর (Move Up / Down) বা মোডাল দিয়ে ক্রম পরিবর্তন করুন
+                  </p>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 6: BLOGS & BILINGUAL CONTENT */}
-        {activeTab === "blogs" && (
-          <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
-              <div>
-                <h3 className="text-xl font-black text-stone-900">ব্লগ ও দ্বিভাষিক বার্তা ব্যবস্থাপনা</h3>
-                <p className="text-xs text-stone-500">বাংলা, ইংরেজি বা উভয় ভাষায় সহজ ব্লগ প্রকাশনা ও র্যাংক</p>
-              </div>
-
-              <button
-                onClick={() => {
-                  setEditingBlog({
-                    isNew: true,
-                    title: "",
-                    titleBengali: "",
-                    titleEnglish: "",
-                    category: "লোকসংস্কৃতি ও উৎসব",
-                    excerpt: "",
-                    excerptBengali: "",
-                    excerptEnglish: "",
-                    content: "",
-                    contentBengali: "",
-                    contentEnglish: "",
-                    image: "/images/community-collage.jpg",
-                    author: "জিয়নকাঠি প্রচার দল",
-                    date: new Date().toLocaleDateString("bn-IN", { month: "long", year: "numeric" }),
-                    readTime: "৫ মিনিট পাঠ",
-                    rank: (data.blogs?.length || 0) + 1,
-                  });
-                  setBlogLangMode("both");
-                  setShowBlogModal(true);
-                }}
-                className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>নতুন ব্লগ যোগ করুন (Bilingual Modal)</span>
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {(data.blogs || []).map((blog, bIdx) => (
-                <div
-                  key={blog.id || bIdx}
-                  className="bg-white rounded-2xl p-6 border border-stone-200 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4"
-                >
-                  <div className="flex items-center space-x-4 w-full md:w-auto">
-                    <span className="w-8 h-8 rounded-full bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center shrink-0 border border-amber-200">
-                      #{bIdx + 1}
-                    </span>
-
-                    <div className="w-16 h-16 rounded-xl bg-stone-100 overflow-hidden shrink-0 border border-stone-200">
-                      {blog.image ? (
-                        <img src={blog.image} alt={blog.title} className="w-full h-full object-cover" />
-                      ) : (
-                        <FileText className="w-full h-full p-4 text-stone-400" />
-                      )}
-                    </div>
-
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="bg-stone-100 text-stone-700 px-2 py-0.5 rounded text-[10px] font-bold">
-                          {blog.category || "ব্লগ"}
-                        </span>
-                        <span className="text-[11px] text-stone-400">{blog.date}</span>
-                      </div>
-                      <h4 className="font-extrabold text-stone-900 text-sm sm:text-base">
-                        {blog.titleBengali || blog.title}
-                      </h4>
-                      {blog.titleEnglish && (
-                        <p className="text-xs text-stone-500 italic truncate max-w-md">
-                          {blog.titleEnglish}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 self-end md:self-auto shrink-0">
-                    <button
-                      onClick={() => handleMoveItem("blogs", bIdx, -1)}
-                      disabled={bIdx === 0}
-                      className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
-                      title="Move Up"
-                    >
-                      <ArrowUp className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => handleMoveItem("blogs", bIdx, 1)}
-                      disabled={bIdx === (data.blogs?.length || 0) - 1}
-                      className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
-                      title="Move Down"
-                    >
-                      <ArrowDown className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setEditingBlog({ ...blog });
-                        setBlogLangMode(blog.titleEnglish ? "both" : "bn");
-                        setShowBlogModal(true);
-                      }}
-                      className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>সম্পাদনা</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (!confirm("Are you sure you want to delete this blog?")) return;
-                        const filtered = (data.blogs || []).filter((_, i) => i !== bIdx);
-                        const updated = { ...data, blogs: filtered };
-                        setData(updated);
-                        handleSaveGlobal(updated);
-                      }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-xl border border-red-200 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 7: EXECUTIVE MEMBERS & PRIORITY RANKING */}
-        {activeTab === "members" && (
-          <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
-              <div>
-                <h3 className="text-xl font-black text-stone-900">নির্বাহী সদস্যবৃন্দ ও অগ্রাধিকার ক্রম</h3>
-                <p className="text-xs text-stone-500">
-                  তালিকায় ওপরে বা নিচে স্থানান্তর (Move Up / Down) বা মোডাল দিয়ে ক্রম পরিবর্তন করুন
-                </p>
-              </div>
-
-              <button
-                onClick={() => {
-                  setEditingMember({
-                    isNew: true,
-                    name: "",
-                    role: "কার্যনির্বাহী সদস্য",
-                    bio: "সদস্যের ভূমিকা ও অবদান...",
-                    image: "/images/community-collage.jpg",
-                    rank: (data.members?.length || 0) + 1,
-                  });
-                  setShowMemberModal(true);
-                }}
-                className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs cursor-pointer"
-              >
-                <Plus className="w-4 h-4" />
-                <span>নতুন সদস্য যোগ করুন (Modal)</span>
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {(data.members || []).map((member, mIdx) => (
-                <div
-                  key={member.id || mIdx}
-                  className="bg-white rounded-2xl p-5 border border-stone-200 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4"
-                >
-                  <div className="flex items-center space-x-4 w-full md:w-auto">
-                    <span className="w-8 h-8 rounded-full bg-stone-100 text-stone-700 font-bold text-xs flex items-center justify-center shrink-0 border border-stone-200">
-                      {mIdx + 1}
-                    </span>
-
-                    <div className="w-14 h-14 rounded-full bg-stone-200 overflow-hidden shrink-0 border border-stone-300">
-                      {member.image ? (
-                        <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
-                      ) : (
-                        <Users className="w-full h-full p-3 text-stone-400" />
-                      )}
-                    </div>
-
-                    <div className="space-y-0.5">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-extrabold text-stone-900 text-base">{member.name}</span>
-                        <span className="text-xs text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                          {member.role}
-                        </span>
-                      </div>
-                      <p className="text-xs text-stone-600 leading-relaxed max-w-xl">{member.bio}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-2 self-end md:self-auto shrink-0">
-                    <button
-                      onClick={() => handleMoveItem("members", mIdx, -1)}
-                      disabled={mIdx === 0}
-                      className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
-                      title="Move Up"
-                    >
-                      <ArrowUp className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => handleMoveItem("members", mIdx, 1)}
-                      disabled={mIdx === (data.members?.length || 0) - 1}
-                      className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
-                      title="Move Down"
-                    >
-                      <ArrowDown className="w-3.5 h-3.5" />
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setEditingMember({ ...member });
-                        setShowMemberModal(true);
-                      }}
-                      className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>সম্পাদনা</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (!confirm("Remove this member?")) return;
-                        const filtered = (data.members || []).filter((_, i) => i !== mIdx);
-                        const updated = { ...data, members: filtered };
-                        setData(updated);
-                        handleSaveGlobal(updated);
-                      }}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-xl border border-red-200 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 8: GALLERY (PHOTOS & VIDEOS) */}
-        {activeTab === "gallery" && (
-          <div className="space-y-8">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
-              <div>
-                <h3 className="text-xl font-black text-stone-900">ফটো ও ভিডিও গ্যালারি ব্যবস্থাপনা</h3>
-                <p className="text-xs text-stone-500">
-                  তাত্ক্ষণিক প্রকাশ করুন অথবা ভবিষ্যতের তারিখ ও সময় নির্ধারণ করে শিডিউল করুন
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <label className="flex items-center space-x-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs px-4 py-2.5 rounded-xl border border-stone-300 shadow-2xs cursor-pointer transition-colors">
-                  <Upload className="w-4 h-4 text-stone-600" />
-                  <span>একসাথে একাধিক ছবি আপলোড (Bulk)</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    className="hidden"
-                    onChange={async (e) => {
-                      const files = Array.from(e.target.files || []);
-                      if (files.length === 0) return;
-
-                      setSaveLoading(true);
-                      try {
-                        const newGalleryItems = [];
-                        for (let i = 0; i < files.length; i++) {
-                          const file = files[i];
-                          const url = await handleFileUpload(file);
-                          if (url) {
-                            const nameClean = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
-                            newGalleryItems.push({
-                              id: `img-${Date.now()}-${i}`,
-                              title: nameClean,
-                              url: url,
-                              category: "events",
-                              description: `${nameClean} - ফিল্ড স্টেশন কার্যক্রম ও আলোকচিত্র`,
-                              publishedAt: new Date().toISOString(),
-                              rank: (data.gallery?.length || 0) + i + 1,
-                            });
-                          }
-                        }
-
-                        if (newGalleryItems.length > 0) {
-                          const updated = {
-                            ...data,
-                            gallery: [...(data.gallery || []), ...newGalleryItems]
-                          };
-                          setData(updated);
-                          await handleSaveGlobal(updated);
-                          alert(`সফলভাবে ${newGalleryItems.length} টি ছবি আপলোড ও সেভ করা হয়েছে!`);
-                        }
-                      } catch (err) {
-                        alert("Bulk upload error: " + err.message);
-                      } finally {
-                        setSaveLoading(false);
-                        e.target.value = "";
-                      }
-                    }}
-                  />
-                </label>
 
                 <button
                   onClick={() => {
-                    setEditingGallery({
+                    setEditingMember({
                       isNew: true,
-                      title: "",
-                      url: "/images/community-collage.jpg",
-                      category: "events",
-                      description: "",
-                      publishedAt: new Date().toISOString(),
-                      rank: (data.gallery?.length || 0) + 1,
+                      name: "",
+                      role: "কার্যনির্বাহী সদস্য",
+                      bio: "সদস্যের ভূমিকা ও অবদান...",
+                      image: "/images/community-collage.jpg",
+                      rank: (data.members?.length || 0) + 1,
                     });
-                    setShowGalleryModal(true);
+                    setShowMemberModal(true);
                   }}
                   className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs cursor-pointer"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>নতুন ফটো / ভিডিও যোগ করুন (Modal)</span>
+                  <span>নতুন সদস্য যোগ করুন (Modal)</span>
                 </button>
               </div>
-            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(data.gallery || []).map((item, gIdx) => (
-                <div
-                  key={item.id || gIdx}
-                  className="bg-white rounded-3xl overflow-hidden border border-stone-200 shadow-2xs flex flex-col justify-between"
-                >
-                  <div className="aspect-video bg-stone-900 relative">
-                    <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
-                    <span className="absolute top-2 right-2 bg-stone-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">
-                      {item.category || "Moment"}
-                    </span>
-                  </div>
-
-                  <div className="p-5 space-y-2">
-                    <h4 className="font-extrabold text-stone-900 text-sm">{item.title}</h4>
-                    <p className="text-xs text-stone-600 line-clamp-2">{item.description}</p>
-                    <span className="text-[11px] text-stone-400 block font-medium">
-                      {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString() : ""}
-                    </span>
-                  </div>
-
-                  <div className="p-4 bg-stone-50 border-t border-stone-100 flex items-center justify-between">
-                    <button
-                      onClick={() => {
-                        setEditingGallery({ ...item });
-                        setShowGalleryModal(true);
-                      }}
-                      className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
-                    >
-                      <Edit className="w-3.5 h-3.5" />
-                      <span>সম্পাদনা</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        if (!confirm("Delete this gallery item?")) return;
-                        const filtered = (data.gallery || []).filter((_, i) => i !== gIdx);
-                        const updated = { ...data, gallery: filtered };
-                        setData(updated);
-                        handleSaveGlobal(updated);
-                      }}
-                      className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* TAB 9: VOLUNTEER SUBMISSIONS REVIEW */}
-        {activeTab === "volunteers" && (
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
-              <div>
-                <h3 className="text-xl font-black text-stone-900">স্বেচ্ছাসেবী আবেদন পর্যালোচনা</h3>
-                <p className="text-xs text-stone-500">
-                  অনলাইন ফরম থেকে জমা পড়া আবেদন অনুমোদন, বাতিল বা DDBMPBS সংযুক্তি
-                </p>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => setVolFilter("all")}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "all"
-                    ? "bg-amber-600 text-white border-amber-600"
-                    : "bg-white text-stone-600 border-stone-200"
-                    }`}
-                >
-                  সব ({volunteers.length})
-                </button>
-                <button
-                  onClick={() => setVolFilter("pending")}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "pending"
-                    ? "bg-amber-600 text-white border-amber-600"
-                    : "bg-white text-stone-600 border-stone-200"
-                    }`}
-                >
-                  অপেক্ষমান ({pendingVolunteersCount})
-                </button>
-                <button
-                  onClick={() => setVolFilter("approved")}
-                  className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "approved"
-                    ? "bg-amber-600 text-white border-amber-600"
-                    : "bg-white text-stone-600 border-stone-200"
-                    }`}
-                >
-                  অনুমোদিত ({approvedVolunteersCount})
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {volunteers
-                .filter((v) => (volFilter === "all" ? true : v.status === volFilter))
-                .map((vol) => (
+              <div className="space-y-3">
+                {(data.members || []).map((member, mIdx) => (
                   <div
-                    key={vol.id}
-                    className="bg-white rounded-2xl p-6 border border-stone-200 shadow-2xs space-y-4"
+                    key={member.id || mIdx}
+                    className="bg-white rounded-2xl p-5 border border-stone-200 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4"
                   >
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center space-x-3">
-                          <h4 className="font-extrabold text-stone-900 text-base">{vol.name}</h4>
-                          <span
-                            className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${vol.status === "approved"
-                              ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
-                              : vol.status === "rejected"
-                                ? "bg-red-100 text-red-900 border border-red-200"
-                                : "bg-amber-100 text-amber-900 border border-amber-200"
-                              }`}
-                          >
-                            {vol.status}
+                    <div className="flex items-center space-x-4 w-full md:w-auto">
+                      <span className="w-8 h-8 rounded-full bg-stone-100 text-stone-700 font-bold text-xs flex items-center justify-center shrink-0 border border-stone-200">
+                        {mIdx + 1}
+                      </span>
+
+                      <div className="w-14 h-14 rounded-full bg-stone-200 overflow-hidden shrink-0 border border-stone-300">
+                        {member.image ? (
+                          <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Users className="w-full h-full p-3 text-stone-400" />
+                        )}
+                      </div>
+
+                      <div className="space-y-0.5">
+                        <div className="flex items-center space-x-2">
+                          <span className="font-extrabold text-stone-900 text-base">{member.name}</span>
+                          <span className="text-xs text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                            {member.role}
                           </span>
-
-                          {vol.isDdbmpbs && (
-                            <span className="bg-indigo-100 text-indigo-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-indigo-200">
-                              DDBMPBS
-                            </span>
-                          )}
                         </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-stone-600">
-                          <div>📧 <strong>ইমেইল:</strong> {vol.email}</div>
-                          <div>📞 <strong>ফোন:</strong> {vol.phone || "N/A"}</div>
-                          <div>📍 <strong>ঠিকানা:</strong> {vol.location || "N/A"}</div>
-                        </div>
-
-                        <div className="text-xs text-stone-700 bg-stone-50 p-3 rounded-xl border border-stone-200">
-                          <strong>আবেদনের অনুপ্রেরণা ও দক্ষতা:</strong> {vol.motivation || vol.skills || "N/A"}
-                        </div>
+                        <p className="text-xs text-stone-600 leading-relaxed max-w-xl">{member.bio}</p>
                       </div>
+                    </div>
 
-                      <div className="flex flex-wrap items-center gap-2 self-end md:self-auto shrink-0">
-                        <button
-                          onClick={() => handleUpdateVolunteer(vol.id, vol.status, !vol.isDdbmpbs)}
-                          className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${vol.isDdbmpbs
-                            ? "bg-indigo-600 text-white border-indigo-700"
-                            : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
-                            }`}
-                        >
-                          {vol.isDdbmpbs ? "✓ DDBMPBS যুক্ত" : "+ DDBMPBS যুক্ত করুন"}
-                        </button>
+                    <div className="flex items-center space-x-2 self-end md:self-auto shrink-0">
+                      <button
+                        onClick={() => handleMoveItem("members", mIdx, -1)}
+                        disabled={mIdx === 0}
+                        className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
+                        title="Move Up"
+                      >
+                        <ArrowUp className="w-3.5 h-3.5" />
+                      </button>
 
-                        {vol.status !== "approved" && (
-                          <button
-                            onClick={() => handleUpdateVolunteer(vol.id, "approved")}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
-                          >
-                            অনুমোদন (Approve)
-                          </button>
-                        )}
+                      <button
+                        onClick={() => handleMoveItem("members", mIdx, 1)}
+                        disabled={mIdx === (data.members?.length || 0) - 1}
+                        className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
+                        title="Move Down"
+                      >
+                        <ArrowDown className="w-3.5 h-3.5" />
+                      </button>
 
-                        {vol.status !== "rejected" && (
-                          <button
-                            onClick={() => handleUpdateVolunteer(vol.id, "rejected")}
-                            className="bg-stone-100 hover:bg-red-50 text-red-700 text-xs font-bold px-3 py-1.5 rounded-xl border border-red-200 cursor-pointer"
-                          >
-                            বাতিল (Reject)
-                          </button>
-                        )}
+                      <button
+                        onClick={() => {
+                          setEditingMember({ ...member });
+                          setShowMemberModal(true);
+                        }}
+                        className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>সম্পাদনা</span>
+                      </button>
 
-                        <button
-                          onClick={() => handleDeleteVolunteer(vol.id)}
-                          className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg cursor-pointer"
-                          title="Delete Permanent"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => {
+                          if (!confirm("Remove this member?")) return;
+                          const filtered = (data.members || []).filter((_, i) => i !== mIdx);
+                          const updated = { ...data, members: filtered };
+                          setData(updated);
+                          handleSaveGlobal(updated);
+                        }}
+                        className="p-2 text-red-600 hover:bg-red-50 rounded-xl border border-red-200 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
                 ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
+
+          {/* TAB 8: GALLERY (PHOTOS & VIDEOS) */}
+          {activeTab === "gallery" && (
+            <div className="space-y-8">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
+                <div>
+                  <h3 className="text-xl font-black text-stone-900">ফটো ও ভিডিও গ্যালারি ব্যবস্থাপনা</h3>
+                  <p className="text-xs text-stone-500">
+                    তাত্ক্ষণিক প্রকাশ করুন অথবা ভবিষ্যতের তারিখ ও সময় নির্ধারণ করে শিডিউল করুন
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-3">
+                  <label className="flex items-center space-x-1.5 bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs px-4 py-2.5 rounded-xl border border-stone-300 shadow-2xs cursor-pointer transition-colors">
+                    <Upload className="w-4 h-4 text-stone-600" />
+                    <span>একসাথে একাধিক ছবি আপলোড (Bulk)</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length === 0) return;
+
+                        setSaveLoading(true);
+                        try {
+                          const newGalleryItems = [];
+                          for (let i = 0; i < files.length; i++) {
+                            const file = files[i];
+                            const url = await handleFileUpload(file);
+                            if (url) {
+                              const nameClean = file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ");
+                              newGalleryItems.push({
+                                id: `img-${Date.now()}-${i}`,
+                                title: nameClean,
+                                url: url,
+                                category: "events",
+                                description: `${nameClean} - ফিল্ড স্টেশন কার্যক্রম ও আলোকচিত্র`,
+                                publishedAt: new Date().toISOString(),
+                                rank: (data.gallery?.length || 0) + i + 1,
+                              });
+                            }
+                          }
+
+                          if (newGalleryItems.length > 0) {
+                            const updated = {
+                              ...data,
+                              gallery: [...(data.gallery || []), ...newGalleryItems]
+                            };
+                            setData(updated);
+                            await handleSaveGlobal(updated);
+                            alert(`সফলভাবে ${newGalleryItems.length} টি ছবি আপলোড ও সেভ করা হয়েছে!`);
+                          }
+                        } catch (err) {
+                          alert("Bulk upload error: " + err.message);
+                        } finally {
+                          setSaveLoading(false);
+                          e.target.value = "";
+                        }
+                      }}
+                    />
+                  </label>
+
+                  <button
+                    onClick={() => {
+                      setEditingGallery({
+                        isNew: true,
+                        title: "",
+                        url: "/images/community-collage.jpg",
+                        category: "events",
+                        description: "",
+                        publishedAt: new Date().toISOString(),
+                        rank: (data.gallery?.length || 0) + 1,
+                      });
+                      setShowGalleryModal(true);
+                    }}
+                    className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs cursor-pointer"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>নতুন ফটো / ভিডিও যোগ করুন (Modal)</span>
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {(data.gallery || []).map((item, gIdx) => (
+                  <div
+                    key={item.id || gIdx}
+                    className="bg-white rounded-3xl overflow-hidden border border-stone-200 shadow-2xs flex flex-col justify-between"
+                  >
+                    <div className="aspect-video bg-stone-900 relative">
+                      <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
+                      <span className="absolute top-2 right-2 bg-stone-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">
+                        {item.category || "Moment"}
+                      </span>
+                    </div>
+
+                    <div className="p-5 space-y-2">
+                      <h4 className="font-extrabold text-stone-900 text-sm">{item.title}</h4>
+                      <p className="text-xs text-stone-600 line-clamp-2">{item.description}</p>
+                      <span className="text-[11px] text-stone-400 block font-medium">
+                        {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString() : ""}
+                      </span>
+                    </div>
+
+                    <div className="p-4 bg-stone-50 border-t border-stone-100 flex items-center justify-between">
+                      <button
+                        onClick={() => {
+                          setEditingGallery({ ...item });
+                          setShowGalleryModal(true);
+                        }}
+                        className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
+                      >
+                        <Edit className="w-3.5 h-3.5" />
+                        <span>সম্পাদনা</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          if (!confirm("Delete this gallery item?")) return;
+                          const filtered = (data.gallery || []).filter((_, i) => i !== gIdx);
+                          const updated = { ...data, gallery: filtered };
+                          setData(updated);
+                          handleSaveGlobal(updated);
+                        }}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 9: VOLUNTEER SUBMISSIONS REVIEW */}
+          {activeTab === "volunteers" && (
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
+                <div>
+                  <h3 className="text-xl font-black text-stone-900">স্বেচ্ছাসেবী আবেদন পর্যালোচনা</h3>
+                  <p className="text-xs text-stone-500">
+                    অনলাইন ফরম থেকে জমা পড়া আবেদন অনুমোদন, বাতিল বা DDBMPBS সংযুক্তি
+                  </p>
+                </div>
+
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => setVolFilter("all")}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "all"
+                        ? "bg-amber-600 text-white border-amber-600"
+                        : "bg-white text-stone-600 border-stone-200"
+                      }`}
+                  >
+                    সব ({volunteers.length})
+                  </button>
+                  <button
+                    onClick={() => setVolFilter("pending")}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "pending"
+                        ? "bg-amber-600 text-white border-amber-600"
+                        : "bg-white text-stone-600 border-stone-200"
+                      }`}
+                  >
+                    অপেক্ষমান ({pendingVolunteersCount})
+                  </button>
+                  <button
+                    onClick={() => setVolFilter("approved")}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "approved"
+                        ? "bg-amber-600 text-white border-amber-600"
+                        : "bg-white text-stone-600 border-stone-200"
+                      }`}
+                  >
+                    অনুমোদিত ({approvedVolunteersCount})
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                {volunteers
+                  .filter((v) => (volFilter === "all" ? true : v.status === volFilter))
+                  .map((vol) => (
+                    <div
+                      key={vol.id}
+                      className="bg-white rounded-2xl p-6 border border-stone-200 shadow-2xs space-y-4"
+                    >
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-2">
+                          <div className="flex items-center space-x-3">
+                            <h4 className="font-extrabold text-stone-900 text-base">{vol.name}</h4>
+                            <span
+                              className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${vol.status === "approved"
+                                  ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
+                                  : vol.status === "rejected"
+                                    ? "bg-red-100 text-red-900 border border-red-200"
+                                    : "bg-amber-100 text-amber-900 border border-amber-200"
+                                }`}
+                            >
+                              {vol.status}
+                            </span>
+
+                            {vol.isDdbmpbs && (
+                              <span className="bg-indigo-100 text-indigo-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-indigo-200">
+                                DDBMPBS
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-stone-600">
+                            <div>📧 <strong>ইমেইল:</strong> {vol.email}</div>
+                            <div>📞 <strong>ফোন:</strong> {vol.phone || "N/A"}</div>
+                            <div>📍 <strong>ঠিকানা:</strong> {vol.location || "N/A"}</div>
+                          </div>
+
+                          <div className="text-xs text-stone-700 bg-stone-50 p-3 rounded-xl border border-stone-200">
+                            <strong>আবেদনের অনুপ্রেরণা ও দক্ষতা:</strong> {vol.motivation || vol.skills || "N/A"}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-wrap items-center gap-2 self-end md:self-auto shrink-0">
+                          <button
+                            onClick={() => handleUpdateVolunteer(vol.id, vol.status, !vol.isDdbmpbs)}
+                            className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${vol.isDdbmpbs
+                                ? "bg-indigo-600 text-white border-indigo-700"
+                                : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
+                              }`}
+                          >
+                            {vol.isDdbmpbs ? "✓ DDBMPBS যুক্ত" : "+ DDBMPBS যুক্ত করুন"}
+                          </button>
+
+                          {vol.status !== "approved" && (
+                            <button
+                              onClick={() => handleUpdateVolunteer(vol.id, "approved")}
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
+                            >
+                              অনুমোদন (Approve)
+                            </button>
+                          )}
+
+                          {vol.status !== "rejected" && (
+                            <button
+                              onClick={() => handleUpdateVolunteer(vol.id, "rejected")}
+                              className="bg-stone-100 hover:bg-red-50 text-red-700 text-xs font-bold px-3 py-1.5 rounded-xl border border-red-200 cursor-pointer"
+                            >
+                              বাতিল (Reject)
+                            </button>
+                          )}
+
+                          <button
+                            onClick={() => handleDeleteVolunteer(vol.id)}
+                            className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg cursor-pointer"
+                            title="Delete Permanent"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
+        </main>
       </div>
 
       {/* ========================================================================= */}
@@ -1836,8 +2581,8 @@ export default function AdminDashboard({ userSession, setUserSession }) {
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
                 <label
                   className={`inline-flex items-center space-x-2 border font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all ${isDocxExtracting
-                    ? "bg-stone-100 border-stone-300 text-stone-400 cursor-not-allowed opacity-75"
-                    : "bg-white hover:bg-amber-50 text-amber-900 border-amber-300 cursor-pointer"
+                      ? "bg-stone-100 border-stone-300 text-stone-400 cursor-not-allowed opacity-75"
+                      : "bg-white hover:bg-amber-50 text-amber-900 border-amber-300 cursor-pointer"
                     }`}
                 >
                   <Upload className={`w-4 h-4 ${isDocxExtracting ? "text-stone-400 animate-spin" : "text-amber-600"}`} />
