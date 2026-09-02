@@ -17,6 +17,7 @@ const defaultSiteData = {
     quoteEnglish: "In this era of extreme environmental crisis, facing global threats, our collective effort at the local level to protect nature, humanity, and all living beings... is Jiyonkathi.",
     quoteAuthorBengali: "জিয়নকাঠির লক্ষ্য ও আদর্শ",
     quoteAuthorEnglish: "Goal & Ideology of Jiyonkathi",
+    heroImage: "/images/paddy-harvesting.jpg",
     statSeeds: "১২০+",
     statYears: "১৩+",
     statFamilies: "৩৫০+",

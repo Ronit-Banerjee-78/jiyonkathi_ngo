@@ -26,6 +26,21 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 
+// Helper for video embed / direct stream
+function getYouTubeEmbedUrl(url) {
+  if (!url) return null;
+  if (url.includes("youtube.com/embed/")) return url;
+  const ytMatch = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})/);
+  if (ytMatch && ytMatch[1]) {
+    return `https://www.youtube.com/embed/${ytMatch[1]}`;
+  }
+  const vimeoMatch = url.match(/vimeo\.com\/(?:channels\/(?:\w+\/)?|groups\/(?:[^\/]*)\/videos\/|album\/(?:\d+)\/video\/|video\/|)(\d+)/);
+  if (vimeoMatch && vimeoMatch[1]) {
+    return `https://player.vimeo.com/video/${vimeoMatch[1]}`;
+  }
+  return null;
+}
+
 export default function HomeSection({ setActiveTab }) {
   const { siteData, language } = useContext(SiteContext);
 
@@ -145,24 +160,21 @@ export default function HomeSection({ setActiveTab }) {
 
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6">
-              {/* <div className="inline-flex items-center space-x-2 bg-amber-100/90 text-amber-900 border border-amber-300/80 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wide shadow-2xs">
-                <Sparkles className="w-3.5 h-3.5 text-amber-700" />
-                <span>{language === "bn" ? "টেকসই পল্লী উন্নয়ন ও পরিবেশ উদ্যোগ" : "Sustainable Rural Development"}</span>
-              </div> */}
+
 
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-stone-900 tracking-tight leading-[1.15]">
                 {language === "bn" ? (
                   <>
-                    মাটি, মানুষ ও প্রকৃতির টানে <br className="hidden sm:inline" />
+                    {general.bannerTitleBengali || "মাটি, মানুষ ও প্রকৃতির টানে"} <br className="hidden sm:inline" />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700">
-                      জিয়নকাঠির টেকসই পথচলা
+                      {general.bannerHighlightBengali || "জিয়নকাঠির টেকসই পথচলা"}
                     </span>
                   </>
                 ) : (
                   <>
-                    Cultivating Life, Ecology & <br className="hidden sm:inline" />
+                    {general.bannerTitleEnglish || "Cultivating Life, Ecology &"} <br className="hidden sm:inline" />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700">
-                      Sustainable Heritage
+                      {general.bannerHighlightEnglish || "Sustainable Heritage"}
                     </span>
                   </>
                 )}
@@ -171,7 +183,7 @@ export default function HomeSection({ setActiveTab }) {
               <p className="text-base sm:text-lg text-stone-700 leading-relaxed font-medium max-w-2xl">
                 {language === "bn"
                   ? (general.bannerSubtitleBengali || "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ১২০+ বিলুপ্তপ্রায় দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।")
-                  : (general.bannerSubtitle || "Dedicated to pesticide-free organic farming, conserving 120+ indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal.")}
+                  : (general.bannerSubtitle || general.bannerSubtitleEnglish || "Dedicated to pesticide-free organic farming, conserving 120+ indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal.")}
               </p>
 
               {/* Exact Hero Action Buttons: "See Work" and "Report" */}
@@ -223,28 +235,39 @@ export default function HomeSection({ setActiveTab }) {
               <div className="bg-white p-3 sm:p-4 rounded-3xl border border-amber-200/90 shadow-md relative">
                 <div className="aspect-4/3 rounded-2xl overflow-hidden bg-stone-100 relative">
                   <img
-                    src="/images/paddy-harvesting.jpg"
-                    alt="Jiyonkathi Community Paddy Harvesting"
+                    key={general.heroImage || "/images/paddy-harvesting.jpg"}
+                    src={general.heroImage || "/images/paddy-harvesting.jpg"}
+                    alt={language === "bn" ? (general.heroTitleBengali || "জিয়নকাঠি কার্যক্রম") : (general.heroTitleEnglish || "Jiyonkathi Action")}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.target.src = "/images/seedbed.jpg";
+                      e.currentTarget.src = "/images/paddy-harvesting.jpg";
                     }}
                   />
-                  <div className="absolute top-3 left-3 bg-stone-900/80 backdrop-blur-xs text-amber-300 text-[11px] font-black px-3 py-1 rounded-full flex items-center space-x-1.5">
+                  <div className="absolute top-3 left-3 bg-stone-900/80 backdrop-blur-xs text-amber-300 text-[11px] font-black px-3 py-1 rounded-full flex items-center space-x-1.5 shadow-xs">
                     <Sprout className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{language === "bn" ? "প্রাকৃতিক উপায়ে বীজতলা" : "Natural Seed Bank"}</span>
+                    <span>
+                      {language === "bn"
+                        ? (general.heroBadgeBengali || "প্রাকৃতিক উপায়ে বীজতলা")
+                        : (general.heroBadgeEnglish || "Natural Seed Bank")}
+                    </span>
                   </div>
                 </div>
 
                 <div className="p-4 space-y-2">
                   <div className="flex items-center justify-between text-xs text-stone-500 font-semibold">
-                    <span>{language === "bn" ? "স্থান: আউশগ্রাম, বর্ধমান" : "Location: Aushgram, Burdwan"}</span>
-                    <span className="text-amber-700 font-bold">{language === "bn" ? "মাঠ গবেষণা কেন্দ্র" : "Field Station"}</span>
+                    <span>
+                      {language === "bn"
+                        ? (general.heroLocationBengali || "স্থান: আউশগ্রাম, বর্ধমান")
+                        : (general.heroLocationEnglish || "Location: Aushgram, Burdwan")}
+                    </span>
+                    <span className="text-amber-700 font-bold">
+                      {language === "bn" ? (general.heroStationBengali || "মাঠ গবেষণা কেন্দ্র") : (general.heroStationEnglish || "Field Station")}
+                    </span>
                   </div>
-                  <h3 className="text-base font-black text-stone-900">
+                  <h3 className="text-base font-black text-stone-900 leading-snug">
                     {language === "bn"
-                      ? "রাসায়নিক সার ও কীটনাশকমুক্ত দেশীয় ধান ও ফল-সবজি উৎপাদনের মডেল"
-                      : "Heirloom Agro-Ecology & Sustainable Food Sovereignty"}
+                      ? (general.heroTitleBengali || "রাসায়নিক সার ও কীটনাশকমুক্ত দেশীয় ধান ও ফল-সবজি উৎপাদনের মডেল")
+                      : (general.heroTitleEnglish || "Heirloom Agro-Ecology & Sustainable Food Sovereignty")}
                   </h3>
                 </div>
               </div>
@@ -447,21 +470,47 @@ export default function HomeSection({ setActiveTab }) {
       {/* 6. NGO VIDEO / EDITABLE HOMEPAGE VIDEO SHOWCASE */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-12">
-          <div className="lg:col-span-7 bg-stone-900 relative flex items-center justify-center min-h-[300px]">
-            {siteData.homepageVideo?.url ? (
-              <video
-                src={siteData.homepageVideo.url}
-                controls
-                className="w-full h-full object-cover"
-                poster={siteData.homepageVideo?.poster || "/images/ecology-collage.jpg"}
-              />
-            ) : (
-              <img
-                src="/images/community-collage.jpg"
-                alt="Jiyonkathi Field Work Moments"
-                className="w-full h-full object-cover"
-              />
-            )}
+          <div className="lg:col-span-7 bg-stone-900 relative flex items-center justify-center min-h-[340px]">
+            {(() => {
+              const videoUrl = siteData.homepageVideo?.url?.trim();
+              if (!videoUrl) {
+                return (
+                  <img
+                    src={siteData.homepageVideo?.poster || "/images/community-collage.jpg"}
+                    alt="Jiyonkathi Field Work Moments"
+                    className="w-full h-full object-cover"
+                  />
+                );
+              }
+
+              const embedUrl = getYouTubeEmbedUrl(videoUrl);
+              if (embedUrl) {
+                return (
+                  <iframe
+                    src={embedUrl}
+                    title="Jiyonkathi Video"
+                    className="w-full h-full aspect-video border-0 min-h-[340px]"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                );
+              }
+
+              return (
+                <video
+                  key={videoUrl}
+                  src={videoUrl}
+                  controls
+                  playsInline
+                  preload="metadata"
+                  className="w-full h-full object-cover max-h-[480px]"
+                  poster={siteData.homepageVideo?.poster || "/images/ecology-collage.jpg"}
+                >
+                  <source src={videoUrl} />
+                  Your browser does not support the video tag.
+                </video>
+              );
+            })()}
           </div>
 
           <div className="lg:col-span-5 p-8 sm:p-10 flex flex-col justify-between space-y-6">

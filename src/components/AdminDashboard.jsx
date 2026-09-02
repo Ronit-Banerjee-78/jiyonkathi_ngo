@@ -1003,6 +1003,40 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                       </div>
                     </div>
 
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-700">কেন্দ্রের নাম (বাংলা)</label>
+                        <input
+                          type="text"
+                          value={data.general?.heroStationBengali || "মাঠ গবেষণা কেন্দ্র"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              general: { ...(data.general || {}), heroStationBengali: e.target.value },
+                            })
+                          }
+                          className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
+                          placeholder="যেমন: মাঠ গবেষণা কেন্দ্র"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-xs font-bold text-stone-700">Station / Tag (English)</label>
+                        <input
+                          type="text"
+                          value={data.general?.heroStationEnglish || "Field Station"}
+                          onChange={(e) =>
+                            setData({
+                              ...data,
+                              general: { ...(data.general || {}), heroStationEnglish: e.target.value },
+                            })
+                          }
+                          className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
+                          placeholder="e.g. Field Station"
+                        />
+                      </div>
+                    </div>
+
                     <div className="space-y-1">
                       <label className="text-xs font-bold text-stone-700">ছবির শিরোনাম ও বিবরণ (বাংলা)</label>
                       <input
@@ -1060,7 +1094,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                       <div className="p-3 space-y-1.5">
                         <div className="flex items-center justify-between text-xs text-stone-500 font-semibold">
                           <span>{data.general?.heroLocationBengali || "স্থান: আউশগ্রাম, বর্ধমান"}</span>
-                          <span className="text-amber-700 font-bold">মাঠ গবেষণা কেন্দ্র</span>
+                          <span className="text-amber-700 font-bold">{data.general?.heroStationBengali || "মাঠ গবেষণা কেন্দ্র"}</span>
                         </div>
                         <h3 className="text-sm font-black text-stone-900 leading-snug">
                           {data.general?.heroTitleBengali || "রাসায়নিক সার ও কীটনাশকমুক্ত দেশীয় ধান ও ফল-সবজি উৎপাদনের মডেল"}
@@ -1646,8 +1680,60 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
               <div className="space-y-4 pt-2">
                 <h4 className="font-extrabold text-stone-900 text-sm flex items-center space-x-2 border-b border-stone-100 pb-2">
                   <Sparkles className="w-4 h-4 text-amber-600" />
-                  <span>হোমপেজ ব্যানার সাব-টাইটেল</span>
+                  <span>হোমপেজ ব্যানার প্রধান শিরোনাম ও সাব-টাইটেল</span>
                 </h4>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">ব্যানার প্রধান শিরোনাম (বাংলা - প্রথম অংশ)</label>
+                    <input
+                      type="text"
+                      value={data.general?.bannerTitleBengali || "মাটি, মানুষ ও প্রকৃতির টানে"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), bannerTitleBengali: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">ব্যানার হাইলাইট শিরোনাম (বাংলা - দ্বিতীয় অংশ)</label>
+                    <input
+                      type="text"
+                      value={data.general?.bannerHighlightBengali || "জিয়নকাঠির টেকসই পথচলা"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), bannerHighlightBengali: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-amber-700"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">Banner Heading (English - Part 1)</label>
+                    <input
+                      type="text"
+                      value={data.general?.bannerTitleEnglish || "Cultivating Life, Ecology &"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), bannerTitleEnglish: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
+                    />
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-bold text-stone-700">Banner Highlight (English - Part 2)</label>
+                    <input
+                      type="text"
+                      value={data.general?.bannerHighlightEnglish || "Sustainable Heritage"}
+                      onChange={(e) =>
+                        setData({ ...data, general: { ...(data.general || {}), bannerHighlightEnglish: e.target.value } })
+                      }
+                      className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold text-amber-700"
+                    />
+                  </div>
+                </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1">
@@ -2165,111 +2251,312 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
             </div>
           )}
 
-          {/* TAB 7: EXECUTIVE MEMBERS & PRIORITY RANKING */}
+          {/* TAB 7: EXECUTIVE MEMBERS & VOLUNTEER APPLICANTS MANAGEMENT */}
           {activeTab === "members" && (
-            <div className="space-y-8">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
-                <div>
-                  <h3 className="text-xl font-black text-stone-900">নির্বাহী সদস্যবৃন্দ ও অগ্রাধিকার ক্রম</h3>
-                  <p className="text-xs text-stone-500">
-                    তালিকায় ওপরে বা নিচে স্থানান্তর (Move Up / Down) বা মোডাল দিয়ে ক্রম পরিবর্তন করুন
-                  </p>
+            <div className="space-y-10">
+              {/* SECTION 1: EXECUTIVE MEMBERS LIST */}
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-xl font-black text-stone-900">নির্বাহী পরিষদ ও কোর সদস্যবৃন্দ</h3>
+                      <span className="bg-amber-100 text-amber-900 text-xs font-black px-2.5 py-0.5 rounded-full">
+                        {(data.members || []).length} জন
+                      </span>
+                    </div>
+                    <p className="text-xs text-stone-500 mt-1">
+                      তালিকায় ওপরে বা নিচে স্থানান্তর (Move Up / Down) বা মোডাল দিয়ে ক্রম ও তথ্য পরিবর্তন করুন
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      setEditingMember({
+                        isNew: true,
+                        name: "",
+                        role: "কার্যনির্বাহী সদস্য",
+                        bio: "সদস্যের ভূমিকা ও অবদান...",
+                        image: "/images/community-collage.jpg",
+                        rank: (data.members?.length || 0) + 1,
+                      });
+                      setShowMemberModal(true);
+                    }}
+                    className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs cursor-pointer shrink-0"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>নতুন সদস্য যোগ করুন (Modal)</span>
+                  </button>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setEditingMember({
-                      isNew: true,
-                      name: "",
-                      role: "কার্যনির্বাহী সদস্য",
-                      bio: "সদস্যের ভূমিকা ও অবদান...",
-                      image: "/images/community-collage.jpg",
-                      rank: (data.members?.length || 0) + 1,
-                    });
-                    setShowMemberModal(true);
-                  }}
-                  className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>নতুন সদস্য যোগ করুন (Modal)</span>
-                </button>
+                <div className="space-y-3">
+                  {(data.members || []).map((member, mIdx) => (
+                    <div
+                      key={member.id || mIdx}
+                      className="bg-white rounded-2xl p-5 border border-stone-200 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4"
+                    >
+                      <div className="flex items-center space-x-4 w-full md:w-auto">
+                        <span className="w-8 h-8 rounded-full bg-stone-100 text-stone-700 font-bold text-xs flex items-center justify-center shrink-0 border border-stone-200">
+                          {mIdx + 1}
+                        </span>
+
+                        <div className="w-14 h-14 rounded-full bg-stone-200 overflow-hidden shrink-0 border border-stone-300">
+                          {member.image ? (
+                            <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Users className="w-full h-full p-3 text-stone-400" />
+                          )}
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <div className="flex items-center space-x-2">
+                            <span className="font-extrabold text-stone-900 text-base">{member.name}</span>
+                            <span className="text-xs text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              {member.role}
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-600 leading-relaxed max-w-xl">{member.bio}</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 self-end md:self-auto shrink-0">
+                        <button
+                          onClick={() => handleMoveItem("members", mIdx, -1)}
+                          disabled={mIdx === 0}
+                          className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
+                          title="Move Up"
+                        >
+                          <ArrowUp className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => handleMoveItem("members", mIdx, 1)}
+                          disabled={mIdx === (data.members?.length || 0) - 1}
+                          className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
+                          title="Move Down"
+                        >
+                          <ArrowDown className="w-3.5 h-3.5" />
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setEditingMember({ ...member });
+                            setShowMemberModal(true);
+                          }}
+                          className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                          <span>সম্পাদনা</span>
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            if (!confirm("Remove this member?")) return;
+                            const filtered = (data.members || []).filter((_, i) => i !== mIdx);
+                            const updated = { ...data, members: filtered };
+                            setData(updated);
+                            handleSaveGlobal(updated);
+                          }}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-xl border border-red-200 cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-3">
-                {(data.members || []).map((member, mIdx) => (
-                  <div
-                    key={member.id || mIdx}
-                    className="bg-white rounded-2xl p-5 border border-stone-200 shadow-2xs flex flex-col md:flex-row items-center justify-between gap-4"
-                  >
-                    <div className="flex items-center space-x-4 w-full md:w-auto">
-                      <span className="w-8 h-8 rounded-full bg-stone-100 text-stone-700 font-bold text-xs flex items-center justify-center shrink-0 border border-stone-200">
-                        {mIdx + 1}
-                      </span>
-
-                      <div className="w-14 h-14 rounded-full bg-stone-200 overflow-hidden shrink-0 border border-stone-300">
-                        {member.image ? (
-                          <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <Users className="w-full h-full p-3 text-stone-400" />
-                        )}
-                      </div>
-
-                      <div className="space-y-0.5">
-                        <div className="flex items-center space-x-2">
-                          <span className="font-extrabold text-stone-900 text-base">{member.name}</span>
-                          <span className="text-xs text-emerald-800 font-semibold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                            {member.role}
-                          </span>
-                        </div>
-                        <p className="text-xs text-stone-600 leading-relaxed max-w-xl">{member.bio}</p>
-                      </div>
+              {/* SECTION 2: VOLUNTEER & JOINING APPLICANTS MANAGEMENT */}
+              <div className="space-y-6 pt-4 border-t-2 border-dashed border-stone-200">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between bg-gradient-to-r from-emerald-50 via-white to-amber-50 p-6 rounded-3xl border border-emerald-200/90 shadow-2xs gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center space-x-2">
+                      <HeartHandshake className="w-5 h-5 text-emerald-700" />
+                      <h3 className="text-xl font-black text-stone-900">
+                        যোগদানের আবেদনকারী স্বেচ্ছাসেবী ও সাধারণ সদস্যবৃন্দ
+                      </h3>
                     </div>
-
-                    <div className="flex items-center space-x-2 self-end md:self-auto shrink-0">
-                      <button
-                        onClick={() => handleMoveItem("members", mIdx, -1)}
-                        disabled={mIdx === 0}
-                        className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
-                        title="Move Up"
-                      >
-                        <ArrowUp className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => handleMoveItem("members", mIdx, 1)}
-                        disabled={mIdx === (data.members?.length || 0) - 1}
-                        className="p-2 bg-stone-100 hover:bg-stone-200 disabled:opacity-30 rounded-lg text-stone-700 text-xs font-bold flex items-center space-x-1 cursor-pointer"
-                        title="Move Down"
-                      >
-                        <ArrowDown className="w-3.5 h-3.5" />
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          setEditingMember({ ...member });
-                          setShowMemberModal(true);
-                        }}
-                        className="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>সম্পাদনা</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          if (!confirm("Remove this member?")) return;
-                          const filtered = (data.members || []).filter((_, i) => i !== mIdx);
-                          const updated = { ...data, members: filtered };
-                          setData(updated);
-                          handleSaveGlobal(updated);
-                        }}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-xl border border-red-200 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    <p className="text-xs text-stone-600">
+                      ওয়েবসাইট থেকে অনলাইনে যোগ দিতে আগ্রহীদের আবেদন পর্যালোচনা, অনুমোদন ও পরিচালনা করুন
+                    </p>
                   </div>
-                ))}
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      onClick={() => setVolFilter("all")}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "all"
+                          ? "bg-emerald-700 text-white border-emerald-700 shadow-xs"
+                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                        }`}
+                    >
+                      সব ({volunteers.length})
+                    </button>
+                    <button
+                      onClick={() => setVolFilter("pending")}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "pending"
+                          ? "bg-amber-600 text-white border-amber-600 shadow-xs"
+                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                        }`}
+                    >
+                      অপেক্ষমান ({pendingVolunteersCount})
+                    </button>
+                    <button
+                      onClick={() => setVolFilter("approved")}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "approved"
+                          ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                        }`}
+                    >
+                      অনুমোদিত ({approvedVolunteersCount})
+                    </button>
+                    <button
+                      onClick={() => setVolFilter("rejected")}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "rejected"
+                          ? "bg-red-600 text-white border-red-600 shadow-xs"
+                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                        }`}
+                    >
+                      বাতিল ({volunteers.filter((v) => v.status === "rejected").length})
+                    </button>
+                  </div>
+                </div>
+
+                {volunteers.length === 0 ? (
+                  <div className="bg-white rounded-3xl p-10 text-center border border-stone-200 shadow-2xs space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-700 mx-auto flex items-center justify-center">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <h4 className="font-extrabold text-stone-800 text-sm">কোনো নতুন স্বেচ্ছাসেবী আবেদন পাওয়া যায়নি</h4>
+                    <p className="text-xs text-stone-500 max-w-md mx-auto">
+                      ওয়েবসাইটের &quot;স্বেচ্ছাসেবী ফরম&quot; থেকে কেউ আবেদন করলে তা সরাসরি এখানে তালিকাভুক্ত হবে।
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {volunteers
+                      .filter((v) => (volFilter === "all" ? true : v.status === volFilter))
+                      .map((vol) => (
+                        <div
+                          key={vol.id}
+                          className="bg-white rounded-2xl p-6 border border-stone-200 shadow-2xs space-y-4 hover:border-emerald-300 transition-colors"
+                        >
+                          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                            <div className="space-y-2.5">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <h4 className="font-black text-stone-900 text-base">{vol.name}</h4>
+
+                                <span
+                                  className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${vol.status === "approved"
+                                      ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
+                                      : vol.status === "rejected"
+                                        ? "bg-red-100 text-red-900 border border-red-200"
+                                        : "bg-amber-100 text-amber-900 border border-amber-200"
+                                    }`}
+                                >
+                                  {vol.status === "approved" ? "✓ অনুমোদিত (Approved)" : vol.status === "rejected" ? "✕ বাতিল (Rejected)" : "⏳ অপেক্ষমান (Pending)"}
+                                </span>
+
+                                {vol.isDdbmpbs && (
+                                  <span className="bg-indigo-100 text-indigo-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-indigo-200">
+                                    ★ DDBMPBS সদস্য
+                                  </span>
+                                )}
+
+                                {vol.createdAt && (
+                                  <span className="text-[11px] text-stone-400 font-medium">
+                                    তারিখ: {new Date(vol.createdAt).toLocaleDateString()}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-stone-600">
+                                <div className="flex items-center space-x-1.5">
+                                  <Mail className="w-3.5 h-3.5 text-stone-400" />
+                                  <span><strong>ইমেইল:</strong> {vol.email || "N/A"}</span>
+                                </div>
+                                <div className="flex items-center space-x-1.5">
+                                  <Phone className="w-3.5 h-3.5 text-stone-400" />
+                                  <span><strong>ফোন:</strong> {vol.phone || "N/A"}</span>
+                                </div>
+                                <div className="flex items-center space-x-1.5">
+                                  <MapPin className="w-3.5 h-3.5 text-stone-400" />
+                                  <span><strong>ঠিকানা:</strong> {vol.location || "N/A"}</span>
+                                </div>
+                              </div>
+
+                              {(vol.motivation || vol.skills) && (
+                                <div className="text-xs text-stone-700 bg-stone-50 p-3 rounded-xl border border-stone-200/80 leading-relaxed">
+                                  <strong>আবেদনের অনুপ্রেরণা ও দক্ষতা:</strong> {vol.motivation || vol.skills}
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-2 self-end lg:self-auto shrink-0">
+                              {/* Toggle DDBMPBS */}
+                              <button
+                                onClick={() => handleUpdateVolunteer(vol.id, vol.status, !vol.isDdbmpbs)}
+                                className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${vol.isDdbmpbs
+                                    ? "bg-indigo-600 text-white border-indigo-700"
+                                    : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
+                                  }`}
+                              >
+                                {vol.isDdbmpbs ? "✓ DDBMPBS যুক্ত" : "+ DDBMPBS ট্যাগ"}
+                              </button>
+
+                              {/* Promote to Executive Member */}
+                              <button
+                                onClick={() => {
+                                  setEditingMember({
+                                    isNew: true,
+                                    name: vol.name || "",
+                                    role: vol.isDdbmpbs ? "DDBMPBS সমন্বয়কারী" : "স্বেচ্ছাসেবী প্রতিনিধি",
+                                    bio: vol.motivation || `${vol.location ? `ঠিকানা: ${vol.location}। ` : ""}যোগদানের আগ্রহ প্রকাশ করেছেন।`,
+                                    image: "/images/community-collage.jpg",
+                                    rank: (data.members?.length || 0) + 1,
+                                  });
+                                  setShowMemberModal(true);
+                                }}
+                                className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center space-x-1 cursor-pointer"
+                                title="নির্বাহী পরিষদ সদস্য হিসেবে যুক্ত করুন"
+                              >
+                                <Plus className="w-3.5 h-3.5 text-amber-700" />
+                                <span>নির্বাহী কমিটিতে যুক্ত করুন</span>
+                              </button>
+
+                              {/* Approve */}
+                              {vol.status !== "approved" && (
+                                <button
+                                  onClick={() => handleUpdateVolunteer(vol.id, "approved")}
+                                  className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs cursor-pointer"
+                                >
+                                  অনুমোদন (Approve)
+                                </button>
+                              )}
+
+                              {/* Reject */}
+                              {vol.status !== "rejected" && (
+                                <button
+                                  onClick={() => handleUpdateVolunteer(vol.id, "rejected")}
+                                  className="bg-stone-100 hover:bg-red-50 text-red-700 text-xs font-bold px-3 py-1.5 rounded-xl border border-red-200 cursor-pointer"
+                                >
+                                  বাতিল (Reject)
+                                </button>
+                              )}
+
+                              {/* Delete */}
+                              <button
+                                onClick={() => handleDeleteVolunteer(vol.id)}
+                                className="p-2 text-stone-400 hover:text-red-600 hover:bg-red-50 rounded-xl cursor-pointer transition-colors"
+                                title="Delete Permanent"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
               </div>
             </div>
           )}

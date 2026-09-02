@@ -102,7 +102,7 @@ export default function Footer({ setActiveTab }) {
       {/* Main Footer Links */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-          
+
           {/* Column 1: Brand & Logo */}
           <div className="space-y-4">
             <div className="flex items-center space-x-3 cursor-pointer" onClick={() => handleLinkClick("home")}>
@@ -146,7 +146,7 @@ export default function Footer({ setActiveTab }) {
                   onClick={() => handleLinkClick("reports")}
                   className="text-stone-300 hover:text-amber-400 transition-colors flex items-center space-x-1.5"
                 >
-                  <FileText className="w-3.5 h-3.5 text-amber-500" />
+                  {/* <FileText className="w-3.5 h-3.5 text-amber-500" /> */}
                   <span>{language === "bn" ? "আমাদের কাজ ও গবেষণা" : "Work & Research Reports"}</span>
                 </button>
               </li>
@@ -155,7 +155,7 @@ export default function Footer({ setActiveTab }) {
                   onClick={() => handleLinkClick("mission")}
                   className="text-stone-300 hover:text-amber-400 transition-colors flex items-center space-x-1.5"
                 >
-                  <Compass className="w-3.5 h-3.5 text-amber-500" />
+                  {/* <Compass className="w-3.5 h-3.5 text-amber-500" /> */}
                   <span>{language === "bn" ? "৪টি মূল স্তম্ভ ও খাদ্য নিরাপত্তা" : "4 Pillars & Food Security"}</span>
                 </button>
               </li>

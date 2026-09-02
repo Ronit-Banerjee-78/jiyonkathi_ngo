@@ -154,7 +154,7 @@ export default function Header({
                     key={item.id}
                     id={`admin-nav-${item.id}`}
                     onClick={() => handleTabClick(item.id)}
-                    className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${activeTab === item.id || (item.id === "admin" && activeTab === "portal")
+                    className={`flex items-center space-x-2 px-3.5 py-2 rounded-xl cursor-pointer text-xs font-bold transition-all ${activeTab === item.id || (item.id === "admin" && activeTab === "portal")
                       ? item.isPrimary
                         ? "bg-amber-600 text-white shadow-xs"
                         : "bg-white text-amber-800 shadow-2xs border border-amber-200"
@@ -173,7 +173,7 @@ export default function Header({
                     key={item.id}
                     id={`nav-${item.id}`}
                     onClick={() => handleTabClick(item.id)}
-                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all duration-150 ${activeTab === item.id
+                    className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] cursor-pointer font-bold transition-all duration-150 ${activeTab === item.id
                       ? "bg-amber-100/80 text-amber-900 shadow-2xs border border-amber-200"
                       : "text-stone-700 hover:text-amber-700 hover:bg-amber-50/60"
                       }`}
@@ -189,7 +189,7 @@ export default function Header({
                     id="nav-more-dropdown"
                     onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                     onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
-                    className={`flex items-center space-x-1 px-3 py-2 rounded-xl text-xs sm:text-[13px] font-bold transition-all ${moreItems.some((item) => item.id === activeTab)
+                    className={`flex items-center space-x-1 px-3 py-2 rounded-xl text-xs cursor-pointer sm:text-[13px] font-bold transition-all ${moreItems.some((item) => item.id === activeTab)
                       ? "bg-amber-100/80 text-amber-900 shadow-2xs border border-amber-200"
                       : "text-stone-700 hover:text-amber-700 hover:bg-amber-50/60"
                       }`}
@@ -210,7 +210,7 @@ export default function Header({
                           key={item.id}
                           id={`dropdown-${item.id}`}
                           onClick={() => handleTabClick(item.id)}
-                          className={`flex items-center space-x-2.5 w-full px-4 py-2.5 text-left text-xs font-bold transition-colors ${activeTab === item.id
+                          className={`flex items-center space-x-2.5 w-full px-4 py-2.5 cursor-pointer text-left text-xs font-bold transition-colors ${activeTab === item.id
                             ? "bg-amber-50 text-amber-900 font-extrabold"
                             : "text-stone-700 hover:text-amber-700 hover:bg-stone-50"
                             }`}
