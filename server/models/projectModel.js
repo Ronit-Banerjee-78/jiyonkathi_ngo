@@ -1,7 +1,13 @@
 import pool, { isDbConnected } from './db.js';
+import { DEFAULT_PROJECTS_DATA } from './seedData.js';
 
-let inMemoryProjects = [];
-let nextProjectId = 1;
+let inMemoryProjects = DEFAULT_PROJECTS_DATA.map((p, idx) => ({
+  id: idx + 1,
+  title: p.title,
+  target_amount: p.target_amount,
+  created_at: new Date(),
+}));
+let nextProjectId = 5;
 
 export const getAllProjects = async () => {
   if (!isDbConnected) {
@@ -9,6 +15,13 @@ export const getAllProjects = async () => {
   }
   try {
     const result = await pool.query('SELECT * FROM projects ORDER BY id ASC');
+    if (result.rows.length === 0) {
+      for (const p of DEFAULT_PROJECTS_DATA) {
+        await pool.query('INSERT INTO projects (title, target_amount) VALUES ($1, $2)', [p.title, p.target_amount]);
+      }
+      const seeded = await pool.query('SELECT * FROM projects ORDER BY id ASC');
+      return seeded.rows;
+    }
     return result.rows;
   } catch (error) {
     console.error('Error fetching from DB, returning memory projects:', error.message);

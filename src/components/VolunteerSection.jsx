@@ -105,7 +105,7 @@ export default function VolunteerSection() {
                       {language === "bn" ? "দেশীয় বীজ ও কৃষি রক্ষা" : "Preserve Heirloom Seeds"}
                     </h3>
                     <p className="text-xs text-stone-600 font-medium mt-0.5 leading-relaxed">
-                      {language === "bn" ? "১২০+ প্রজাতির ধান ও সবজির জৈব চাষাবাদে প্রত্যক্ষ অবদান।" : "Hands-on participation in chemical-free heirloom rice seedbeds."}
+                      {language === "bn" ? "৫৬ রকম প্রজাতির ধান ও সবজির জৈব চাষাবাদে প্রত্যক্ষ অবদান।" : "Hands-on participation in chemical-free heirloom rice seedbeds."}
                     </p>
                   </div>
                 </div>

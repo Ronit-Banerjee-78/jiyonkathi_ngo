@@ -9,27 +9,27 @@ const upload = multer({
   limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit for docs
 });
 
-// Seed data for Research Reports (translated and expanded from Our Work items)
+// Seed data for Research Reports (aligned with Home section and PDF field works)
 let memoryReports = [
   {
     id: "rep-1",
-    title: "দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ গবেষণা প্রতিবেদন",
+    title: "দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ গবেষণা প্রতিবেদন (২০১৩-২০২৬)",
     titleEnglish:
-      "Research Report on Indigenous Paddy Seed Preservation & Chemical-Free Farming",
+      "Indigenous Rice Cultivars & Seed Conservation Field Report (2013-2026)",
     topic: "বীজ সংরক্ষণ ও দেশীয় ধান",
     topicEnglish: "Seed Conservation & Indigenous Crops",
-    author: "জিয়নকাঠি কৃষি গবেষণা ও বীজ ব্যাংক দল",
+    author: "জিয়নকাঠি কৃষি গবেষণা দল",
     publishedDate: "২০২৬-০৮-১৫",
     summary:
-      "রাসায়নিক সার ও কীটনাশক মুক্ত উপায়ে ১২০+ দেশীয় ধানের প্রজাতি সংরক্ষণ, ভূগর্ভস্থ জল অপচয় রোধ এবং স্থানীয় চাষিদের মাঝে বিনামূল্যে দেশীয় বীজ বিতরণের বিস্তারিত ফলাফল।",
+      "১২০টিরও বেশি বিলুপ্তপ্রায় দেশীয় ধানের প্রজাতির ফলন বিশ্লেষণ, রাসায়নিক সার ও কীটনাশক ব্যতিরেকে প্রাকৃতিক পুষ্টি ব্যবস্থাপনা এবং ভূগর্ভস্থ জল অপচয় রোধের বিস্তারিত ফলাফল।",
     summaryEnglish:
-      "A detailed analysis of preserving 120+ indigenous paddy varieties without synthetic fertilizers or pesticides, preventing groundwater depletion, and field seed-exchange dynamics.",
+      "A comprehensive analysis of preserving 56+ heirloom paddy varieties without synthetic chemicals, preventing groundwater depletion, and field seed-exchange dynamics.",
     content: `## ভূমিকা ও প্রেক্ষাপট
 জলবায়ু সংকট ও আধুনিক রাসায়নিক কৃষির মারাত্মক ক্ষতিকর প্রভাব থেকে মাটির উর্বরতা ও ঐতিহ্যবাহী বীজসম্পদ রক্ষা করতে জিয়নকাঠি গত তেরো বছর ধরে নিরবচ্ছিন্নভাবে কাজ করে চলেছে। রাসায়নিক সার ও বিষমুক্ত উপায়ে দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ আমাদের সবচেয়ে গুরুত্বপূর্ণ গবেষণাক্ষেত্র।
 
 ### মূল গবেষণার বিষয় ও কার্যপ্রণালী:
-১. **১২০+ দেশীয় ধান প্রজাতি সংরক্ষণ**: বহুরূপী, কালাভাত, দুধেশ্বর, কেরালাসুন্দরী, রাধাতিলক, যামিনী, অগ্নিকুমার ইত্যাদি বিলুপ্তপ্রায় প্রজাতির জৈব চাষ ও বীজব্যাংক স্থাপন।
-২. **ভূগর্ভস্থ জল সংরক্ষণ**: মাটির গভীর থেকে পাম্পের মাধ্যমে জল না তুলে কেবল বৃষ্টির জল ও পুকুরের জল ব্যবহার করে বীজতলা তৈরি।
+১. **৫৬ রকম দেশীয় ধান প্রজাতি সংরক্ষণ**: বাহুরূপী, কালোভাত, দুধেশ্বর, কেরালাসুন্দরী, রাধাতিলক, যামিনী, অগ্নিকুমার ইত্যাদি বিলুপ্তপ্রায় প্রজাতির জৈব চাষ ও বীজব্যাংক স্থাপন।
+২. **ভূগর্ভস্থ জল সংরক্ষণ**: মাটির গভীর থেকে পাম্পের মাধ্যমে ভূগর্ভস্থ জল না তুলে কেবল বৃষ্টির জল ও পুকুরের জল ব্যবহার করে বীজতলা তৈরি ও মৃদু সেচ।
 ৩. **বিষমুক্ত মাটির পুনরুজ্জীবন**: গোবর, কম্পোস্ট সার, নিম নির্যাস এবং প্রাকৃতিক অণুজীব ব্যবহারের মাধ্যমে মাটির জৈব কার্বন বৃদ্ধি।
 
 ### ফলাফল ও প্রাপ্তি:
@@ -40,7 +40,7 @@ let memoryReports = [
 To combat the climate crisis and soil degradation caused by heavy petrochemical agriculture, Jiyonkathi has dedicated over thirteen years to preserving indigenous paddy seeds and organic farming methodologies.
 
 ### Core Research Focus:
-1. **Preservation of 120+ Indigenous Varieties**: Sowing and cultivating rare heirloom rice varieties including Bahurupi, Kalabhat, Dudheswar, and Radhatilak without artificial inputs.
+1. **Preservation of 56 Indigenous Varieties**: Sowing and cultivating rare heirloom rice varieties including Bahurupi, Kalabhat, Dudheswar, and Radhatilak without artificial inputs.
 2. **Groundwater Conservation**: Avoiding subterranean water pumps, relying solely on natural monsoons and catchment ponds for seedbeds.
 3. **Zero-Pesticide Soil Regeneration**: Utilizing compost, neem extracts, and bio-fertilizers to boost microbial soil health.
 
@@ -56,7 +56,7 @@ To combat the climate crisis and soil degradation caused by heavy petrochemical 
     ],
     findings: [
       "মাটির উর্বরতা বৃদ্ধি ও কেঁচোর সংখ্যা বৃদ্ধি",
-      "খরচ ৭০% কমে যাওয়া",
+      "চাষের খরচ ৭০% হ্রাস",
       "বীজের অঙ্কুরোদগম ক্ষমতা ৯২% এর বেশি বজায় রাখা",
     ],
     views: 148,
@@ -64,6 +64,91 @@ To combat the climate crisis and soil degradation caused by heavy petrochemical 
   },
   {
     id: "rep-2",
+    title: "বসতভিটায় সারাবছর বিষমুক্ত ফল ও সবজি চাষ পদ্ধতি এবং খাদ্য নিরাপত্তা",
+    titleEnglish:
+      "Homestead Organic Fruit & Vegetable Food Security Framework",
+    topic: "সবজি ও ফল চাষ (খাদ্য নিরাপত্তা)",
+    topicEnglish: "Food Security & Fruit/Vegetable Farming",
+    author: "জিয়নকাঠি উদ্যানপালন ইউনিট",
+    publishedDate: "২০২৬-০৮-১০",
+    summary:
+      "মাচা ভিত্তিক লতানো সবজি, দেশীয় বহুস্তরীয় ফলের বাগান এবং দশপর্ণী অর্ক বালাইনাশক ব্যবহারের ব্যবহারিক ক্ষেত্র পর্যালোচনা।",
+    summaryEnglish:
+      "A dedicated research methodology detailing multi-tier fruit orchards, trellis organic vegetable cultivation, bio-pest repellents, and family nutrition security.",
+    content: `## জীবনের জন্য খাদ্য নিরাপত্তা
+খাদ্য নিরাপত্তা মানে কেবল পেট ভরানো নয়, বিষমুক্ত পুষ্টিকর খাবারের সুনিশ্চিত যোগান। জিয়নকাঠি বিশ্বাস করে যে প্রতিটি পরিবার নিজেদের বসতভিটার আশেপাশের অব্যবহৃত জমিতে পুষ্টিকর ফল ও সবজি চাষ করতে পারে।
+
+### অনুসৃত কৃষি পদ্ধতিসমূহ:
+১. **মাচায় বিষমুক্ত লতানো সবজি চাষ**: লাউ, কুমড়ো, করলা, ঝিঙে, পটল ইত্যাদি প্রাকৃতিক বাঁশের মাচা তৈরি করে চাষ করা।
+২. **দেশীয় ফলের বাগান সৃজন**: আম, জাম, পেয়ারা, আতা, লেবু, বাতাবি, বেদানা, কুল ও বেল গাছের মিশ্র রোপণ।
+৩. **প্রাকৃতিক জৈব বালাইনাশক**: নিমপাতা, রসুন, কাঁচা লঙ্কা ও গোমূত্রের মিশ্রণে তৈরি 'দশপর্ণী অর্ক' ও 'জীবাশ্ম বালাইনাশক'।
+৪. **বহুস্তরীয় খাদ্য বন (Food Forest)**: উঁচু ফল গাছ, মাঝারি ঝোপ (লেবু/পেঁপে) ও মাটির স্তরে আদা/হলুদ চাষ।`,
+    contentEnglish: `## Practicing Food Security for Life
+True food security entails chemical-free, nutrient-dense sustained yields. Jiyonkathi champions homestead permaculture and bio-dynamic orchard integration.
+
+### Core Farming Methodologies:
+1. **Vertical Trellis Vegetable Cultivation**: Gourds, squash, and climbers using bamboo frames and compost beds.
+2. **Indigenous Multi-Fruit Orchards**: Mango, Guava, Custard Apple, Citrus, Jamun, and Pomegranate.
+3. **Bio-pest Deterrents**: Herbal extracts utilizing neem leaves, garlic, green chilies, and fermented botanicals.
+4. **Multi-layer Agroforestry Food Forests**: Tall fruit trees paired with understory ginger, turmeric, and tubers.`,
+    image: "/images/ecology-collage.jpg",
+    methodology: [
+      "মাটি পরীক্ষা ও জৈব সার সংমিশ্রণ",
+      "ড্রিপ ও মালচিং নির্ভর জল ব্যবস্থাপনা",
+      "দেশি বীজ ও চারার কলম প্রস্তুতি",
+      "দশপর্ণী অর্ক বালাই দমন",
+    ],
+    findings: [
+      "প্রতিটি পরিবার সারা বছর টাটকা বিষমুক্ত সবজির চাহিদা পূরণ করতে সক্ষম",
+      "বাজারে কীটনাশকযুক্ত সবজি কেনার খরচ শূন্যে নামানো",
+      "স্থানীয় জীববৈচিত্র্য ও মৌমাছির পরাগায়ন বৃদ্ধি",
+    ],
+    views: 204,
+    createdAt: "2026-08-10T08:00:00Z",
+  },
+  {
+    id: "rep-3",
+    title: "বীরভূম ও বর্ধমানের প্রান্তিক কৃষকদের সাথে সহযোগিতামূলক টেকসই কৃষি রূপরেখা",
+    titleEnglish:
+      "Smallholder Sustainable Agriculture in Birbhum & Burdwan (with DDBMPBS)",
+    topic: "টেকসই কৃষি ও সম্প্রদায় সংহতি",
+    topicEnglish: "Sustainable Agriculture & Community Solidarity",
+    author: "গ্রামীণ সমন্বয় পরিষদ (DDBMPBS সহযোগে)",
+    publishedDate: "২০২৬-০৮-০৫",
+    summary:
+      "স্থানীয় কৃষক পরিবারের সাথে সমন্বিতভাবে কীটনাশকমুক্ত ফসল উৎপাদন, দেশীয় বীজ বিনিময় ও কৃষকদের অর্থনৈতিক স্বাবলম্বিতা অর্জনের বাস্তব তথ্য।",
+    summaryEnglish:
+      "Empirical field collaboration with smallholder agrarian households in Purba Bardhaman and Birbhum, advancing non-chemical techniques and seed autonomy.",
+    content: `## গ্রামীণ সংহতি ও টেকসই কৃষির মেলবন্ধন
+পশ্চিমবঙ্গের বীরভূম ও পূর্ব বর্ধমানের বিস্তীর্ণ গ্রামীণ জনপদে রাসায়নিক কৃষি প্রান্তিক চাষিদের চরম ঋণের জালে আবদ্ধ করেছে। এই সংকট থেকে উত্তরণের পথ হিসেবে জিয়নকাঠি ও দুর্গাপুর দক্ষিণবঙ্গীয় মানবিক প্রাকৃতিক বিকাশ সোসাইটি (DDBMPBS) যৌথভাবে কাজ করছে।
+
+### সহযোগিতামূলক উদ্যোগ:
+১. **বিনামূল্যে দেশীয় বীজ বিতরণ ও ব্যাংক প্রতিষ্ঠা**: বাহুরূপী, দুধেশ্বর সহ দেশীয় ধানের বীজ চাষিদের হাতে তুলে দেওয়া এবং পরবর্তী মৌসুমে অতিরিক্ত বীজ জমা নেওয়ার ব্যবস্থা।
+২. **রাসায়নিক সার বর্জন সহায়তা**: কৃষকদের বাড়িতেই জৈব তরল সার ও কেঁচো সার তৈরির হাতে-কলমে প্রশিক্ষণ প্রদান।
+৩. **ন্যায্য মূল্য ও সমবায় বাজার ব্যবস্থা**: বিষমুক্ত ফসল সরাসরি স্বাস্থ্যসচেতন ক্রেতাদের কাছে পৌঁছে দিয়ে মধ্যস্বত্বভোগীদের শোষণ দূর করা।`,
+    contentEnglish: `## Rural Solidarity & Sustainable Agriculture Blueprint
+In rural Birbhum and Burdwan, conventional petrochemical farming has trapped smallholders in cycles of debt and declining soil quality. In partnership with DDBMPBS Society, Jiyonkathi champions collaborative agro-ecology.
+
+### Collaborative Pillars:
+1. **Free Heirloom Seed Banking**: Providing native cultivars with a reciprocal return model for community seed autonomy.
+2. **On-Farm Bio-Input Training**: Hands-on workshops teaching farmers to prepare vermicompost and fermented bio-fertilizers.
+3. **Direct Fair-Price Links**: Connecting organic growers directly to conscious consumers, bypassing exploitative middlemen.`,
+    image: "/images/paddy-planting.jpg",
+    methodology: [
+      "গ্রামভিত্তিক কৃষক পাঠশালা ও কর্মশালা",
+      "পারস্পরিক বীজ বিনিময় মেলা",
+      "জৈব তরল সার প্রস্তুত প্রদর্শনী",
+    ],
+    findings: [
+      "৩৫০+ প্রান্তিক কৃষক পরিবার রাসায়নিক কীটনাশক সম্পূর্ণ বর্জন করেছে",
+      "কৃষকদের ফসল উৎপাদন ব্যয় ৬০-৭০% হ্রাস পেয়েছে",
+      "কৃষক পরিবারের পুষ্টি ও স্বাস্থ্য সূচকে উল্লেখযোগ্য উন্নতি",
+    ],
+    views: 165,
+    createdAt: "2026-08-05T10:00:00Z",
+  },
+  {
+    id: "rep-4",
     title: "সহায়ক শিক্ষা কেন্দ্র ও গ্রামীণ শিশু প্রকৃতি পাঠ পর্যালোচনা",
     titleEnglish:
       "Study on Rural Auxiliary Education & Environmental Nature Literacy",
@@ -81,7 +166,7 @@ To combat the climate crisis and soil degradation caused by heavy petrochemical 
 ### শিক্ষাদান পদ্ধতি:
 - **প্রকৃতি পাঠ**: গাছপালা, পাখি, কীটপতঙ্গ এবং স্থানীয় উদ্ভিদের সাথে পরিচয়।
 - **সর্প সচেতনতা ও কুসংস্কার দূরীকরণ**: বিষাক্ত ও নির্বিষ সাপের পরিচয় এবং সাপে কাটলে প্রাথমিক চিকিৎসার বৈজ্ঞানিক প্রশিক্ষণ।
-- **লোকসংস্কৃতি ও সৃজনশীলতা**: বাউল গান, ছড়া, নাটক ও চিত্রাঙ্কন।
+- **লোকসংস্কৃতি ও সৃজনশীলতা**: বাউল গান, ছড়া, নাটক, মাটির পুতুল ও কারুশিল্প।
 
 ### অগ্রগতি:
 - প্রতি সপ্তাহে ৬০ জনের বেশি শিক্ষার্থী নিয়মিত পুষ্টিকর টিফিন ও পাঠসহায়তা পাচ্ছে।
@@ -92,7 +177,7 @@ Jiyonkathi runs an open-air auxiliary learning center for rural children in Aush
 ### Methodology:
 - Direct nature walks to identify native flora and fauna.
 - Scientific snake awareness sessions to demystify rural superstitions.
-- Creative arts, local folklore, and music workshops.`,
+- Creative arts, local folklore, clay modeling, and music workshops.`,
     image: "/images/education-center.jpg",
     methodology: [
       "মুক্তাঙ্গন আনন্দময় পাঠদান",
@@ -108,7 +193,7 @@ Jiyonkathi runs an open-air auxiliary learning center for rural children in Aush
     createdAt: "2026-08-01T10:30:00Z",
   },
   {
-    id: "rep-3",
+    id: "rep-5",
     title: "সর্প সচেতনতা ও গ্রামীণ স্বাস্থ্য শিবির প্রতিবেদন",
     titleEnglish:
       "Field Report: Snakebite Awareness, First Aid & Preventive Rural Healthcare",
@@ -124,8 +209,8 @@ Jiyonkathi runs an open-air auxiliary learning center for rural children in Aush
 বর্ষাকালে গ্রামাঞ্চলে সর্পদংশন একটি গুরুতর জনস্বাস্থ্য সংকট। সঠিক সচেতনতার অভাবে বহু মানুষ হাসপাতালে না গিয়ে ওঝার কাছে গিয়ে মূল্যবান সময় নষ্ট করেন।
 
 ### উদ্যোগ ও কৌশল:
-১. **সরাসরি প্রদর্শন ও পুস্তিকা বিতরণ**: বাংলার সাধারণ বিষধর ও নির্বিষ সাপের ছবি সহ পরিচয়।
-২. **সঠিক প্রাথমিক চিকিৎসা (Do's & Don'ts)**: বাঁধন না দেওয়া, ক্ষতস্থানে কাটাছেঁড়া না করা এবং দ্রুত নিকটস্থ মহকুমা বা জেলা হাসপাতালে পৌঁছে এন্টিভেনাম গ্রহণ করা।
+১. **সরাসরি প্রদর্শন ও পুস্তিকা বিতরণ**: বাংলার সাধারণ বিষধর (গোখরো, কেউটে, চন্দ্রবোড়া, কালাচ) ও নির্বিষ সাপের ছবি সহ পরিচয়।
+২. **সঠিক প্রাথমিক চিকিৎসা (Do's & Don'ts)**: বাঁধন না দেওয়া, ক্ষতস্থানে কাটাছেঁড়া না করা এবং দ্রুত নিকটস্থ মহকুমা বা জেলা হাসপাতালে পৌঁছে অ্যান্টিভেনাম গ্রহণ করা।
 ৩. **বিনামূল্যে স্বাস্থ্য ও চক্ষু পরীক্ষা শিবির**: বিশেষজ্ঞ ডাক্তারদের দ্বারা রক্তচাপ, সুগার পরীক্ষা ও প্রয়োজনীয় জরুরি ওষুধ বিতরণ।`,
     contentEnglish: `## Necessity of Snake Awareness
 Snakebites remain a prominent hazard during monsoons in rural Bengal. Lack of scientific knowledge frequently drives victims to faith healers instead of hospitals.
@@ -149,48 +234,45 @@ Snakebites remain a prominent hazard during monsoons in rural Bengal. Lack of sc
     createdAt: "2026-07-20T14:15:00Z",
   },
   {
-    id: "rep-4",
-    title: "জীবনের জন্য খাদ্য নিরাপত্তা ও বিষমুক্ত ফল-সবজি চাষ পদ্ধতি",
+    id: "rep-6",
+    title: "কৃষিকাজে পুনর্ব্যবহারযোগ্য শক্তি ও সৌর সেচ ব্যবস্থাপনা প্রতিবেদন",
     titleEnglish:
-      "Practicing Food Security for Life: Sustainable Fruit & Vegetable Farming Methods",
-    topic: "সবজি ও ফল চাষ (খাদ্য নিরাপত্তা)",
-    topicEnglish: "Food Security & Fruit/Vegetable Farming",
-    author: "জিয়নকাঠি জৈব চাষ ও বাগান বিশেষজ্ঞ দল",
-    publishedDate: "২০২৬-০৭-০৫",
+      "Renewable Energy & Solar Irrigation Management in Rural Agriculture",
+    topic: "পুনর্ব্যবহারযোগ্য শক্তি ও পরিবেশ",
+    topicEnglish: "Renewable Energy & Ecology",
+    author: "পরিবেশ ও প্রযুক্তি দল, জিয়নকাঠি",
+    publishedDate: "২০২৬-০৭-১০",
     summary:
-      "বহুবর্ষজীবী ফল চাষ, মাচা ভিত্তিক বিষমুক্ত সবজি উৎপাদন, প্রাকৃতিক জৈব বালাইনাশক প্রয়োগ এবং পরিবারের পুষ্টি নিরাপত্তা নিশ্চিতকরণের বাস্তবায়ন。",
+      "মাটির গভীরের জল না তুলে প্রাকৃতিক পুকুর ও বৃষ্টির জল সৌরচালিত মৃদু পাম্পের সাহায্যে সেচে ব্যবহারের মাধ্যমে ভূগর্ভস্থ জলস্তর সুরক্ষা ও জীবাশ্ম জ্বালানি বর্জনের ক্ষেত্র সমীক্ষা।",
     summaryEnglish:
-      "A dedicated research methodology detailing multi-tier fruit orchards, trellis organic vegetable cultivation, bio-pest repellents, and family nutrition security.",
-    content: `## জীবনের জন্য খাদ্য নিরাপত্তা
-খাদ্য নিরাপত্তা মানে কেবল পেট ভরানো নয়, বিষমুক্ত পুষ্টিকর খাবারের সুনিশ্চিত যোগান। জিয়নকাঠি বিশ্বাস করে যে প্রতিটি পরিবার নিজেদের বসতভিটার আশেপাশের অব্যবহৃত জমিতে পুষ্টিকর ফল ও সবজি চাষ করতে পারে।
+      "Field research on deploying solar micro-pumps with rainwater catchment ponds, preventing groundwater depletion, and eliminating diesel fuel dependence in agriculture.",
+    content: `## জীবাশ্ম জ্বালানিমুক্ত টেকসই শক্তি ব্যবস্থাপনা
+আধুনিক চাষাবাদে ডিজেল চালিত গভীর নলকূপ ব্যবহারের কারণে ভূগর্ভস্থ জলস্তর বিপজ্জনকভাবে নিচে নেমে যাচ্ছে। একই সাথে জ্বালানি খরচ প্রান্তিক কৃষকের বোঝা বাড়াচ্ছে। এর বিজ্ঞানসম্মত টেকসই সমাধান সৌরশক্তি ও পৃষ্ঠজলের সমন্বিত ব্যবহার।
 
-### অনুসৃত কৃষি পদ্ধতিসমূহ:
-১. **মাচায় বিষমুক্ত লতানো সবজি চাষ**: লাউ, কুমড়ো, করলা, ঝিঙে, পটল ইত্যাদি প্রাকৃতিক মাচা তৈরি করে চাষ করা।
-২. **দেশীয় ফলের বাগান সৃজন**: আম, জাম, পেয়ারা, আতা, লেবু, বাতাবি, বেদানা, কুল ও বেল গাছের মিশ্র রোপণ।
-৩. **প্রাকৃতিক জৈব বালাইনাশক**: নিমপাতা, রসুন, কাঁচা লঙ্কা ও গোমূত্রের মিশ্রণে তৈরি 'দশপর্ণী অর্ক' ও 'জীবাশ্ম বালাইনাশক'।
-৪. **বহুস্তরীয় খাদ্য বন (Food Forest)**: উঁচু গাছ (নারকেল/ফল), মাঝারি ঝোপ (লেবু/পেঁপে) ও মাটির স্তরে আদা/হলুদ চাষ।`,
-    contentEnglish: `## Practicing Food Security for Life
-True food security entails chemical-free, nutrient-dense sustained yields. Jiyonkathi champions homestead permaculture and bio-dynamic orchard integration.
+### প্রকল্প বাস্তবায়ন কৌশল:
+১. **বৃষ্টির জল সংরক্ষণ পুকুর সংস্কার**: প্রাকৃতিক জলাশয় সংস্কার করে বর্ষার জল ধরে রাখা।
+২. **সৌরচালিত মৃদু সেচ পাম্প**: ভূগর্ভস্থ গভীর জলস্তর স্পর্শ না করে পুকুরের জল সৌর পাম্পের সাহায্যে বিন্দু সেচ (Drip Irrigation) ও মাচায় প্রয়োগ।
+৩. **কৃষি প্রক্রিয়াকরণে সৌর শক্তির ব্যবহার**: জৈব বীজ শুকানো ও সংরক্ষণে সৌর ড্রায়ার ব্যবহারের পরীক্ষা।`,
+    contentEnglish: `## Post-Petroleum Renewable Energy Framework
+Heavy reliance on diesel-driven deep tubewells depletes aquifers and burdens smallholders with escalating fuel bills. Jiyonkathi deploys surface rainwater catchment linked with solar micro-irrigation.
 
-### Core Farming Methodologies:
-1. **Vertical Trellis Vegetable Cultivation**: Gourds, squash, and climbers using bamboo frames and compost beds.
-2. **Indigenous Multi-Fruit Orchards**: Mango, Guava, Custard Apple, Citrus, Jamun, and Pomegranate.
-3. **Bio-pest Deterrents**: Herbal extracts utilizing neem leaves, garlic, green chilies, and fermented botanicals.
-4. **Multi-layer Agroforestry Food Forests**: Tall fruit trees paired with understory ginger, turmeric, and tubers.`,
-    image: "/images/ecology-collage.jpg",
+### Strategy:
+1. **Rainwater Retention Ponds**: Desilting traditional ponds to store monsoon overflow for year-round agricultural needs.
+2. **Solar Micro-Pumping**: Pumping surface pond water via gentle solar irrigation systems, eliminating deep aquifer extraction.
+3. **Solar Seed Processing**: Deploying clean solar dehydration units for heirloom seed conservation.`,
+    image: "/images/community-collage.jpg",
     methodology: [
-      "মাটি পরীক্ষা ও জৈব সার সংমিশ্রণ",
-      "ড্রিপ ও মালচিং নির্ভর জল ব্যবস্থাপনা",
-      "দেশি বীজ ও চারার কলম প্রস্তুতি",
-      "দশপর্ণী অর্ক বালাই দমন",
+      "বৃষ্টির জল নিষ্কাশন ও পুকুর ম্যাপিং",
+      "সৌর মৃদু সেচ প্যানেল স্থাপন",
+      "বিন্দু সেচ ও মালচিং সংমিশ্রণ",
     ],
     findings: [
-      "প্রতিটি পরিবার সারা বছর টাটকা বিষমুক্ত সবজির চাহিদা পূরণ করতে সক্ষম",
-      "বাজারে কীটনাশকযুক্ত সবজি কেনার খরচ শূন্যে নামানো",
-      "স্থানীয় জীববৈচিত্র্য ও মৌমাছির পরাগায়ন বৃদ্ধি",
+      "সেচ কাজে জীবাশ্ম জ্বালানির ব্যবহার শূন্যে নামিয়ে আনা",
+      "ভূগর্ভস্থ জলের অপচয় ১০০% রোধ",
+      "বিদ্যুৎ বিল ও জ্বালানি খরচ সম্পূর্ণ সাশ্রয়",
     ],
-    views: 204,
-    createdAt: "2026-07-05T08:00:00Z",
+    views: 88,
+    createdAt: "2026-07-10T11:00:00Z",
   },
 ];
 

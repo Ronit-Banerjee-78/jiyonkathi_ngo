@@ -141,88 +141,115 @@ export const initDB = async () => {
         );
       `);
 
-      // Seed research reports if table is empty
+      // Seed / Sync research reports into DB
       try {
-        const reportCountRes = await client.query(
-          "SELECT COUNT(*) FROM research_reports",
-        );
-        const reportCount = parseInt(reportCountRes.rows[0]?.count || "0", 10);
-        if (reportCount === 0) {
-          const { defaultReports } =
-            await import("../controllers/reportController.js");
-          if (defaultReports && defaultReports.length > 0) {
-            for (const rep of defaultReports) {
-              await client.query(
-                `INSERT INTO research_reports (
-                  id, title, title_english, topic, topic_english, author,
-                  published_date, summary, summary_english, content, content_english,
-                  image, methodology, findings, views
-                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-                ON CONFLICT (id) DO NOTHING`,
-                [
-                  rep.id,
-                  rep.title,
-                  rep.titleEnglish || null,
-                  rep.topic || null,
-                  rep.topicEnglish || null,
-                  rep.author || null,
-                  rep.publishedDate || null,
-                  rep.summary || null,
-                  rep.summaryEnglish || null,
-                  rep.content,
-                  rep.contentEnglish || null,
-                  rep.image || null,
-                  JSON.stringify(rep.methodology || []),
-                  JSON.stringify(rep.findings || []),
-                  rep.views || 0,
-                ],
-              );
-            }
-            console.log(
-              `Seeded ${defaultReports.length} research reports into DB.`,
+        const { defaultReports } =
+          await import("../controllers/reportController.js");
+        if (defaultReports && defaultReports.length > 0) {
+          for (const rep of defaultReports) {
+            await client.query(
+              `INSERT INTO research_reports (
+                id, title, title_english, topic, topic_english, author,
+                published_date, summary, summary_english, content, content_english,
+                image, methodology, findings, views
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+              ON CONFLICT (id) DO UPDATE SET
+                title = EXCLUDED.title,
+                title_english = EXCLUDED.title_english,
+                topic = EXCLUDED.topic,
+                topic_english = EXCLUDED.topic_english,
+                author = EXCLUDED.author,
+                published_date = EXCLUDED.published_date,
+                summary = EXCLUDED.summary,
+                summary_english = EXCLUDED.summary_english,
+                content = EXCLUDED.content,
+                content_english = EXCLUDED.content_english,
+                image = EXCLUDED.image,
+                methodology = EXCLUDED.methodology,
+                findings = EXCLUDED.findings`,
+              [
+                rep.id,
+                rep.title,
+                rep.titleEnglish || null,
+                rep.topic || null,
+                rep.topicEnglish || null,
+                rep.author || null,
+                rep.publishedDate || null,
+                rep.summary || null,
+                rep.summaryEnglish || null,
+                rep.content,
+                rep.contentEnglish || null,
+                rep.image || null,
+                JSON.stringify(rep.methodology || []),
+                JSON.stringify(rep.findings || []),
+                rep.views || 0,
+              ],
             );
           }
+          console.log(
+            `Synced ${defaultReports.length} research reports into DB.`,
+          );
         }
       } catch (seedErr) {
         console.warn("Could not seed default reports:", seedErr.message);
       }
 
-      // Seed initial site_settings with default pillars if empty
+      // Seed initial site_settings with complete site data if empty
       try {
         const settingsRes = await client.query(
           "SELECT id, data FROM site_settings ORDER BY id DESC LIMIT 1",
         );
-        const { DEFAULT_PILLARS_DATA } = await import("./seedData.js");
+        const { FULL_INITIAL_SITE_DATA, DEFAULT_PILLARS_DATA } = await import("./seedData.js");
         if (settingsRes.rows.length === 0) {
-          const initialData = {
-            pillars: DEFAULT_PILLARS_DATA,
-          };
-          const jsonString = JSON.stringify(initialData).replace(/'/g, "''");
           await client.query(
-            `INSERT INTO site_settings (data) VALUES ('${jsonString}'::jsonb)`,
+            "INSERT INTO site_settings (data) VALUES ($1::jsonb)",
+            [JSON.stringify(FULL_INITIAL_SITE_DATA)],
           );
-          console.log("Seeded initial site_settings with 4 core pillars.");
+          console.log("Seeded initial site_settings with complete database package.");
         } else {
-          // If settings exist but pillars array is missing or empty, ensure pillars are present
+          // If settings exist, ensure pillars and other core fields are populated
           const currentData = settingsRes.rows[0].data || {};
-          if (!currentData.pillars || currentData.pillars.length === 0) {
-            const updatedData = {
-              ...currentData,
-              pillars: DEFAULT_PILLARS_DATA,
-            };
-            const jsonString = JSON.stringify(updatedData).replace(/'/g, "''");
+          let needsUpdate = false;
+          const mergedData = { ...FULL_INITIAL_SITE_DATA, ...currentData };
+          if (!currentData.pillars || currentData.pillars.length !== 2 || !currentData.pillars[0]?.titleBn?.includes("পরিবেশ সংকটকালে")) {
+            mergedData.pillars = DEFAULT_PILLARS_DATA.slice(0, 2);
+            needsUpdate = true;
+          }
+          if (!currentData.general) {
+            mergedData.general = FULL_INITIAL_SITE_DATA.general;
+            needsUpdate = true;
+          }
+          if (needsUpdate) {
             await client.query(
-              `UPDATE site_settings SET data = '${jsonString}'::jsonb WHERE id = $1`,
-              [settingsRes.rows[0].id],
+              "UPDATE site_settings SET data = $1::jsonb WHERE id = $2",
+              [JSON.stringify(mergedData), settingsRes.rows[0].id],
             );
-            console.log("Updated existing site_settings with 4 core pillars.");
+            console.log("Updated site_settings with missing default structures.");
           }
         }
       } catch (settingsSeedErr) {
         console.warn(
-          "Could not seed default pillars into site_settings:",
+          "Could not seed site_settings into DB:",
           settingsSeedErr.message,
         );
+      }
+
+      // Seed initial projects if empty
+      try {
+        const projRes = await client.query("SELECT COUNT(*) FROM projects");
+        const projCount = parseInt(projRes.rows[0]?.count || "0", 10);
+        if (projCount === 0) {
+          const { DEFAULT_PROJECTS_DATA } = await import("./seedData.js");
+          for (const p of DEFAULT_PROJECTS_DATA) {
+            await client.query(
+              "INSERT INTO projects (title, target_amount) VALUES ($1, $2)",
+              [p.title, p.target_amount],
+            );
+          }
+          console.log(`Seeded ${DEFAULT_PROJECTS_DATA.length} initial projects into DB.`);
+        }
+      } catch (projSeedErr) {
+        console.warn("Could not seed default projects into DB:", projSeedErr.message);
       }
 
       isDbConnected = true;

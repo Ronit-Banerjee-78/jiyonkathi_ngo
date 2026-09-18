@@ -90,9 +90,9 @@ const INITIAL_EVENTS = [
     description:
       "চাষি ভাইবোনদের মাঝে বিনামূল্যে রাসায়নিক ও বিষমুক্ত দেশীয় প্রজাতির ধানের বীজ বিতরণ ও অভিজ্ঞতা আদান-প্রদান।",
     full_details:
-      "এই সফল অনুষ্ঠানে ১২০+ বিরল দেশীয় ধান বীজ বিনামূল্যে স্থানীয় কৃষকদের হাতে তুলে দেওয়া হয়েছে।",
+      "এই সফল অনুষ্ঠানে ৫৬ রকম বিরল দেশীয় ধান বীজ বিনামূল্যে স্থানীয় কৃষকদের হাতে তুলে দেওয়া হয়েছে।",
     full_details_english:
-      "Over 120 indigenous organic paddy seed varieties were successfully distributed to regional farmers.",
+      "56 indigenous organic paddy seed varieties were successfully distributed to regional farmers.",
     image: "/images/farming-collage.jpg",
     category: "কৃষি",
     category_english: "Agriculture",

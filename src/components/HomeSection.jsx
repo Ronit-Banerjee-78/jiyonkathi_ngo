@@ -42,114 +42,151 @@ function getYouTubeEmbedUrl(url) {
 }
 
 export default function HomeSection({ setActiveTab }) {
-  const { siteData, language } = useContext(SiteContext);
+  const { siteData, language, reports: contextReports, setSelectedReportId } = useContext(SiteContext);
 
   const general = siteData.general || {};
 
-  const pillars = siteData.pillars || [
+  const defaultPillars = [
     {
       id: "pillar-1",
-      titleBn: "দেশীয় প্রজাতির দানাশস্য ও বীজ সংরক্ষণ",
-      titleEn: "Indigenous Crop & Seed Conservation",
-      taglineBn: "১২০+ দেশীয় ধানের প্রজাতি ও রাসায়নিক মুক্ত বীজ সুরক্ষা",
-      taglineEn: "Preserving 120+ heirloom cultivars without synthetic chemicals",
+      number: "০১",
+      titleBn: "পরিবেশ সংকটকালে, একটি সুস্থায়ী গ্রামীণ প্ল্যাটফর্ম প্রস্তুত করা",
+      titleEn: "Building a Sustainable Rural Platform in Environmental Crisis",
+      taglineBn: "রাসায়নিক সার-কীটনাশকহীন চাষাবাদ, ভূগর্ভস্থ জল সুরক্ষা এবং পুনর্ব্যবহারযোগ্য শক্তির প্রয়োগ।",
+      taglineEn: "Chemical-free agro-ecology, groundwater preservation, and renewable energy adoption.",
+      descBn: "পরিবেশ সংকটকালে একটি সুস্থায়ী গ্রামীণ প্ল্যাটফর্ম প্রস্তুত করার মাধ্যমে প্রকৃতিবান্ধব কৃষি, বিষমুক্ত ফল-সবজি ও খাদ্য নিরাপত্তা নিশ্চিত করা।",
+      descEn: "Creating an ecologically sustainable rural platform to foster regenerative farming and chemical-free food security.",
       icon: "Leaf",
-      colorTheme: "amber"
+      colorTheme: "amber",
+      topics: [
+        {
+          id: "p1-t1",
+          number: "১",
+          titleBn: "দেশীয় প্রজাতির দানাশস্য (মূলত ধান), সব্জী (যতটা সম্ভব) চাষ করা, এবং সেই কাজে-",
+          titleEn: "Cultivating indigenous crops (chiefly paddy) and vegetables to the utmost extent:",
+          subPoints: [
+            "রাসায়নিক সার ও কীটনাশক একবারে ব্যবহার না করা।",
+            "মাটির তলার জল না তোলা।",
+            "যতটা কম সম্ভব জীবাশ্ম জ্বালানী ব্যবহার করা।"
+          ]
+        },
+        {
+          id: "p1-t2",
+          number: "২",
+          titleBn: "পুনর্ব্যবহারযোগ্য শক্তি কে নিজেদের কাজে ব্যবহার করা।",
+          titleEn: "Utilizing renewable energy for daily and farming workflows.",
+          subPoints: []
+        },
+        {
+          id: "p1-t3",
+          number: "৩",
+          titleBn: "বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা",
+          titleEn: "Chemical-free horticulture and natural food security.",
+          subPoints: []
+        }
+      ],
+      goals: [
+        "রাসায়নিক সার ও কীটনাশক একবারে ব্যবহার না করা",
+        "মাটির তলার জল না তোলা",
+        "যতটা কম সম্ভব জীবাশ্ম জ্বালানী ব্যবহার করা",
+        "পুনর্ব্যবহারযোগ্য শক্তি কে নিজেদের কাজে ব্যবহার করা",
+        "বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা"
+      ],
+      linkedReportId: "rep-1"
     },
     {
       id: "pillar-2",
-      titleBn: "কৃষিজীবী মানুষের সাথে নিবিড় যোগাযোগ",
-      titleEn: "Community Engagement & Knowledge Sharing",
-      taglineBn: "মাঠ পর্যায়ের কৃষক ও সমাজের যৌথ অভিজ্ঞতা বিনিময়",
-      taglineEn: "Direct dialogue uniting rural cultivators and urban learners",
+      number: "০২",
+      titleBn: "DDMPBS সোসাইটির সহায়তায়, শহর এবং গ্রামের একসাথে প্রস্তুত হওয়ার কার্যকরী প্রচেষ্টা",
+      titleEn: "Collaborative Rural-Urban Action Supported by DDMPBS Society",
+      taglineBn: "বিলুপ্তপ্রায় দেশীয় বীজ সংরক্ষণ, পল্লী শিশুদের সহায়ক শিক্ষা এবং গ্রামীণ স্বাস্থ্য সচেতনতা।",
+      taglineEn: "Preserving heirloom seed varieties, rural children's auxiliary education, and health camps.",
+      descBn: "DDMPBS সোসাইটির সহযোগিতায় শহর ও গ্রামীণ সমাজের যৌথ সংহতি, দেশীয় প্রজাতির বীজ সংরক্ষণ ও শিশু শিক্ষার সহায়ক কার্যক্রম।",
+      descEn: "Fostering solidarity between urban and agrarian communities, indigenous seed banking, and child education.",
       icon: "Users",
-      colorTheme: "orange"
-    },
-    {
-      id: "pillar-3",
-      titleBn: "পুনর্ব্যবহারযোগ্য শক্তি ও পরিবেশ সুরক্ষা",
-      titleEn: "Renewable Energy & Eco-Balance",
-      taglineBn: "জীবাশ্ম জ্বালানিমুক্ত টেকসই জীবনযাপনের পথ",
-      taglineEn: "Decentralized clean solar energy across farm workflows",
-      icon: "Sun",
-      colorTheme: "amber"
-    },
-    {
-      id: "pillar-4",
-      titleBn: "Practicing Food Security for Life",
-      titleEn: "Practicing Food Security for Life",
-      taglineBn: "জীবনের জন্য খাদ্য নিরাপত্তা: বিষমুক্ত ফল ও বহুমুখী সবজি চাষ",
-      taglineEn: "Homestead vegetable & fruit farming methodologies",
-      icon: "Apple",
-      colorTheme: "emerald"
+      colorTheme: "orange",
+      topics: [
+        {
+          id: "p2-t1",
+          number: "১",
+          titleBn: "দেশীয় প্রজাতির দানাশস্য (ধান, রাগী, শ্যামা ধান, দেশী মুগ ডাল, ইত্যাদি) এবং সব্জীর (যতটা সম্ভব) বীজ সংরক্ষণ করা।",
+          titleEn: "Preserving seeds of indigenous food grains (rice, ragi, shyama rice, desi moong dal, etc.) and vegetables.",
+          subPoints: []
+        },
+        {
+          id: "p2-t2",
+          number: "২",
+          titleBn: "সহায়ক শিক্ষাকেন্দ্র",
+          titleEn: "Auxiliary Education Center",
+          descriptionBn: "পল্লী অঞ্চলের শিশুদের লোকসংস্কৃতি, প্রকৃতি পরিচয়, নীতিশিক্ষা এবং ব্যবহারিক কারুশিল্প প্রশিক্ষণ",
+          subPoints: []
+        },
+        {
+          id: "p2-t3",
+          number: "৩",
+          titleBn: "স্বাস্থ্য সচেতনতা শিবির, সর্প সচেতনতা শিবির, গ্রামের কৃষিজীবী মানুষজনের সাথে যোগাযোগ বাড়ানো, সাংস্কৃতিক অনুষ্ঠান, ইত্যাদি আয়োজন করা।",
+          titleEn: "Organizing free health checkups, snakebite awareness camps, agrarian community dialogues, and cultural events.",
+          subPoints: []
+        }
+      ],
+      goals: [
+        "দেশীয় প্রজাতির দানাশস্য ও সব্জীর বীজ সংরক্ষণ",
+        "পল্লী শিশুদের লোকসংস্কৃতি, প্রকৃতি পরিচয় ও কারুশিল্প শিক্ষা",
+        "নিয়মিত স্বাস্থ্য ও সর্প সচেতনতা শিবির পরিচালনা",
+        "কৃষিজীবী মানুষের সাথে নিবিড় মানবিক যোগ ও সংস্কৃতি চর্চা"
+      ],
+      linkedReportId: "rep-2"
     }
   ];
 
-  const reports = siteData.researchReports || [
-    {
-      id: "rep-1",
-      titleBn: "দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ গবেষণা প্রতিবেদন (২০১৩-২০২৬)",
-      titleEn: "Indigenous Rice Cultivars & Seed Conservation Field Report",
-      categoryBn: "কৃষি ও পরিবেশ",
-      categoryEn: "Agro-Ecology",
-      authorBn: "জিয়নকাঠি কৃষি গবেষণা দল",
-      readTime: "৮ মিনিট পাঠ",
-      excerptBn: "১২০টিরও বেশি বিলুপ্তপ্রায় দেশীয় ধানের প্রজাতির ফলন বিশ্লেষণ, রাসায়নিক সার ব্যতিরেকে প্রাকৃতিক পুষ্টি ব্যবস্থাপনা ও ভূগর্ভস্থ জল সংরক্ষণ পদ্ধতি।"
-    },
-    {
-      id: "rep-2",
-      titleBn: "বসতভিটায় সারাবছর বিষমুক্ত ফল ও সবজি চাষ পদ্ধতি এবং খাদ্য নিরাপত্তা",
-      titleEn: "Homestead Organic Fruit & Vegetable Food Security Framework",
-      categoryBn: "খাদ্য নিরাপত্তা",
-      categoryEn: "Food Security",
-      authorBn: "জিয়নকাঠি উদ্যানপালন ইউনিট",
-      readTime: "৬ মিনিট পাঠ",
-      excerptBn: "মাচা ভিত্তিক লতানো সবজি, দেশীয় বহুস্তরীয় ফলের বাগান এবং দশপর্ণী অর্ক বালাইনাশক ব্যবহারের ব্যবহারিক ক্ষেত্র পর্যালোচনা।"
-    },
-    {
-      id: "rep-3",
-      titleBn: "বীরভূম ও বর্ধমানের প্রান্তিক কৃষকদের সাথে সহযোগিতামূলক টেকসই কৃষি রূপরেখা",
-      titleEn: "Smallholder Sustainable Agriculture in Birbhum & Burdwan",
-      categoryBn: "সামাজিক সংহতি",
-      categoryEn: "Social Solidarity",
-      authorBn: "গ্রামীণ সমন্বয় পরিষদ",
-      readTime: "৫ মিনিট পাঠ",
-      excerptBn: "স্থানীয় কৃষক পরিবারের সাথে সমন্বিতভাবে কীটনাশকমুক্ত ফসল উৎপাদন ও কৃষকদের অর্থনৈতিক স্বাবলম্বিতা অর্জনের বাস্তব তথ্য।"
-    }
-  ];
+  const hasValidPillars =
+    Array.isArray(siteData?.pillars) &&
+    siteData.pillars.length === 2 &&
+    siteData.pillars[0]?.titleBn?.includes("পরিবেশ সংকটকালে") &&
+    siteData.pillars[1]?.titleBn?.includes("DDMPBS");
+  const pillars = (hasValidPillars ? siteData.pillars : defaultPillars).slice(0, 2);
 
-  const initiatives = [
-    {
-      id: "init-1",
-      titleBn: "দেশীয় বীজ সংরক্ষণাগার",
-      titleEn: "Heirloom Seed Conservation Bank",
-      descBn: "১২০+ বিলুপ্তপ্রায় ধান ও ফসলের বীজ সংগ্রহ, বংশবৃদ্ধি এবং বিনামূল্যে প্রান্তিক কৃষকদের মাঝে বিতরণ।",
-      descEn: "Preserving and multiplying 120+ endangered indigenous crop seeds and distributing to smallholders.",
-      icon: <Leaf className="w-5 h-5 text-amber-700" />,
-      tagBn: "বীজ সংরক্ষণ",
-      tagEn: "Seed Bank"
-    },
-    {
-      id: "init-2",
-      titleBn: "সহায়ক শিক্ষাকেন্দ্র",
-      titleEn: "Rural Auxiliary Learning Center",
-      descBn: "পল্লী অঞ্চলের শিশুদের লোকসংস্কৃতি, প্রকৃতি পরিচয়, নীতিশিক্ষা এবং ব্যবহারিক কারুশিল্প প্রশিক্ষণ।",
-      descEn: "Nature-based experiential learning, indigenous folklore, and basic craftsmanship for rural children.",
-      icon: <BookOpen className="w-5 h-5 text-emerald-700" />,
-      tagBn: "শিশু শিক্ষা",
-      tagEn: "Education"
-    },
-    {
-      id: "init-3",
-      titleBn: "প্রাকৃতিক উপায়ে চাষাবাদ",
-      titleEn: "Chemical-Free Natural Cultivation",
-      descBn: "কীটনাশক ও রাসায়নিক মুক্ত দশপর্ণী অর্ক ও জীবাণুসার প্রয়োগে মাটির উর্বরতা ও স্বাস্থ্য সুরক্ষা।",
-      descEn: "Restoring soil microbiology using botanical concoctions, zero synthetic fertilizers, and bio-manure.",
-      icon: <Sprout className="w-5 h-5 text-orange-700" />,
-      tagBn: "বিষমুক্ত কৃষি",
-      tagEn: "Eco-Farming"
+  const reports = (Array.isArray(contextReports) && contextReports.length > 0)
+    ? contextReports
+    : (siteData.researchReports || [
+      {
+        id: "rep-1",
+        title: "দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ গবেষণা প্রতিবেদন (২০১৩-২০২৬)",
+        titleEnglish: "Indigenous Rice Cultivars & Seed Conservation Field Report",
+        topic: "বীজ সংরক্ষণ ও দেশীয় ধান",
+        topicEnglish: "Agro-Ecology",
+        author: "জিয়নকাঠি কৃষি গবেষণা দল",
+        publishedDate: "২০২৬-০৮-১৫",
+        summary: "১২০টিরও বেশি বিলুপ্তপ্রায় দেশীয় ধানের প্রজাতির ফলন বিশ্লেষণ, রাসায়নিক সার ব্যতিরেকে প্রাকৃতিক পুষ্টি ব্যবস্থাপনা ও ভূগর্ভস্থ জল সংরক্ষণ পদ্ধতি।"
+      },
+      {
+        id: "rep-2",
+        title: "বসতভিটায় সারাবছর বিষমুক্ত ফল ও সবজি চাষ পদ্ধতি এবং খাদ্য নিরাপত্তা",
+        titleEnglish: "Homestead Organic Fruit & Vegetable Food Security Framework",
+        topic: "সবজি ও ফল চাষ (খাদ্য নিরাপত্তা)",
+        topicEnglish: "Food Security",
+        author: "জিয়নকাঠি উদ্যানপালন ইউনিট",
+        publishedDate: "২০২৬-০৮-১০",
+        summary: "মাচা ভিত্তিক লতানো সবজি, দেশীয় বহুস্তরীয় ফলের বাগান এবং দশপর্ণী অর্ক বালাইনাশক ব্যবহারের ব্যবহারিক ক্ষেত্র পর্যালোচনা।"
+      },
+      {
+        id: "rep-3",
+        title: "বীরভূম ও বর্ধমানের প্রান্তিক কৃষকদের সাথে সহযোগিতামূলক টেকসই কৃষি রূপরেখা",
+        titleEnglish: "Smallholder Sustainable Agriculture in Birbhum & Burdwan",
+        topic: "টেকসই কৃষি ও সম্প্রদায় সংহতি",
+        topicEnglish: "Social Solidarity",
+        author: "গ্রামীণ সমন্বয় পরিষদ (DDBMPBS সহযোগে)",
+        publishedDate: "২০২৬-০৮-০৫",
+        summary: "স্থানীয় কৃষক পরিবারের সাথে সমন্বিতভাবে কীটনাশকমুক্ত ফসল উৎপাদন ও কৃষকদের অর্থনৈতিক স্বাবলম্বিতা অর্জনের বাস্তব তথ্য।"
+      }
+    ]);
+
+  const handleReportCardClick = (r) => {
+    if (setSelectedReportId && r.id) {
+      setSelectedReportId(r.id);
     }
-  ];
+    setActiveTab("reports");
+  };
 
   return (
     <div id="home-section" className="bg-[#faf7f0] text-stone-900 space-y-16 sm:space-y-24 pb-20">
@@ -165,9 +202,9 @@ export default function HomeSection({ setActiveTab }) {
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-stone-900 tracking-tight leading-[1.15]">
                 {language === "bn" ? (
                   <>
-                    {general.bannerTitleBengali || "মাটি, মানুষ ও প্রকৃতির টানে"} <br className="hidden sm:inline" />
+                    {general.bannerTitleBengali || "প্রাণ-প্রকৃতি-পরিবেশের টানে"} <br className="hidden sm:inline" />
                     <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700">
-                      {general.bannerHighlightBengali || "জিয়নকাঠির টেকসই পথচলা"}
+                      {general.bannerHighlightBengali || "জিয়নকাঠির সুস্থায়ী পথচলা"}
                     </span>
                   </>
                 ) : (
@@ -182,8 +219,8 @@ export default function HomeSection({ setActiveTab }) {
 
               <p className="text-base sm:text-lg text-stone-700 leading-relaxed font-medium max-w-2xl">
                 {language === "bn"
-                  ? (general.bannerSubtitleBengali || "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ১২০+ বিলুপ্তপ্রায় দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।")
-                  : (general.bannerSubtitle || general.bannerSubtitleEnglish || "Dedicated to pesticide-free organic farming, conserving 120+ indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal.")}
+                  ? (general.bannerSubtitleBengali || "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।")
+                  : (general.bannerSubtitle || general.bannerSubtitleEnglish || "Dedicated to pesticide-free organic farming, conserving 56 types of indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal.")}
               </p>
 
               {/* Exact Hero Action Buttons: "See Work" and "Report" */}
@@ -210,7 +247,7 @@ export default function HomeSection({ setActiveTab }) {
               {/* Quick Trust Highlights */}
               <div className="grid grid-cols-3 gap-3 pt-6 border-t border-stone-200/80">
                 <div className="bg-white p-3.5 rounded-2xl border border-stone-200/80 shadow-2xs text-center">
-                  <div className="text-xl sm:text-2xl font-black text-amber-700">{general.statSeeds || "১২০+"}</div>
+                  <div className="text-xl sm:text-2xl font-black text-amber-700">{general.statSeeds || "৫৬ রকম"}</div>
                   <div className="text-[11px] font-bold text-stone-600 mt-0.5">
                     {language === "bn" ? "দেশীয় ধান সংরক্ষণ" : "Rice Cultivars"}
                   </div>
@@ -276,7 +313,7 @@ export default function HomeSection({ setActiveTab }) {
         </div>
       </section>
 
-      {/* 2. REQUIRED HOMEPAGE QUOTE SECTION (From User Prompt & Image 3) */}
+      {/* 2. PHILOSOPHY QUOTE */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative bg-gradient-to-r from-amber-50 via-white to-amber-50 rounded-3xl p-8 sm:p-12 border border-amber-200/90 shadow-xs text-center space-y-5">
           <div className="w-12 h-12 mx-auto rounded-full bg-amber-100/80 text-amber-800 flex items-center justify-center font-serif text-2xl font-black shadow-2xs">
@@ -293,62 +330,9 @@ export default function HomeSection({ setActiveTab }) {
         </div>
       </section>
 
-      {/* 3. KEY INITIATIVES SECTION (আমাদের প্রধান কর্মসূচিসমূহ - From Image 3) */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-200 pb-5">
-          <div className="space-y-1">
-            <span className="text-amber-700 font-black text-xs uppercase tracking-wider">
-              {language === "bn" ? "আমাদের প্রধান কর্মসূচিসমূহ" : "Our Key Initiatives"}
-            </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
-              {language === "bn" ? "টেকসই গ্রামীণ প্রকল্পসমূহ" : "Sustainable Rural Initiatives"}
-            </h2>
-          </div>
-          <button
-            onClick={() => setActiveTab("reports")}
-            className="inline-flex items-center space-x-1.5 text-xs font-extrabold text-amber-800 hover:text-amber-900 bg-amber-100/70 hover:bg-amber-100 px-4 py-2 rounded-xl transition-all w-fit cursor-pointer"
-          >
-            <span>{language === "bn" ? "আমাদের সকল কাজ দেখুন >" : "See All Our Work >"}</span>
-          </button>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {initiatives.map((init) => (
-            <div
-              key={init.id}
-              onClick={() => setActiveTab("reports")}
-              className="bg-white rounded-3xl p-6 sm:p-7 border border-stone-200 shadow-2xs hover:shadow-md hover:border-amber-400 transition-all cursor-pointer group flex flex-col justify-between"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="p-3 bg-amber-50 rounded-2xl border border-amber-100 group-hover:bg-amber-100 transition-colors">
-                    {init.icon}
-                  </div>
-                  <span className="text-[10px] font-extrabold bg-stone-100 text-stone-700 px-2.5 py-1 rounded-full uppercase">
-                    {language === "bn" ? init.tagBn : init.tagEn}
-                  </span>
-                </div>
 
-                <div className="space-y-2">
-                  <h3 className="text-lg font-black text-stone-900 group-hover:text-amber-700 transition-colors">
-                    {language === "bn" ? init.titleBn : init.titleEn}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-medium">
-                    {language === "bn" ? init.descBn : init.descEn}
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-5 mt-5 border-t border-stone-100 flex items-center justify-between text-xs font-bold text-amber-700">
-                <span>{language === "bn" ? "বিস্তারিত প্রকল্প তথ্য" : "Explore Initiative"}</span>
-                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 4. THE FOUR PILLARS (Clean, Clickable, No AI-Slop) */}
+      {/* 3. THE TWO PILLARS (Directly matching PDF Page 1) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-200 pb-5">
           <div className="space-y-1">
@@ -356,11 +340,11 @@ export default function HomeSection({ setActiveTab }) {
               {language === "bn" ? "মৌলিক আদর্শ" : "Core Philosophy"}
             </span>
             <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
-              {language === "bn" ? "জিয়নকাঠির ৪টি মূল স্তম্ভ" : "Our 4 Guiding Pillars"}
+              {language === "bn" ? "জিয়নকাঠির ২ টি মূল স্তম্ভ" : "Our 2 Guiding Pillars"}
             </h2>
           </div>
           <button
-            onClick={() => setActiveTab("mission")}
+            onClick={() => setActiveTab("about")}
             className="inline-flex items-center space-x-1.5 text-xs font-extrabold text-amber-800 hover:text-amber-900 bg-amber-100/70 hover:bg-amber-100 px-4 py-2 rounded-xl transition-all w-fit cursor-pointer"
           >
             <span>{language === "bn" ? "স্তম্ভগুলির বিশদ বিবরণ দেখুন" : "View Pillar Deep Dives"}</span>
@@ -368,42 +352,63 @@ export default function HomeSection({ setActiveTab }) {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 sm:gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
           {pillars.map((p, idx) => {
-            const isPillar4 = idx === 3 || p.titleBn?.includes("Food Security") || p.titleEn?.includes("Food Security");
+            const isPillar2 = idx === 1 || p.id === "pillar-2";
             return (
               <div
                 key={p.id || idx}
-                onClick={() => setActiveTab("mission")}
-                className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs hover:shadow-md hover:border-amber-400/80 transition-all cursor-pointer group flex flex-col justify-between"
+                onClick={() => setActiveTab("about")}
+                className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/90 shadow-2xs hover:shadow-md hover:border-amber-400/80 transition-all cursor-pointer group flex flex-col justify-between"
               >
-                <div className="space-y-4">
+                <div className="space-y-5">
                   <div className="flex items-center justify-between">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg ${isPillar4
-                        ? "bg-emerald-100 text-emerald-800"
-                        : idx === 1
-                          ? "bg-orange-100 text-orange-800"
-                          : "bg-amber-100 text-amber-800"
-                      }`}>
-                      {isPillar4 ? <Apple className="w-6 h-6" /> : idx === 1 ? <Users className="w-6 h-6" /> : idx === 2 ? <Sun className="w-6 h-6" /> : <Leaf className="w-6 h-6" />}
+                    <div
+                      className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg ${isPillar2 ? "bg-orange-100 text-orange-800" : "bg-amber-100 text-amber-800"
+                        }`}
+                    >
+                      {isPillar2 ? <Users className="w-6 h-6" /> : <Leaf className="w-6 h-6" />}
                     </div>
-                    <span className="text-xs font-black text-stone-400 group-hover:text-amber-700 transition-colors">
+                    {/* <span className="text-xs font-black px-3 py-1 rounded-full bg-stone-100 text-stone-600 group-hover:bg-amber-100 group-hover:text-amber-800 transition-colors">
                       {language === "bn" ? `স্তম্ভ ০${idx + 1}` : `Pillar 0${idx + 1}`}
-                    </span>
+                    </span> */}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <h3 className="text-base font-black text-stone-900 leading-snug group-hover:text-amber-700 transition-colors">
+                  <div className="space-y-2">
+                    <h3 className="text-xl sm:text-2xl font-black text-stone-900 leading-snug group-hover:text-amber-700 transition-colors">
                       {language === "bn" ? p.titleBn : p.titleEn}
                     </h3>
-                    <p className="text-xs text-stone-600 leading-relaxed font-medium line-clamp-3">
-                      {language === "bn" ? p.taglineBn : p.taglineEn}
-                    </p>
                   </div>
+
+                  {/* Render Topics directly from PDF Page 2 */}
+                  {Array.isArray(p.topics) && p.topics.length > 0 && (
+                    <div className="space-y-3 pt-3 border-t border-stone-100 text-xs text-stone-700">
+                      {p.topics.map((t, tIdx) => (
+                        <div key={t.id || tIdx} className="space-y-1">
+                          <div className="font-bold text-stone-900 flex items-start space-x-1.5">
+                            <span className="text-amber-700 font-black shrink-0">{t.number || tIdx + 1})</span>
+                            <span className="leading-snug">{language === "bn" ? t.titleBn : t.titleEn}</span>
+                          </div>
+                          {t.descriptionBn && (
+                            <p className="pl-4 text-[11px] text-stone-600 font-medium">
+                              {language === "bn" ? t.descriptionBn : t.descriptionEn}
+                            </p>
+                          )}
+                          {Array.isArray(t.subPoints) && t.subPoints.length > 0 && (
+                            <ul className="pl-5 space-y-0.5 list-disc text-[11px] text-stone-600 font-medium">
+                              {(language === "bn" ? t.subPoints : (t.subPointsEn || t.subPoints)).map((sp, sIdx) => (
+                                <li key={sIdx} className="leading-relaxed">{sp}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                <div className="pt-4 mt-4 border-t border-stone-100 flex items-center justify-between text-xs font-extrabold text-amber-700 group-hover:text-amber-800">
-                  <span>{language === "bn" ? "পদ্ধতি জানুন" : "Explore Method"}</span>
+                <div className="pt-4 mt-6 border-t border-stone-100 flex items-center justify-between text-xs font-extrabold text-amber-700 group-hover:text-amber-800">
+                  <span>{language === "bn" ? "পদ্ধতি ও বিস্তারিত তথ্য জানুন" : "Explore Methodology & Details"}</span>
                   <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
@@ -412,7 +417,8 @@ export default function HomeSection({ setActiveTab }) {
         </div>
       </section>
 
-      {/* 5. RESEARCH REPORTS HIGHLIGHT (From Database) */}
+
+      {/* 4. RESEARCH REPORTS HIGHLIGHT (From Database) */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-200 pb-5">
           <div className="space-y-1">
@@ -436,25 +442,27 @@ export default function HomeSection({ setActiveTab }) {
           {reports.slice(0, 3).map((r, i) => (
             <div
               key={r.id || i}
-              onClick={() => setActiveTab("reports")}
+              onClick={() => handleReportCardClick(r)}
               className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs hover:shadow-md hover:border-amber-400 transition-all cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider">
-                    {language === "bn" ? r.categoryBn || "কৃষি গবেষণা" : r.categoryEn || "Research"}
+                    {language === "bn"
+                      ? (r.topic || r.categoryBn || "কৃষি গবেষণা")
+                      : (r.topicEnglish || r.categoryEn || "Research")}
                   </span>
                   <span className="text-[11px] font-bold text-stone-400">
-                    {r.readTime || "5 min read"}
+                    {r.publishedDate || r.readTime || "গবেষণা প্রতিবেদন"}
                   </span>
                 </div>
 
                 <h3 className="text-base font-black text-stone-900 line-clamp-2 leading-snug group-hover:text-amber-700 transition-colors">
-                  {language === "bn" ? r.titleBn : r.titleEn}
+                  {language === "bn" ? (r.title || r.titleBn) : (r.titleEnglish || r.titleEn || r.title)}
                 </h3>
 
                 <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed font-medium">
-                  {language === "bn" ? r.excerptBn : r.excerptEn || r.excerptBn}
+                  {language === "bn" ? (r.summary || r.excerptBn) : (r.summaryEnglish || r.excerptEn || r.summary)}
                 </p>
               </div>
 

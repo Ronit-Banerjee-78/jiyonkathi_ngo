@@ -20,18 +20,50 @@ import {
   Layers,
   X,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  Leaf,
+  Sun,
+  Sprout,
+  ShieldCheck,
+  Users
 } from "lucide-react";
 
 export default function ResearchReportsSection({ initialReportId = null, onSelectPillar = null }) {
-  const { siteData, language, setActiveTab } = useContext(SiteContext);
-  const [reports, setReports] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    siteData,
+    language,
+    setActiveTab,
+    reports: contextReports,
+    selectedReportId,
+    setSelectedReportId,
+    refreshReports,
+  } = useContext(SiteContext);
+  const [reports, setReports] = useState(contextReports || []);
+  const [loading, setLoading] = useState(!contextReports || contextReports.length === 0);
   const [selectedTopic, setSelectedTopic] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [activeReport, setActiveReport] = useState(null);
   const [copiedLink, setCopiedLink] = useState(false);
+
+  // Sync with context reports if available
+  useEffect(() => {
+    if (Array.isArray(contextReports) && contextReports.length > 0) {
+      setReports(contextReports);
+      setLoading(false);
+    }
+  }, [contextReports]);
+
+  // Handle opening targeted report (from Home or direct link)
+  useEffect(() => {
+    const targetId = initialReportId || selectedReportId;
+    if (targetId && reports.length > 0) {
+      const matched = reports.find((r) => String(r.id) === String(targetId));
+      if (matched) {
+        handleOpenReport(matched);
+      }
+    }
+  }, [initialReportId, selectedReportId, reports]);
 
   // Open report & increment view count for analytics
   const handleOpenReport = (report) => {
@@ -61,8 +93,9 @@ export default function ResearchReportsSection({ initialReportId = null, onSelec
       .then((json) => {
         if (isMounted && json.success && Array.isArray(json.reports)) {
           setReports(json.reports);
-          if (initialReportId) {
-            const matched = json.reports.find((r) => String(r.id) === String(initialReportId));
+          const targetId = initialReportId || selectedReportId;
+          if (targetId) {
+            const matched = json.reports.find((r) => String(r.id) === String(targetId));
             if (matched) {
               handleOpenReport(matched);
             }
@@ -77,11 +110,14 @@ export default function ResearchReportsSection({ initialReportId = null, onSelec
     return () => {
       isMounted = false;
     };
-  }, [initialReportId]);
+  }, [initialReportId, selectedReportId]);
 
   // Close report detail
   const handleCloseReport = () => {
     setActiveReport(null);
+    if (setSelectedReportId) {
+      setSelectedReportId(null);
+    }
   };
 
   // Download / Print handler
@@ -194,6 +230,183 @@ export default function ResearchReportsSection({ initialReportId = null, onSelec
             {language === "bn"
               ? "দেশীয় বীজ সংরক্ষণ, বিষমুক্ত বহুমুখী কৃষি, ফল-সবজি বাগান ও শিশুদের বিকল্প শিক্ষার পরীক্ষিত পদ্ধতি ও গবেষণামূলক দলিল।"
               : "Explore empirical methodologies on indigenous seeds, organic fruit/vegetable cultivation, and rural nature education."}
+          </p>
+        </div>
+
+        {/* ACTIVE GROUND WELFARE INITIATIVES & FIELD STREAMS */}
+        <div className="space-y-6">
+          <div className="space-y-1">
+            <span className="text-amber-700 font-black text-xs uppercase tracking-wider">
+              {language === "bn" ? "মাঠপর্যায়ের প্রয়োগ" : "Active Field Streams"}
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+              {language === "bn" ? "আমাদের সক্রিয় মাঠপর্যায়ের কর্মধারা" : "Our Active Field Workstreams"}
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {/* Project 1 */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <span className="bg-emerald-100 text-emerald-900 text-[11px] font-black px-2.5 py-0.5 rounded-md">
+                  {language === "bn" ? "বীজ ব্যাংক ও দেশীয় ধান" : "Seed Bank & Heirloom Rice"}
+                </span>
+                <h3 className="text-base font-black text-stone-900">
+                  {language === "bn" ? "দেশীয় ধান ও দানাশস্য বীজ সংরক্ষণাগার" : "Heirloom Seed Bank & Free Distribution"}
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed font-medium">
+                  {language === "bn"
+                    ? "বাহুরূপী, দুধেশ্বর, কালোভাত, রাধাতিলক সহ ৫৬টি বিলুপ্তপ্রায় দেশীয় প্রজাতির ধানের জিন সংরক্ষণ এবং বীজ মেলায় চাষীদের মাঝে সম্পূর্ণ বিনামূল্যে বিতরণ।"
+                    : "Preserving 56+ heirloom rice cultivars and distributing them freely to regional farmers to revive native agro-biodiversity."}
+                </p>
+              </div>
+              <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-black text-emerald-800">
+                <span>{language === "bn" ? "৫৬+ দেশীয় ধান প্রজাতি" : "56+ Preserved Cultivars"}</span>
+                <Leaf className="w-4 h-4 text-emerald-600" />
+              </div>
+            </div>
+
+            {/* Project 2 */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <span className="bg-amber-100 text-amber-900 text-[11px] font-black px-2.5 py-0.5 rounded-md">
+                  {language === "bn" ? "সহায়ক শিক্ষা ও প্রকৃতি পাঠ" : "Auxiliary Nature Education"}
+                </span>
+                <h3 className="text-base font-black text-stone-900">
+                  {language === "bn" ? "পল্লী বিকল্প সহায়ক পাঠশালা ও প্রকৃতি পরিচয়" : "Rural Auxiliary Nature School"}
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed font-medium">
+                  {language === "bn"
+                    ? "প্রত্যন্ত পল্লীর শিশুদের পুঁথিগত শিক্ষার পাশাপাশি প্রকৃতি পরিচয়, ভেষজ উদ্ভিদ পাঠ, মৃৎশিল্প ও মাটির পুতুল তৈরি, বাউল ও লোকসংস্কৃতির অবৈতনিক শিক্ষা।"
+                    : "Free holistic education for village youth, fostering nature appreciation, folk arts, local botany, and cultural heritage."}
+                </p>
+              </div>
+              <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-black text-amber-800">
+                <span>{language === "bn" ? "১,২০০+ শিক্ষার্থী উপকৃত" : "1,200+ Beneficiaries"}</span>
+                <BookOpen className="w-4 h-4 text-amber-600" />
+              </div>
+            </div>
+
+            {/* Project 3 */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <span className="bg-orange-100 text-orange-900 text-[11px] font-black px-2.5 py-0.5 rounded-md">
+                  {language === "bn" ? "বিষমুক্ত খাদ্য নিরাপত্তা" : "Homestead Food Security"}
+                </span>
+                <h3 className="text-base font-black text-stone-900">
+                  {language === "bn" ? "বসতভিটায় বিষমুক্ত ফল-সবজি ও পুষ্টিবাগান" : "Pesticide-Free Homestead Nutrition"}
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed font-medium">
+                  {language === "bn"
+                    ? "রাসায়নিক সার ও কীটনাশকমুক্ত উপায়ে বহুতল মাচায় সবজি, পেঁপে, কলা, আম ও শাকসবজির বাগান গড়ে গ্রামীণ পরিবারের পুষ্টি নিরাপত্তা নিশ্চিতকরণ।"
+                    : "Multi-tier chemical-free homestead orchards ensuring nutritional self-reliance with zero toxic synthetic sprays."}
+                </p>
+              </div>
+              <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-black text-orange-800">
+                <span>{language === "bn" ? "১০০% বিষমুক্ত পুষ্টি" : "100% Chemical-Free"}</span>
+                <Sprout className="w-4 h-4 text-orange-600" />
+              </div>
+            </div>
+
+            {/* Project 4 */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <span className="bg-rose-100 text-rose-900 text-[11px] font-black px-2.5 py-0.5 rounded-md">
+                  {language === "bn" ? "গ্রামীণ স্বাস্থ্য ও সর্প সচেতনতা" : "Rural Health & Snakebite Awareness"}
+                </span>
+                <h3 className="text-base font-black text-stone-900">
+                  {language === "bn" ? "সর্প সচেতনতা ও গ্রামীণ স্বাস্থ্য শিবির" : "Snakebite Protocol & Free Health Camps"}
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed font-medium">
+                  {language === "bn"
+                    ? "ওঝা-ঝাড়ফুঁকের কুসংস্কারের পরিবর্তে বৈজ্ঞানিক অ্যান্টিভেনম প্রয়োগের প্রশিক্ষণ, সাপের প্রজাতি চেনা এবং অভিজ্ঞ চিকিৎসকদের তত্ত্বাবধানে স্বাস্থ্য পরীক্ষা।"
+                    : "Demystifying snakebites, teaching evidence-based clinical protocols, and organizing free medical checkups with doctors."}
+                </p>
+              </div>
+              <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-black text-rose-800">
+                <span>{language === "bn" ? "৫০+ স্বাস্থ্য ও সর্প শিবির" : "50+ Camps Conducted"}</span>
+                <ShieldCheck className="w-4 h-4 text-rose-600" />
+              </div>
+            </div>
+
+            {/* Project 5 */}
+            <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs space-y-3 flex flex-col justify-between sm:col-span-2 lg:col-span-1">
+              <div className="space-y-2">
+                <span className="bg-blue-100 text-blue-900 text-[11px] font-black px-2.5 py-0.5 rounded-md">
+                  {language === "bn" ? "সৌর শক্তি ও জল সংরক্ষণ" : "Solar Irrigation & Ecology"}
+                </span>
+                <h3 className="text-base font-black text-stone-900">
+                  {language === "bn" ? "সৌর সেচ ও পৃষ্ঠজল নির্ভর জল সংরক্ষণ" : "Solar Micro-Irrigation & Water Stewardship"}
+                </h3>
+                <p className="text-xs text-stone-600 leading-relaxed font-medium">
+                  {language === "bn"
+                    ? "মাটির গভীরের জল না তুলে প্রাকৃতিক পুকুর ও বর্ষার জল সৌরচালিত মৃদু পাম্পের সাহায্যে সেচে ব্যবহার করে ভূগর্ভস্থ জলস্তর সুরক্ষা করা।"
+                    : "Eliminating deep underground water pumping by deploying solar pumps on rainwater harvesting ponds for micro-irrigation."}
+                </p>
+              </div>
+              <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-black text-blue-800">
+                <span>{language === "bn" ? "০% ভূগর্ভস্থ জল অপচয়" : "Zero Groundwater Extraction"}</span>
+                <Sun className="w-4 h-4 text-blue-600" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 3. EXTRA RICH DATA: VERIFIED FIELD IMPACT METRICS */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-2xs text-center space-y-1">
+            <div className="text-2xl sm:text-3xl font-black text-amber-700">৫৬+ রকম</div>
+            <div className="text-xs font-bold text-stone-800">
+              {language === "bn" ? "সংরক্ষিত দেশীয় ধান" : "Indigenous Rice Varieties"}
+            </div>
+            <div className="text-[11px] text-stone-500 font-medium">
+              {language === "bn" ? "বীজ ব্যাংকে নথিভুক্ত" : "Documented in Seed Bank"}
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-2xs text-center space-y-1">
+            <div className="text-2xl sm:text-3xl font-black text-emerald-700">১৩+ বছর</div>
+            <div className="text-xs font-bold text-stone-800">
+              {language === "bn" ? "মাঠের নিরবচ্ছিন্ন চর্চা" : "Continuous Field Action"}
+            </div>
+            <div className="text-[11px] text-stone-500 font-medium">
+              {language === "bn" ? "আউশগ্রাম, বর্ধমান" : "Aushgram, Bardhaman"}
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-2xs text-center space-y-1">
+            <div className="text-2xl sm:text-3xl font-black text-orange-700">৩৫০+ পরিবার</div>
+            <div className="text-xs font-bold text-stone-800">
+              {language === "bn" ? "উপকৃত ও সহযোগী চাষী" : "Partner Farmer Families"}
+            </div>
+            <div className="text-[11px] text-stone-500 font-medium">
+              {language === "bn" ? "বিনামূল্যে বীজ ও পরামর্শ" : "Free Seeds & Advisory"}
+            </div>
+          </div>
+
+          <div className="bg-white p-5 rounded-3xl border border-stone-200 shadow-2xs text-center space-y-1">
+            <div className="text-2xl sm:text-3xl font-black text-blue-700">১০০%</div>
+            <div className="text-xs font-bold text-stone-800">
+              {language === "bn" ? "রাসায়নিক ও কৃত্রিম বিষহীন" : "Chemical-Free Agro-Ecology"}
+            </div>
+            <div className="text-[11px] text-stone-500 font-medium">
+              {language === "bn" ? "বৃষ্টির জল ও জৈব সার" : "Rainfed & Organic Composts"}
+            </div>
+          </div>
+        </div>
+
+        {/* 4. RESEARCH REPORTS SECTION HEADER */}
+        <div className="pt-4 border-t border-stone-200 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="space-y-1">
+            <span className="text-amber-700 font-black text-xs uppercase tracking-wider">
+              {language === "bn" ? "পদ্ধতিগত দলিল ও প্রকাশনা" : "Scientific & Field Documentation"}
+            </span>
+            <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+              {language === "bn" ? "গবেষণা ও পদ্ধতিগত প্রতিবেদন সংগ্রহশালা" : "Empirical Research Reports Archive"}
+            </h2>
+          </div>
+          <p className="text-xs text-stone-500 max-w-sm">
+            {language === "bn" ? "মাঠ পরীক্ষার উপাত্ত, মাটির পুষ্টি বিশ্লেষণ ও প্রকাশনা পড়তে যে কোনো প্রতিবেদনে ক্লিক করুন।" : "Click on any report below to open the complete document, print or download as PDF."}
           </p>
         </div>
 

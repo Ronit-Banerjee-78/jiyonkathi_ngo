@@ -21,9 +21,14 @@ router.get("/", async (req, res) => {
       "SELECT data FROM site_settings ORDER BY id DESC LIMIT 1",
     );
     if (result.rows.length > 0) {
+      const data = result.rows[0].data || {};
+      const { DEFAULT_PILLARS_DATA } = await import("../models/seedData.js");
+      if (!Array.isArray(data.pillars) || data.pillars.length !== 2 || !data.pillars[0]?.titleBn?.includes("পরিবেশ সংকটকালে")) {
+        data.pillars = DEFAULT_PILLARS_DATA.slice(0, 2);
+      }
       res.json({
         success: true,
-        data: result.rows[0].data,
+        data: data,
         storage: "postgres",
       });
     } else {
@@ -45,6 +50,13 @@ router.post("/", async (req, res) => {
         .json({ success: false, error: "Data is required" });
     }
 
+    const { DEFAULT_PILLARS_DATA } = await import("../models/seedData.js");
+    if (data.pillars) {
+      data.pillars = (Array.isArray(data.pillars) && data.pillars.length === 2 && data.pillars[0]?.titleBn?.includes("পরিবেশ সংকটকালে"))
+        ? data.pillars.slice(0, 2)
+        : DEFAULT_PILLARS_DATA.slice(0, 2);
+    }
+
     await ensureDbConnected();
     if (!isDbConnected) {
       memorySettings = data;
@@ -55,12 +67,17 @@ router.post("/", async (req, res) => {
       });
     }
 
-    // For Supabase connection pooler in transaction mode, prepared statements with JSONB fail.
-    // So we manually stringify and escape it.
-    const jsonString = JSON.stringify(data).replace(/'/g, "''");
-    await pool.query(
-      `INSERT INTO site_settings (data) VALUES ('${jsonString}')`,
-    );
+    try {
+      await pool.query(
+        "INSERT INTO site_settings (data) VALUES ($1::jsonb)",
+        [JSON.stringify(data)],
+      );
+    } catch (paramErr) {
+      const jsonString = JSON.stringify(data).replace(/'/g, "''");
+      await pool.query(
+        `INSERT INTO site_settings (data) VALUES ('${jsonString}'::jsonb)`,
+      );
+    }
     res.json({ success: true, storage: "postgres" });
   } catch (error) {
     console.error("Error saving settings:", error.message);

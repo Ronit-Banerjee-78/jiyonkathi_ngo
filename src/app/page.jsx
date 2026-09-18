@@ -3,7 +3,6 @@
 import React from "react";
 import HomeSection from "../components/HomeSection";
 import AboutSection from "../components/AboutSection";
-import MissionSection from "../components/MissionSection";
 import OurWorkSection from "../components/OurWorkSection";
 import VolunteerSection from "../components/VolunteerSection";
 import GallerySection from "../components/GallerySection";
@@ -32,11 +31,10 @@ export default function Page({ activeTab = "home", setActiveTab = () => { }, use
       case "home":
         return <HomeSection setActiveTab={setActiveTab} />;
       case "about":
-        return <AboutSection />;
       case "mission":
-        return <MissionSection onNavigateToReport={() => setActiveTab("reports")} />;
+        return <AboutSection setActiveTab={setActiveTab} />;
       case "reports":
-        return <ResearchReportsSection onSelectPillar={() => setActiveTab("mission")} />;
+        return <ResearchReportsSection onSelectPillar={() => setActiveTab("about")} />;
       case "work":
         return <OurWorkSection setActiveTab={setActiveTab} />;
       case "volunteer":
@@ -52,7 +50,7 @@ export default function Page({ activeTab = "home", setActiveTab = () => { }, use
       case "donation":
         return <HomeSection setActiveTab={setActiveTab} />;
       case "members":
-        return <MembersSection />;
+        return <MembersSection setActiveTab={setActiveTab} />;
       case "portal":
       case "admin":
         return (

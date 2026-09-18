@@ -5,9 +5,8 @@
 
 export const getNavItems = (language) => [
   { id: "home", label: language === "bn" ? "প্রচ্ছদ" : "Home" },
-  { id: "about", label: language === "bn" ? "আমাদের কথা" : "About Us" },
-  { id: "mission", label: language === "bn" ? "আমাদের লক্ষ্য" : "Our Mission" },
-  { id: "reports", label: language === "bn" ? "গবেষণা ও প্রতিবেদন" : "Research Reports" },
+  { id: "about", label: language === "bn" ? "আমাদের কথা ও লক্ষ্য" : "About Us & Mission" },
+  { id: "reports", label: language === "bn" ? "আমাদের কাজ ও গবেষণা" : "Our Works & Reports" },
   { id: "volunteer", label: language === "bn" ? "স্বেচ্ছাসেবী" : "Volunteer" },
   { id: "gallery", label: language === "bn" ? "গ্যালারি" : "Gallery" },
   { id: "events", label: language === "bn" ? "অনুষ্ঠানসূচী" : "Events" },

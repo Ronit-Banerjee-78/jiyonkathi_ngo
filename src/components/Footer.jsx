@@ -152,11 +152,11 @@ export default function Footer({ setActiveTab }) {
               </li>
               <li>
                 <button
-                  onClick={() => handleLinkClick("mission")}
+                  onClick={() => handleLinkClick("about")}
                   className="text-stone-300 hover:text-amber-400 transition-colors flex items-center space-x-1.5"
                 >
                   {/* <Compass className="w-3.5 h-3.5 text-amber-500" /> */}
-                  <span>{language === "bn" ? "৪টি মূল স্তম্ভ ও খাদ্য নিরাপত্তা" : "4 Pillars & Food Security"}</span>
+                  <span>{language === "bn" ? "২টি মূল স্তম্ভ ও কর্মপরিকল্পনা" : "2 Guiding Pillars"}</span>
                 </button>
               </li>
               <li>
@@ -189,7 +189,7 @@ export default function Footer({ setActiveTab }) {
                   onClick={() => handleLinkClick("about")}
                   className="text-stone-300 hover:text-amber-400 transition-colors"
                 >
-                  {language === "bn" ? "আমাদের কথা ও পটভূমি" : "About Jiyonkathi"}
+                  {language === "bn" ? "আমাদের কথা ও মূল লক্ষ্য" : "About Us & Mission"}
                 </button>
               </li>
               <li>

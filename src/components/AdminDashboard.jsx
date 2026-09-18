@@ -45,11 +45,20 @@ import {
   Quote,
   Menu,
   ChevronRight,
+  ChevronDown,
+  Home,
+  UserMinus,
   LogOut
 } from "lucide-react";
 
 export default function AdminDashboard({ userSession, setUserSession, onLogout, setActiveTab: setMainTabFromProps }) {
-  const { siteData, setSiteData: saveSiteData, language, setActiveTab: setMainActiveTab } = useContext(SiteContext);
+  const {
+    siteData,
+    setSiteData: saveSiteData,
+    language,
+    setActiveTab: setMainActiveTab,
+    refreshReports,
+  } = useContext(SiteContext);
 
   const [activeTab, setActiveTab] = useState("analytics");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -335,6 +344,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
         } else {
           setReports(reports.map((r) => (r.id === editingReport.id ? json.report : r)));
         }
+        if (refreshReports) refreshReports();
         setEditingReport(null);
         setShowReportModal(false);
         setDocxSuccessMsg("");
@@ -354,6 +364,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
       const json = await res.json();
       if (json.success) {
         setReports(reports.filter((r) => r.id !== id));
+        if (refreshReports) refreshReports();
       } else {
         alert(json.error || "Failed to delete report");
       }
@@ -407,9 +418,12 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
   };
 
   // Save / Add Executive Member via Modal
-  const handleSaveMemberModal = (e) => {
+  const handleSaveMemberModal = async (e) => {
     e.preventDefault();
     if (!editingMember) return;
+
+    const targetVolId = editingMember.sourceVolunteerId;
+    const memberName = editingMember.name?.trim();
 
     let updatedMembers;
     if (editingMember.isNew) {
@@ -417,20 +431,114 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
         ...editingMember,
         id: `mem-${Date.now()}`,
         isNew: undefined,
+        sourceVolunteerId: undefined,
         rank: Number(editingMember.rank) || (data.members?.length || 0) + 1,
       };
       updatedMembers = [...(data.members || []), newMember];
     } else {
-      updatedMembers = (data.members || []).map((m) => (m.id === editingMember.id ? editingMember : m));
+      const clean = { ...editingMember, sourceVolunteerId: undefined };
+      updatedMembers = (data.members || []).map((m) => (m.id === editingMember.id ? clean : m));
     }
 
     updatedMembers.sort((a, b) => (Number(a.rank) || 999) - (Number(b.rank) || 999));
 
-    const updated = { ...data, members: updatedMembers };
+    // Remove from volunteer applicants / normal members if promoted
+    if (targetVolId) {
+      try {
+        await fetch(`/api/volunteers/${targetVolId}`, { method: "DELETE" });
+        setVolunteers((prev) => prev.filter((v) => v.id !== targetVolId));
+      } catch (err) {
+        console.error("Error deleting promoted volunteer from DB:", err);
+      }
+    }
+
+    // Also remove from volunteers if matching name
+    const matchingVol = volunteers.find(
+      (v) => (v.id && v.id === targetVolId) || (v.name && v.name.trim().toLowerCase() === memberName?.toLowerCase())
+    );
+    if (matchingVol && matchingVol.id) {
+      try {
+        await fetch(`/api/volunteers/${matchingVol.id}`, { method: "DELETE" });
+        setVolunteers((prev) => prev.filter((v) => v.id !== matchingVol.id));
+      } catch (err) { }
+    }
+
+    // Remove from data.volunteersList in site data
+    const updatedVolList = (data.volunteersList || []).filter(
+      (v) => (targetVolId ? v.id !== targetVolId : true) && v.name?.trim().toLowerCase() !== memberName?.toLowerCase()
+    );
+
+    const updated = { ...data, members: updatedMembers, volunteersList: updatedVolList };
     setData(updated);
     handleSaveGlobal(updated);
     setEditingMember(null);
     setShowMemberModal(false);
+  };
+
+  // Convert / Move Executive Member to Normal Members / Volunteers
+  const handleChangeMemberToNormal = async (member, mIdx) => {
+    if (!confirm(`"${member.name}"-কে কি নির্বাহী পরিষদ থেকে সাধারণ সদস্য / স্বেচ্ছাসেবী তালিকায় স্থানান্তর করতে চান?`)) {
+      return;
+    }
+
+    setSaveLoading(true);
+    try {
+      // 1. Remove from executive members list
+      const updatedMembers = (data.members || []).filter((_, i) => i !== mIdx);
+
+      // 2. Add as approved volunteer / normal member in DB
+      let createdVol = null;
+      try {
+        const res = await fetch("/api/volunteers", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: member.name,
+            email: member.email || `${member.name.replace(/\s+/g, "").toLowerCase()}@jiyonkathi.org`,
+            phone: member.phone || "",
+            location: member.location || "Purba Bardhaman, WB",
+            program: member.role || "সাধারণ সদস্য",
+            skills: member.bio || "সাবেক নির্বাহী পরিষদ সদস্য",
+            motivation: member.bio || "জিয়নকাঠির সাধারণ সদস্য ও স্বেচ্ছাসেবী হিসেবে যুক্ত।",
+            status: "approved",
+            image: member.image || "",
+            isDdbmpbs: true,
+          }),
+        });
+        const json = await res.json();
+        if (json.success && json.volunteer) {
+          createdVol = json.volunteer;
+          setVolunteers((prev) => [json.volunteer, ...prev]);
+        }
+      } catch (err) {
+        console.error("Error creating volunteer record:", err);
+      }
+
+      // 3. Add to context volunteersList
+      const volId = createdVol?.id || (member.id ? `v-${member.id}` : `v-demoted-${mIdx}`);
+      const newVolItem = {
+        id: volId,
+        name: member.name,
+        designation: member.role || "সাধারণ সদস্য",
+        location: "Purba Bardhaman, WB",
+        image: member.image || "/images/community-collage.jpg",
+        bio: member.bio || "জিয়নকাঠির সক্রিয় কর্মী ও সাধারণ সদস্য।",
+        isDdbmpbs: true,
+      };
+      const updatedVolList = [
+        newVolItem,
+        ...(data.volunteersList || []).filter((v) => v.name !== member.name),
+      ];
+
+      const updatedData = { ...data, members: updatedMembers, volunteersList: updatedVolList };
+      setData(updatedData);
+      await handleSaveGlobal(updatedData);
+      alert(`✓ "${member.name}" সফলভাবে সাধারণ সদস্য ও স্বেচ্ছাসেবী তালিকায় স্থানান্তরিত হয়েছেন!`);
+    } catch (err) {
+      alert("Error moving member: " + err.message);
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
   // Save / Add Gallery Item via Modal
@@ -458,22 +566,23 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
     setShowGalleryModal(false);
   };
 
-  // Save / Add Pillar via Modal
+  // Save / Edit Pillar via Modal (Fixed 2 Pillars)
   const handleSavePillarModal = (e) => {
     e.preventDefault();
     if (!editingPillar) return;
 
-    let updatedPillars;
-    if (editingPillar.isNew) {
-      const newPillar = {
-        ...editingPillar,
-        id: `pillar-${Date.now()}`,
-        isNew: undefined,
-      };
-      updatedPillars = [...(data.pillars || []), newPillar];
-    } else {
-      updatedPillars = (data.pillars || []).map((p) => (p.id === editingPillar.id ? editingPillar : p));
-    }
+    const currentPillars = (data.pillars || []).slice(0, 2);
+    const updatedPillars = currentPillars.map((p, idx) => {
+      if (p.id === editingPillar.id || idx === editingPillar.index) {
+        return {
+          ...p,
+          ...editingPillar,
+          id: p.id,
+          number: p.number || (idx === 0 ? "০১" : "০২"),
+        };
+      }
+      return p;
+    }).slice(0, 2);
 
     const updated = { ...data, pillars: updatedPillars };
     setData(updated);
@@ -557,7 +666,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
       group: "কার্যক্রম ও প্রকাশনা",
       items: [
         { id: "reports", label: "গবেষণা ও রিপোর্ট (.docx)", icon: <BookOpen className="w-4 h-4" /> },
-        { id: "pillars", label: "৪ মূল স্তম্ভ ও নিরাপত্তা", icon: <Compass className="w-4 h-4" /> },
+        { id: "pillars", label: "২টি মূল স্তম্ভ ও লক্ষ্য", icon: <Compass className="w-4 h-4" /> },
         { id: "blogs", label: "ব্লগ ও দ্বিভাষিক বার্তা", icon: <FileText className="w-4 h-4" /> },
         { id: "gallery", label: "ফটো ও ভিডিও গ্যালারি", icon: <FolderUp className="w-4 h-4" /> },
       ],
@@ -577,6 +686,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
   ];
 
   const activeTabMeta = navSections.flatMap((s) => s.items).find((i) => i.id === activeTab);
+  const activeGroup = navSections.find((s) => s.items.some((i) => i.id === activeTab));
 
   return (
     <div className="bg-[#faf8f5] min-h-screen text-stone-800 flex flex-col font-sans">
@@ -774,6 +884,78 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
             </button>
           </div>
         </header>
+
+        {/* BREADCRUMB NAVIGATION BAR */}
+        <div className="bg-stone-50/95 border-b border-stone-200 px-4 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xs">
+          <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 flex-wrap">
+            <button
+              onClick={() => {
+                if (setMainTabFromProps) setMainTabFromProps("home");
+                else if (setMainActiveTab) setMainActiveTab("home");
+              }}
+              className="flex items-center space-x-1.5 text-stone-500 hover:text-emerald-800 font-bold transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-stone-200/60"
+              title="মূল ওয়েবসাইটে ফিরে যান"
+            >
+              <Home className="w-3.5 h-3.5 text-stone-600" />
+              <span>হোম (Website)</span>
+            </button>
+
+            <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+
+            <button
+              onClick={() => setActiveTab("analytics")}
+              className={`flex items-center space-x-1.5 font-bold transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-stone-200/60 ${activeTab === "analytics"
+                  ? "text-emerald-900 font-extrabold bg-emerald-50 border border-emerald-200"
+                  : "text-stone-600 hover:text-emerald-800"
+                }`}
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
+              <span>ড্যাশবোর্ড</span>
+            </button>
+
+            {activeGroup && activeTab !== "analytics" && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                <span className="text-stone-600 font-semibold px-1.5 py-0.5">
+                  {activeGroup.group}
+                </span>
+              </>
+            )}
+
+            {activeTabMeta && activeTab !== "analytics" && (
+              <>
+                <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+                <span className="bg-emerald-100/90 text-emerald-900 border border-emerald-300/80 px-2.5 py-1 rounded-lg font-black flex items-center space-x-1.5 shadow-2xs">
+                  <span className="text-emerald-700">{activeTabMeta.icon}</span>
+                  <span>{activeTabMeta.label}</span>
+                </span>
+              </>
+            )}
+          </nav>
+
+          {/* Quick Breadcrumb Tab Switcher Dropdown */}
+          <div className="flex items-center space-x-2">
+            <span className="text-[11px] font-bold text-stone-500 hidden md:inline">দ্রুত নেভিগেশন:</span>
+            <div className="relative inline-block">
+              <select
+                value={activeTab}
+                onChange={(e) => setActiveTab(e.target.value)}
+                className="bg-white border border-stone-300 text-stone-800 rounded-xl pl-3 pr-8 py-1 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-600 cursor-pointer shadow-2xs appearance-none"
+              >
+                {navSections.map((sec) => (
+                  <optgroup key={sec.group} label={sec.group}>
+                    {sec.items.map((it) => (
+                      <option key={it.id} value={it.id}>
+                        {it.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-stone-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+          </div>
+        </div>
 
         {/* Main Content Workspace */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto pb-20">
@@ -1688,7 +1870,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <label className="text-xs font-bold text-stone-700">ব্যানার প্রধান শিরোনাম (বাংলা - প্রথম অংশ)</label>
                     <input
                       type="text"
-                      value={data.general?.bannerTitleBengali || "মাটি, মানুষ ও প্রকৃতির টানে"}
+                      value={data.general?.bannerTitleBengali || "প্রাণ-প্রকৃতি-পরিবেশের টানে"}
                       onChange={(e) =>
                         setData({ ...data, general: { ...(data.general || {}), bannerTitleBengali: e.target.value } })
                       }
@@ -1700,7 +1882,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <label className="text-xs font-bold text-stone-700">ব্যানার হাইলাইট শিরোনাম (বাংলা - দ্বিতীয় অংশ)</label>
                     <input
                       type="text"
-                      value={data.general?.bannerHighlightBengali || "জিয়নকাঠির টেকসই পথচলা"}
+                      value={data.general?.bannerHighlightBengali || "জিয়নকাঠির সুস্থায়ী পথচলা"}
                       onChange={(e) =>
                         setData({ ...data, general: { ...(data.general || {}), bannerHighlightBengali: e.target.value } })
                       }
@@ -1740,7 +1922,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <label className="text-xs font-bold text-stone-700">ব্যানার বিবরণ (বাংলা)</label>
                     <textarea
                       rows={3}
-                      value={data.general?.bannerSubtitleBengali || "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ১২০+ বিলুপ্তপ্রায় দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।"}
+                      value={data.general?.bannerSubtitleBengali || "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।"}
                       onChange={(e) =>
                         setData({ ...data, general: { ...(data.general || {}), bannerSubtitleBengali: e.target.value } })
                       }
@@ -1752,7 +1934,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <label className="text-xs font-bold text-stone-700">Banner Description (English)</label>
                     <textarea
                       rows={3}
-                      value={data.general?.bannerSubtitle || "Dedicated to pesticide-free organic farming, conserving 120+ indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal."}
+                      value={data.general?.bannerSubtitle || "Dedicated to pesticide-free organic farming, conserving 56 types of indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal."}
                       onChange={(e) =>
                         setData({ ...data, general: { ...(data.general || {}), bannerSubtitle: e.target.value } })
                       }
@@ -1834,7 +2016,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <label className="text-xs font-bold text-stone-700">বীজ সংরক্ষণ সংখ্যা</label>
                     <input
                       type="text"
-                      value={data.general?.statSeeds || "১২০+"}
+                      value={data.general?.statSeeds || "৫৬ রকম"}
                       onChange={(e) =>
                         setData({ ...data, general: { ...(data.general || {}), statSeeds: e.target.value } })
                       }
@@ -2028,40 +2210,30 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
             </div>
           )}
 
-          {/* TAB 5: 4 CORE PILLARS & INITIATIVES */}
+          {/* TAB 5: 2 CORE PILLARS & INITIATIVES */}
           {activeTab === "pillars" && (
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs gap-4">
                 <div>
-                  <h3 className="text-xl font-black text-stone-900">৪টি মূল স্তম্ভ ও টেকসই কর্মসূচি</h3>
-                  <p className="text-xs text-stone-500">
-                    স্তম্ভের শিরোনাম, বিবরণ ও বাস্তব রূপরেখা সম্পাদনা করুন
+                  <div className="flex items-center space-x-2">
+                    <h3 className="text-xl font-black text-stone-900">২টি মূল স্তম্ভ ও টেকসই কর্মসূচি</h3>
+                    <span className="bg-amber-100 text-amber-900 text-xs font-black px-2.5 py-0.5 rounded-full">
+                      নির্দিষ্ট ২টি স্তম্ভ
+                    </span>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-1">
+                    পিডিএফ নির্দেশিকা অনুযায়ী জিয়নকাঠির অপরিবর্তনীয় ২টি মূল স্তম্ভ এবং এর অন্তর্গত ক্ষেত্রপর্যায়ের কর্মসূচি
                   </p>
                 </div>
 
-                <button
-                  onClick={() => {
-                    setEditingPillar({
-                      isNew: true,
-                      titleBn: "নতুন স্তম্ভের শিরোনাম",
-                      titleEn: "New Guiding Pillar Title",
-                      taglineBn: "স্তম্ভের সংক্ষিপ্ত সারসংক্ষেপ...",
-                      taglineEn: "Short summary in English...",
-                      methodology: "মাঠ পর্যায়ের কাজের রূপরেখা...",
-                      icon: "Leaf",
-                      colorTheme: "amber",
-                    });
-                    setShowPillarModal(true);
-                  }}
-                  className="flex items-center space-x-1.5 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs cursor-pointer"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>নতুন স্তম্ভ যোগ করুন</span>
-                </button>
+                <div className="inline-flex items-center space-x-2 bg-emerald-50 text-emerald-800 border border-emerald-200 px-3.5 py-1.5 rounded-xl text-xs font-bold">
+                  <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                  <span>স্থায়ীভাবে ২টি স্তম্ভ নির্ধারিত</span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {(data.pillars || []).map((pillar, pIdx) => (
+                {(data.pillars || []).slice(0, 2).map((pillar, pIdx) => (
                   <div
                     key={pillar.id || pIdx}
                     className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4 flex flex-col justify-between"
@@ -2071,52 +2243,49 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                         <span className="bg-amber-100 text-amber-900 text-xs font-black px-3 py-1 rounded-full">
                           স্তম্ভ ০{pIdx + 1}
                         </span>
-                        <div className="flex items-center space-x-1">
-                          <button
-                            onClick={() => handleMoveItem("pillars", pIdx, -1)}
-                            disabled={pIdx === 0}
-                            className="p-1.5 text-stone-500 hover:bg-stone-100 disabled:opacity-30 rounded cursor-pointer"
-                          >
-                            <ArrowUp className="w-3.5 h-3.5" />
-                          </button>
-                          <button
-                            onClick={() => handleMoveItem("pillars", pIdx, 1)}
-                            disabled={pIdx === (data.pillars?.length || 0) - 1}
-                            className="p-1.5 text-stone-500 hover:bg-stone-100 disabled:opacity-30 rounded cursor-pointer"
-                          >
-                            <ArrowDown className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                        <span className="text-[11px] font-bold text-stone-400">
+                          {pIdx === 0 ? "পরিবেশ ও কৃষি প্ল্যাটফর্ম" : "DDMPBS ও গ্রামীণ সহমর্মিতা"}
+                        </span>
                       </div>
 
-                      <h4 className="font-extrabold text-stone-900 text-base">{pillar.titleBn}</h4>
-                      <p className="text-xs text-stone-500 italic">{pillar.titleEn}</p>
-                      <p className="text-xs text-stone-600 leading-relaxed font-medium">{pillar.taglineBn}</p>
+                      <h4 className="font-extrabold text-stone-900 text-base leading-snug">{pillar.titleBn}</h4>
+                      {pillar.titleEn && <p className="text-xs text-stone-500 italic">{pillar.titleEn}</p>}
+
+                      {/* Display Topics from PDF */}
+                      {Array.isArray(pillar.topics) && pillar.topics.length > 0 && (
+                        <div className="space-y-2 pt-2 border-t border-stone-100 text-xs text-stone-700">
+                          {pillar.topics.map((t, tIdx) => (
+                            <div key={t.id || tIdx} className="space-y-0.5">
+                              <div className="font-bold text-stone-900 flex items-start space-x-1.5">
+                                <span className="text-amber-700 font-black shrink-0">{t.number || tIdx + 1})</span>
+                                <span className="leading-snug">{t.titleBn}</span>
+                              </div>
+                              {t.descriptionBn && (
+                                <p className="pl-4 text-[11px] text-stone-600">{t.descriptionBn}</p>
+                              )}
+                              {Array.isArray(t.subPoints) && t.subPoints.length > 0 && (
+                                <ul className="pl-5 list-disc text-[11px] text-stone-600 space-y-0.5">
+                                  {t.subPoints.map((sp, sIdx) => (
+                                    <li key={sIdx}>{sp}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="pt-3 border-t border-stone-100 flex items-center justify-between">
+                    <div className="pt-3 border-t border-stone-100 flex items-center justify-end">
                       <button
                         onClick={() => {
                           setEditingPillar({ ...pillar, index: pIdx });
                           setShowPillarModal(true);
                         }}
-                        className="px-3.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
+                        className="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-xl font-bold text-xs border border-amber-200 flex items-center space-x-1.5 cursor-pointer"
                       >
                         <Edit className="w-3.5 h-3.5" />
-                        <span>সম্পাদনা করুন</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          if (!confirm("Remove this pillar?")) return;
-                          const filtered = (data.pillars || []).filter((_, i) => i !== pIdx);
-                          const updated = { ...data, pillars: filtered };
-                          setData(updated);
-                          handleSaveGlobal(updated);
-                        }}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>স্তম্ভ সম্পাদনা করুন</span>
                       </button>
                     </div>
                   </div>
@@ -2338,6 +2507,15 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                         </button>
 
                         <button
+                          onClick={() => handleChangeMemberToNormal(member, mIdx)}
+                          className="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-900 rounded-xl font-bold text-xs border border-emerald-200 flex items-center space-x-1 cursor-pointer transition-colors shadow-2xs"
+                          title="নির্বাহী পরিষদ থেকে সাধারণ সদস্য / স্বেচ্ছাসেবী তালিকায় স্থানান্তর করুন"
+                        >
+                          <UserMinus className="w-3.5 h-3.5 text-emerald-700" />
+                          <span>সাধারণ সদস্যে রূপান্তর</span>
+                        </button>
+
+                        <button
                           onClick={() => {
                             setEditingMember({ ...member });
                             setShowMemberModal(true);
@@ -2508,16 +2686,17 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                                 onClick={() => {
                                   setEditingMember({
                                     isNew: true,
+                                    sourceVolunteerId: vol.id,
                                     name: vol.name || "",
-                                    role: vol.isDdbmpbs ? "DDBMPBS সমন্বয়কারী" : "স্বেচ্ছাসেবী প্রতিনিধি",
-                                    bio: vol.motivation || `${vol.location ? `ঠিকানা: ${vol.location}। ` : ""}যোগদানের আগ্রহ প্রকাশ করেছেন।`,
-                                    image: "/images/community-collage.jpg",
+                                    role: vol.isDdbmpbs ? "DDBMPBS প্রতিনিধি" : "কার্যনির্বাহী সদস্য",
+                                    bio: vol.motivation || vol.skills || `${vol.location ? `ঠিকানা: ${vol.location}। ` : ""}যোগদানের আবেদনকারী হিসেবে যুক্ত।`,
+                                    image: vol.image || "",
                                     rank: (data.members?.length || 0) + 1,
                                   });
                                   setShowMemberModal(true);
                                 }}
                                 className="bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 text-xs font-bold px-3 py-1.5 rounded-xl flex items-center space-x-1 cursor-pointer"
-                                title="নির্বাহী পরিষদ সদস্য হিসেবে যুক্ত করুন"
+                                title="নির্বাহী পরিষদ সদস্য হিসেবে যুক্ত করুন (সাধারণ তালিকা থেকে স্বয়ংক্রিয়ভাবে অপসারিত হবে)"
                               >
                                 <Plus className="w-3.5 h-3.5 text-amber-700" />
                                 <span>নির্বাহী কমিটিতে যুক্ত করুন</span>
@@ -2739,88 +2918,100 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                 </div>
               </div>
 
-              <div className="space-y-4">
-                {volunteers
-                  .filter((v) => (volFilter === "all" ? true : v.status === volFilter))
-                  .map((vol) => (
-                    <div
-                      key={vol.id}
-                      className="bg-white rounded-2xl p-6 border border-stone-200 shadow-2xs space-y-4"
-                    >
-                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div className="space-y-2">
-                          <div className="flex items-center space-x-3">
-                            <h4 className="font-extrabold text-stone-900 text-base">{vol.name}</h4>
-                            <span
-                              className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${vol.status === "approved"
-                                  ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
-                                  : vol.status === "rejected"
-                                    ? "bg-red-100 text-red-900 border border-red-200"
-                                    : "bg-amber-100 text-amber-900 border border-amber-200"
+              {volunteers.length === 0 ? (
+                <div className="bg-white rounded-3xl p-12 text-center border border-stone-200 shadow-2xs space-y-3">
+                  <div className="w-14 h-14 rounded-full bg-emerald-50 text-emerald-700 mx-auto flex items-center justify-center">
+                    <Users className="w-7 h-7" />
+                  </div>
+                  <h4 className="font-extrabold text-stone-900 text-base">কোনো স্বেচ্ছাসেবী আবেদন জমা নেই</h4>
+                  <p className="text-xs text-stone-500 max-w-md mx-auto">
+                    ওয়েবসাইটের &quot;স্বেচ্ছাসেবী হিসেবে যুক্ত হোন&quot; ফর্মের মাধ্যমে আবেদন এলে তা সরাসরি এখানে প্রদর্শিত হবে।
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {volunteers
+                    .filter((v) => (volFilter === "all" ? true : v.status === volFilter))
+                    .map((vol) => (
+                      <div
+                        key={vol.id}
+                        className="bg-white rounded-2xl p-6 border border-stone-200 shadow-2xs space-y-4"
+                      >
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center space-x-3">
+                              <h4 className="font-extrabold text-stone-900 text-base">{vol.name}</h4>
+                              <span
+                                className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${vol.status === "approved"
+                                    ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
+                                    : vol.status === "rejected"
+                                      ? "bg-red-100 text-red-900 border border-red-200"
+                                      : "bg-amber-100 text-amber-900 border border-amber-200"
+                                  }`}
+                              >
+                                {vol.status}
+                              </span>
+
+                              {vol.isDdbmpbs && (
+                                <span className="bg-indigo-100 text-indigo-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-indigo-200">
+                                  DDBMPBS
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-stone-600">
+                              <div>📧 <strong>ইমেইল:</strong> {vol.email}</div>
+                              <div>📞 <strong>ফোন:</strong> {vol.phone || "N/A"}</div>
+                              <div>📍 <strong>ঠিকানা:</strong> {vol.location || "N/A"}</div>
+                            </div>
+
+                            <div className="text-xs text-stone-700 bg-stone-50 p-3 rounded-xl border border-stone-200">
+                              <strong>আবেদনের অনুপ্রেরণা ও দক্ষতা:</strong> {vol.motivation || vol.skills || "N/A"}
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 self-end md:self-auto shrink-0">
+                            <button
+                              onClick={() => handleUpdateVolunteer(vol.id, vol.status, !vol.isDdbmpbs)}
+                              className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${vol.isDdbmpbs
+                                  ? "bg-indigo-600 text-white border-indigo-700"
+                                  : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
                                 }`}
                             >
-                              {vol.status}
-                            </span>
+                              {vol.isDdbmpbs ? "✓ DDBMPBS যুক্ত" : "+ DDBMPBS যুক্ত করুন"}
+                            </button>
 
-                            {vol.isDdbmpbs && (
-                              <span className="bg-indigo-100 text-indigo-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-indigo-200">
-                                DDBMPBS
-                              </span>
+                            {vol.status !== "approved" && (
+                              <button
+                                onClick={() => handleUpdateVolunteer(vol.id, "approved")}
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
+                              >
+                                অনুমোদন (Approve)
+                              </button>
                             )}
-                          </div>
 
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-stone-600">
-                            <div>📧 <strong>ইমেইল:</strong> {vol.email}</div>
-                            <div>📞 <strong>ফোন:</strong> {vol.phone || "N/A"}</div>
-                            <div>📍 <strong>ঠিকানা:</strong> {vol.location || "N/A"}</div>
-                          </div>
+                            {vol.status !== "rejected" && (
+                              <button
+                                onClick={() => handleUpdateVolunteer(vol.id, "rejected")}
+                                className="bg-stone-100 hover:bg-red-50 text-red-700 text-xs font-bold px-3 py-1.5 rounded-xl border border-red-200 cursor-pointer"
+                              >
+                                বাতিল (Reject)
+                              </button>
+                            )}
 
-                          <div className="text-xs text-stone-700 bg-stone-50 p-3 rounded-xl border border-stone-200">
-                            <strong>আবেদনের অনুপ্রেরণা ও দক্ষতা:</strong> {vol.motivation || vol.skills || "N/A"}
-                          </div>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2 self-end md:self-auto shrink-0">
-                          <button
-                            onClick={() => handleUpdateVolunteer(vol.id, vol.status, !vol.isDdbmpbs)}
-                            className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${vol.isDdbmpbs
-                                ? "bg-indigo-600 text-white border-indigo-700"
-                                : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
-                              }`}
-                          >
-                            {vol.isDdbmpbs ? "✓ DDBMPBS যুক্ত" : "+ DDBMPBS যুক্ত করুন"}
-                          </button>
-
-                          {vol.status !== "approved" && (
                             <button
-                              onClick={() => handleUpdateVolunteer(vol.id, "approved")}
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-1.5 rounded-xl shadow-xs cursor-pointer"
+                              onClick={() => handleDeleteVolunteer(vol.id)}
+                              className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg cursor-pointer"
+                              title="Delete Permanent"
                             >
-                              অনুমোদন (Approve)
+                              <Trash2 className="w-4 h-4" />
                             </button>
-                          )}
-
-                          {vol.status !== "rejected" && (
-                            <button
-                              onClick={() => handleUpdateVolunteer(vol.id, "rejected")}
-                              className="bg-stone-100 hover:bg-red-50 text-red-700 text-xs font-bold px-3 py-1.5 rounded-xl border border-red-200 cursor-pointer"
-                            >
-                              বাতিল (Reject)
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => handleDeleteVolunteer(vol.id)}
-                            className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg cursor-pointer"
-                            title="Delete Permanent"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-              </div>
+                    ))}
+                </div>
+              )}
             </div>
           )}
         </main>
@@ -3327,15 +3518,12 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
               </div>
 
               <ImageSelectorField
-                label="সদস্যের ছবি (Member Photo)"
+                label="সদস্যের ছবি (Member Photo - Device Only)"
                 value={editingMember.image || ""}
                 onChange={(url) => setEditingMember({ ...editingMember, image: url })}
-                galleryItems={data.gallery || []}
-                category="community"
-                onUploadAutoAddToGallery={(url, file) => {
-                  autoAddImageToGallery(url, file, editingMember.name || "নির্বাহী সদস্য", "community");
-                }}
-                helperText="গ্যালারি থেকে নির্বাচন করুন অথবা ডিভাইস থেকে নতুন ছবি আপলোড করুন।"
+                allowGallery={false}
+                deviceOnly={true}
+                helperText="সদস্যের ছবি শুধুমাত্র ডিভাইস থেকে নির্বাচন ও আপলোড করুন (এটি গ্যালারিতে যাবে না এবং গ্যালারি থেকে নেওয়া হবে না)।"
               />
 
               <div className="space-y-1">

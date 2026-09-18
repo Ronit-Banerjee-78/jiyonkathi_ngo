@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import MissionSection from "../../../components/MissionSection";
+import AboutSection from "../../../components/AboutSection";
 
 export default function MissionPage() {
-  return <MissionSection />;
+  return <AboutSection />;
 }

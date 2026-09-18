@@ -5,15 +5,10 @@ import { SiteContext } from "../context/SiteContext";
 import { motion, AnimatePresence } from "motion/react";
 import { Users, HandHelping, MapPin, Award, ChevronLeft, ChevronRight, Sparkles, UserCheck, ShieldCheck } from "lucide-react";
 
-export default function MembersSection() {
+export default function MembersSection({ setActiveTab }) {
   const { siteData, language } = useContext(SiteContext);
   const members = siteData.members || [];
-  const baseVolunteers = siteData.volunteersList || [
-    { id: "v-1", name: "Volunteer Alpha (Lorem Ipsum)", designation: "Auxiliary Education Volunteer Teacher", location: "Purba Bardhaman, WB", image: "/images/education-center.jpg", bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor.", isDdbmpbs: true },
-    { id: "v-2", name: "Volunteer Beta (Dolor Sit)", designation: "Organic Farming & Soil Testing Volunteer", location: "Purba Bardhaman, WB", image: "/images/seedbed.jpg", bio: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi.", isDdbmpbs: false },
-    { id: "v-3", name: "Volunteer Gamma (Amet Consectetur)", designation: "Nature Awareness & Community Organizer", location: "Purba Bardhaman, WB", image: "/images/community-collage.jpg", bio: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.", isDdbmpbs: true },
-    { id: "v-4", name: "Volunteer Delta (Adipiscing Elit)", designation: "Eco-farming & Bio-fertilizer Field Lead", location: "Purba Bardhaman, WB", image: "/images/paddy-harvesting.jpg", bio: "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.", isDdbmpbs: false }
-  ];
+  const baseVolunteers = siteData.volunteersList || [];
 
   const [dbVolunteers, setDbVolunteers] = useState([]);
   const [carouselIndex, setCarouselIndex] = useState(0);
@@ -46,7 +41,12 @@ export default function MembersSection() {
       isDdbmpbs: v.isDdbmpbs || v.is_ddbmpbs || false
     });
   });
-  const volunteersList = Array.from(allVolunteersMap.values());
+
+  // Ensure executive members are strictly excluded from normal members/volunteers list
+  const execNames = new Set(members.map(m => (m.name || '').trim().toLowerCase()));
+  const volunteersList = Array.from(allVolunteersMap.values()).filter(
+    v => !execNames.has((v.name || '').trim().toLowerCase())
+  );
 
   const handleNext = () => {
     if (volunteersList.length === 0) return;
@@ -64,10 +64,7 @@ export default function MembersSection() {
 
         {/* Top Members Header */}
         <div className="text-center max-w-3xl mx-auto space-y-4">
-          {/* <div className="inline-flex items-center space-x-2 bg-emerald-50 text-emerald-800 border border-emerald-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide">
-            <Users className="w-3.5 h-3.5 text-emerald-600" />
-            <span>{language === "bn" ? "আমাদের পরিজন ও কর্মীদল" : "Our Community & Leadership"}</span>
-          </div> */}
+
 
           <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-stone-900 tracking-tight leading-tight">
             {language === "bn" ? "আমাদের নির্বাহী সদস্যবৃন্দ" : "Executive Members"}
@@ -151,149 +148,178 @@ export default function MembersSection() {
             </div>
 
             {/* Carousel Control Buttons */}
-            <div className="flex items-center space-x-2 shrink-0">
-              <button
-                onClick={handlePrev}
-                id="members-carousel-prev"
-                className="bg-stone-50 hover:bg-amber-600 text-stone-700 hover:text-white p-3 rounded-2xl transition-all border border-stone-200 active:scale-95"
-                title="Previous Member"
-              >
-                <ChevronLeft className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleNext}
-                id="members-carousel-next"
-                className="bg-stone-50 hover:bg-amber-600 text-stone-700 hover:text-white p-3 rounded-2xl transition-all border border-stone-200 active:scale-95"
-                title="Next Member"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </div>
+            {volunteersList.length > 0 && (
+              <div className="flex items-center space-x-2 shrink-0">
+                <button
+                  onClick={handlePrev}
+                  id="members-carousel-prev"
+                  className="bg-stone-50 hover:bg-amber-600 text-stone-700 hover:text-white p-3 rounded-2xl transition-all border border-stone-200 active:scale-95"
+                  title="Previous Member"
+                >
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleNext}
+                  id="members-carousel-next"
+                  className="bg-stone-50 hover:bg-amber-600 text-stone-700 hover:text-white p-3 rounded-2xl transition-all border border-stone-200 active:scale-95"
+                  title="Next Member"
+                >
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Member Carousel Display Card */}
-          {volunteersList.length > 0 && (
-            <div className="relative">
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={carouselIndex}
-                  initial={{ opacity: 0, scale: 0.98 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.98 }}
-                  transition={{ duration: 0.25 }}
-                  className="bg-white rounded-3xl border border-stone-200 shadow-xs p-7 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
-                >
-                  {/* Photo Column */}
-                  <div className="lg:col-span-4 flex justify-center">
-                    <div className="w-44 h-44 sm:w-56 sm:h-56 rounded-3xl overflow-hidden border-2 border-stone-100 shadow-sm bg-stone-100 shrink-0 flex items-center justify-center">
-                      {volunteersList[carouselIndex].image ? (
-                        <img
-                          src={volunteersList[carouselIndex].image}
-                          alt={volunteersList[carouselIndex].name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <Users className="w-16 h-16 text-stone-400" />
-                      )}
+          {/* Member Carousel Display Card or Empty State */}
+          {volunteersList.length > 0 ? (
+            <>
+              <div className="relative">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={carouselIndex}
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.98 }}
+                    transition={{ duration: 0.25 }}
+                    className="bg-white rounded-3xl border border-stone-200 shadow-xs p-7 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
+                  >
+                    {/* Photo Column */}
+                    <div className="lg:col-span-4 flex justify-center">
+                      <div className="w-44 h-44 sm:w-56 sm:h-56 rounded-3xl overflow-hidden border-2 border-stone-100 shadow-sm bg-stone-100 shrink-0 flex items-center justify-center">
+                        {volunteersList[carouselIndex].image ? (
+                          <img
+                            src={volunteersList[carouselIndex].image}
+                            alt={volunteersList[carouselIndex].name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <Users className="w-16 h-16 text-stone-400" />
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Info Column */}
-                  <div className="lg:col-span-8 space-y-4">
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <span className="bg-emerald-50 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 flex items-center space-x-1">
-                        <Award className="w-3.5 h-3.5 text-emerald-600" />
-                        <span>{volunteersList[carouselIndex].designation || "Community Member"}</span>
-                      </span>
-
-                      {/* DDBMPBS Special Badge */}
-                      {volunteersList[carouselIndex].isDdbmpbs && (
-                        <span className="bg-amber-100 text-amber-900 text-xs font-extrabold px-3 py-1 rounded-full border border-amber-300 flex items-center space-x-1 shadow-2xs">
-                          <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
-                          <span>DDBMPBS Affiliate</span>
+                    {/* Info Column */}
+                    <div className="lg:col-span-8 space-y-4">
+                      <div className="flex flex-wrap items-center gap-2.5">
+                        <span className="bg-emerald-50 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 flex items-center space-x-1">
+                          <Award className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>{volunteersList[carouselIndex].designation || "Community Member"}</span>
                         </span>
-                      )}
 
-                      <span className="bg-stone-50 text-stone-600 text-xs font-semibold px-3 py-1 rounded-full border border-stone-200 flex items-center space-x-1">
-                        <MapPin className="w-3.5 h-3.5 text-stone-500" />
-                        <span>{volunteersList[carouselIndex].location || "Purba Bardhaman, WB"}</span>
-                      </span>
-                    </div>
+                        {/* DDBMPBS Special Badge */}
+                        {volunteersList[carouselIndex].isDdbmpbs && (
+                          <span className="bg-amber-100 text-amber-900 text-xs font-extrabold px-3 py-1 rounded-full border border-amber-300 flex items-center space-x-1 shadow-2xs">
+                            <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
+                            <span>DDBMPBS Affiliate</span>
+                          </span>
+                        )}
 
-                    <h3 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
-                      {volunteersList[carouselIndex].name}
-                    </h3>
-
-                    <p className="text-stone-700 text-sm sm:text-base leading-relaxed bg-[#fdfbf7] p-4 sm:p-5 rounded-2xl border border-stone-200/80">
-                      &quot;{volunteersList[carouselIndex].bio || "Active community member dedicated to environmental conservation and village children education."}&quot;
-                    </p>
-
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-center space-x-2 text-xs font-bold text-amber-800">
-                        <HandHelping className="w-4 h-4 text-amber-600" />
-                        <span>{language === "bn" ? `সদস্য নং ${carouselIndex + 1}` : `Member #${carouselIndex + 1}`}</span>
+                        <span className="bg-stone-50 text-stone-600 text-xs font-semibold px-3 py-1 rounded-full border border-stone-200 flex items-center space-x-1">
+                          <MapPin className="w-3.5 h-3.5 text-stone-500" />
+                          <span>{volunteersList[carouselIndex].location || "Purba Bardhaman, WB"}</span>
+                        </span>
                       </div>
-                      <div className="text-xs text-stone-500 font-medium">
-                        {carouselIndex + 1} / {volunteersList.length}
+
+                      <h3 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+                        {volunteersList[carouselIndex].name}
+                      </h3>
+
+                      <p className="text-stone-700 text-sm sm:text-base leading-relaxed bg-[#fdfbf7] p-4 sm:p-5 rounded-2xl border border-stone-200/80">
+                        &quot;{volunteersList[carouselIndex].bio || "Active community member dedicated to environmental conservation and village children education."}&quot;
+                      </p>
+
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-center space-x-2 text-xs font-bold text-amber-800">
+                          <HandHelping className="w-4 h-4 text-amber-600" />
+                          <span>{language === "bn" ? `সদস্য নং ${carouselIndex + 1}` : `Member #${carouselIndex + 1}`}</span>
+                        </div>
+                        <div className="text-xs text-stone-500 font-medium">
+                          {carouselIndex + 1} / {volunteersList.length}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                </motion.div>
-              </AnimatePresence>
+                  </motion.div>
+                </AnimatePresence>
 
-              {/* Dot Indicators */}
-              <div className="flex justify-center space-x-2 mt-6">
-                {volunteersList.map((_, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setCarouselIndex(idx)}
-                    className={`h-2.5 rounded-full transition-all duration-300 ${idx === carouselIndex ? "w-8 bg-amber-600" : "w-2.5 bg-stone-300 hover:bg-stone-400"
-                      }`}
-                    title={`Go to member ${idx + 1}`}
-                  />
-                ))}
+                {/* Dot Indicators */}
+                <div className="flex justify-center space-x-2 mt-6">
+                  {volunteersList.map((_, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setCarouselIndex(idx)}
+                      className={`h-2.5 rounded-full transition-all duration-300 ${idx === carouselIndex ? "w-8 bg-amber-600" : "w-2.5 bg-stone-300 hover:bg-stone-400"
+                        }`}
+                      title={`Go to member ${idx + 1}`}
+                    />
+                  ))}
+                </div>
               </div>
+
+              {/* Grid View of All Members */}
+              <div className="pt-8">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-6 text-center">
+                  {language === "bn" ? "সকল সাধারণ সদস্যদের তালিকা" : "All Community Members"}
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {volunteersList.map((vol, idx) => (
+                    <div
+                      key={vol.id || idx}
+                      onClick={() => setCarouselIndex(idx)}
+                      className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center space-x-3.5 ${idx === carouselIndex
+                        ? "bg-amber-50/70 border-amber-300 ring-2 ring-amber-400/40 shadow-xs"
+                        : "bg-white border-stone-200 hover:border-amber-200 hover:bg-stone-50/50"
+                        }`}
+                    >
+                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0 flex items-center justify-center border border-stone-200">
+                        {vol.image ? (
+                          <img src={vol.image} alt={vol.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Users className="w-6 h-6 text-stone-400" />
+                        )}
+                      </div>
+                      <div className="overflow-hidden space-y-0.5">
+                        <div className="flex items-center space-x-1.5">
+                          <h5 className="text-sm font-bold text-stone-900 truncate">{vol.name}</h5>
+                          {vol.isDdbmpbs && (
+                            <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-200 shrink-0">
+                              DDBMPBS
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-emerald-800 font-medium truncate">{vol.designation || "Community Member"}</p>
+                        <p className="text-[11px] text-stone-400 truncate">{vol.location || "Purba Bardhaman, WB"}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="bg-white rounded-3xl border border-stone-200 p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-4 shadow-2xs">
+              <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto border border-amber-200">
+                <Users className="w-8 h-8" />
+              </div>
+              <h3 className="text-xl font-extrabold text-stone-900">
+                {language === "bn" ? "সাধারণ সদস্য ও স্বেচ্ছাসেবী হিসেবে যুক্ত হোন" : "Join as a Volunteer or Community Member"}
+              </h3>
+              <p className="text-sm text-stone-600 leading-relaxed max-w-lg mx-auto">
+                {language === "bn"
+                  ? "বর্তমানে সাধারণ সদস্যের তালিকা প্রস্তুত করা হচ্ছে। আপনি জিয়নকাঠির প্রাকৃতিক কৃষি, বীজ সংরক্ষণ ও শিশুদের পাঠদানে অংশ নিতে এখনই আবেদন করতে পারেন।"
+                  : "We are currently compiling our community volunteers registry. You can submit an application to join our agricultural conservation and village learning initiatives."}
+              </p>
+              {typeof setActiveTab === "function" && (
+                <div className="pt-2">
+                  <button
+                    onClick={() => setActiveTab("volunteer")}
+                    className="inline-flex items-center space-x-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm px-6 py-3 rounded-2xl transition-all shadow-xs cursor-pointer active:scale-95"
+                  >
+                    <HandHelping className="w-4 h-4" />
+                    <span>{language === "bn" ? "স্বেচ্ছাসেবী আবেদন ফর্ম খুলুন" : "Open Volunteer Application Form"}</span>
+                  </button>
+                </div>
+              )}
             </div>
           )}
-
-          {/* Grid View of All Members */}
-          <div className="pt-8">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-6 text-center">
-              {language === "bn" ? "সকল সাধারণ সদস্যদের তালিকা" : "All Community Members"}
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {volunteersList.map((vol, idx) => (
-                <div
-                  key={vol.id || idx}
-                  onClick={() => setCarouselIndex(idx)}
-                  className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center space-x-3.5 ${idx === carouselIndex
-                    ? "bg-amber-50/70 border-amber-300 ring-2 ring-amber-400/40 shadow-xs"
-                    : "bg-white border-stone-200 hover:border-amber-200 hover:bg-stone-50/50"
-                    }`}
-                >
-                  <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0 flex items-center justify-center border border-stone-200">
-                    {vol.image ? (
-                      <img src={vol.image} alt={vol.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Users className="w-6 h-6 text-stone-400" />
-                    )}
-                  </div>
-                  <div className="overflow-hidden space-y-0.5">
-                    <div className="flex items-center space-x-1.5">
-                      <h5 className="text-sm font-bold text-stone-900 truncate">{vol.name}</h5>
-                      {vol.isDdbmpbs && (
-                        <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-200 shrink-0">
-                          DDBMPBS
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-emerald-800 font-medium truncate">{vol.designation || "Community Member"}</p>
-                    <p className="text-[11px] text-stone-400 truncate">{vol.location || "Purba Bardhaman, WB"}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
 
         </div>
 
