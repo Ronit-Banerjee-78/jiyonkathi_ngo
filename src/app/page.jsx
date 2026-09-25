@@ -14,10 +14,15 @@ import PortalSection from "../components/PortalSection";
 import ResearchReportsSection from "../components/ResearchReportsSection";
 import { motion, AnimatePresence } from "motion/react";
 
-/**
- * Root Page Component for Jiyonkathi App
- */
-export default function Page({ activeTab = "home", setActiveTab = () => { }, userSession = null, setUserSession = () => { } }) {
+export default function Page({
+  activeTab = "home",
+  setActiveTab = () => {},
+  targetItemId = null,
+  setTargetItemId = () => {},
+  userSession = null,
+  setUserSession = () => {},
+  navigate = () => {},
+}) {
   React.useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     if (typeof document !== "undefined") {
@@ -34,23 +39,43 @@ export default function Page({ activeTab = "home", setActiveTab = () => { }, use
       case "mission":
         return <AboutSection setActiveTab={setActiveTab} />;
       case "reports":
-        return <ResearchReportsSection onSelectPillar={() => setActiveTab("about")} />;
+        return (
+          <ResearchReportsSection
+            initialReportId={targetItemId}
+            onSelectReport={(id) => setTargetItemId(id)}
+            onClearTarget={() => setTargetItemId(null)}
+            onSelectPillar={() => setActiveTab("about")}
+          />
+        );
       case "work":
         return <OurWorkSection setActiveTab={setActiveTab} />;
       case "volunteer":
         return <VolunteerSection setActiveTab={setActiveTab} />;
       case "gallery":
-        return <GallerySection />;
+        return (
+          <GallerySection
+            targetImageId={targetItemId}
+            onSelectImage={(id) => setTargetItemId(id)}
+            onClearTarget={() => setTargetItemId(null)}
+          />
+        );
       case "events":
         return <EventsSection setActiveTab={setActiveTab} />;
       case "blog":
-        return <BlogSection />;
+        return (
+          <BlogSection
+            targetBlogId={targetItemId}
+            onSelectBlog={(id) => setTargetItemId(id)}
+            onClearTarget={() => setTargetItemId(null)}
+          />
+        );
       case "contact":
         return <ContactSection />;
       case "donation":
         return <HomeSection setActiveTab={setActiveTab} />;
       case "members":
         return <MembersSection setActiveTab={setActiveTab} />;
+      case "login":
       case "portal":
       case "admin":
         return (
@@ -58,6 +83,8 @@ export default function Page({ activeTab = "home", setActiveTab = () => { }, use
             userSession={userSession}
             setUserSession={setUserSession}
             setActiveTab={setActiveTab}
+            navigate={navigate}
+            isLoginRoute={activeTab === "login"}
           />
         );
       default:

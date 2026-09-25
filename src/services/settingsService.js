@@ -1,7 +1,3 @@
-/**
- * Settings Service
- * Clean Architecture Layer: Service / Domain Data Access
- */
 
 import { apiClient } from "./apiClient";
 

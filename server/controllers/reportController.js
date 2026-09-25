@@ -1,13 +1,39 @@
 import express from "express";
 import multer from "multer";
-import mammoth from "mammoth";
+import { getDocumentProxy, extractText, extractImages } from "unpdf";
+import { PNG } from "pngjs";
 import pool, { isDbConnected, ensureDbConnected } from "../models/db.js";
+import { storeUploadedFile } from "./uploadController.js";
+import { adminAuthMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit for docs
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit for PDFs
 });
+
+function convertRawImageToPng(imgData) {
+  const png = new PNG({ width: imgData.width, height: imgData.height });
+  if (imgData.channels === 3) {
+    for (let i = 0, j = 0; i < imgData.data.length; i += 3, j += 4) {
+      png.data[j] = imgData.data[i];
+      png.data[j + 1] = imgData.data[i + 1];
+      png.data[j + 2] = imgData.data[i + 2];
+      png.data[j + 3] = 255;
+    }
+  } else if (imgData.channels === 4) {
+    png.data.set(imgData.data);
+  } else if (imgData.channels === 1) {
+    for (let i = 0, j = 0; i < imgData.data.length; i += 1, j += 4) {
+      png.data[j] = imgData.data[i];
+      png.data[j + 1] = imgData.data[i];
+      png.data[j + 2] = imgData.data[i];
+      png.data[j + 3] = 255;
+    }
+  }
+  const pngBuf = PNG.sync.write(png);
+  return `data:image/png;base64,${pngBuf.toString("base64")}`;
+}
 
 // Seed data for Research Reports (aligned with Home section and PDF field works)
 let memoryReports = [
@@ -25,12 +51,16 @@ let memoryReports = [
     summaryEnglish:
       "A comprehensive analysis of preserving 56+ heirloom paddy varieties without synthetic chemicals, preventing groundwater depletion, and field seed-exchange dynamics.",
     content: `## ভূমিকা ও প্রেক্ষাপট
-জলবায়ু সংকট ও আধুনিক রাসায়নিক কৃষির মারাত্মক ক্ষতিকর প্রভাব থেকে মাটির উর্বরতা ও ঐতিহ্যবাহী বীজসম্পদ রক্ষা করতে জিয়নকাঠি গত তেরো বছর ধরে নিরবচ্ছিন্নভাবে কাজ করে চলেছে। রাসায়নিক সার ও বিষমুক্ত উপায়ে দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ আমাদের সবচেয়ে গুরুত্বপূর্ণ গবেষণাক্ষেত্র।
+জলবায়ু সংকট ও আধুনিক রাসায়নিক কৃষির মারাত্মক ক্ষতিকর প্রভাব থেকে মাটির উর্বরতা ও ঐতিহ্যবাহী বীজসম্পদ রক্ষা করতে জিয়নকাঠি গত তেরো বছর ধরে নিরবচ্ছিন্নভাবে কাজ করে চলেছে। রাসায়নিক সার ও বিষমুক্ত উপায়ে দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ আমাদের সবচেয়ে গুরুত্বপূর্ণ অন্বেষণক্ষেত্র।
 
-### মূল গবেষণার বিষয় ও কার্যপ্রণালী:
+![বৃষ্টি নির্ভর বীজতলা প্রস্তুতি](/images/seedbed.jpg)
+
+### মূল অন্বেষণের বিষয় ও কার্যপ্রণালী:
 ১. **৫৬ রকম দেশীয় ধান প্রজাতি সংরক্ষণ**: বাহুরূপী, কালোভাত, দুধেশ্বর, কেরালাসুন্দরী, রাধাতিলক, যামিনী, অগ্নিকুমার ইত্যাদি বিলুপ্তপ্রায় প্রজাতির জৈব চাষ ও বীজব্যাংক স্থাপন।
 ২. **ভূগর্ভস্থ জল সংরক্ষণ**: মাটির গভীর থেকে পাম্পের মাধ্যমে ভূগর্ভস্থ জল না তুলে কেবল বৃষ্টির জল ও পুকুরের জল ব্যবহার করে বীজতলা তৈরি ও মৃদু সেচ।
 ৩. **বিষমুক্ত মাটির পুনরুজ্জীবন**: গোবর, কম্পোস্ট সার, নিম নির্যাস এবং প্রাকৃতিক অণুজীব ব্যবহারের মাধ্যমে মাটির জৈব কার্বন বৃদ্ধি।
+
+![ধান চারা রোপণ ও মাঠ সমীক্ষা](/images/paddy-planting.jpg)
 
 ### ফলাফল ও প্রাপ্তি:
 - গত বছরে ১৫০+ প্রান্তিক কৃষক পরিবারকে বিনামূল্যে দেশীয় বীজ ও জৈব সার প্রস্তুত প্রণালীর পুস্তিকা প্রদান করা হয়েছে।
@@ -48,6 +78,12 @@ To combat the climate crisis and soil degradation caused by heavy petrochemical 
 - Free seed distribution to 150+ smallholder farming households across Barddhaman and Birbhum.
 - Achieved 85-90% comparable crop yield while slashing farm input expenses by 70%.`,
     image: "/images/farming-collage.jpg",
+    embeddedImages: [
+      "/images/seedbed.jpg",
+      "/images/paddy-planting.jpg",
+      "/images/ripening-paddy.jpg",
+      "/images/paddy-harvesting.jpg",
+    ],
     methodology: [
       "প্রাকৃতিক বৃষ্টি নির্ভর বীজতলা প্রস্তুতি",
       "হাতে নিড়ানো ও জৈব মালচিং পদ্ধতি",
@@ -92,6 +128,11 @@ True food security entails chemical-free, nutrient-dense sustained yields. Jiyon
 3. **Bio-pest Deterrents**: Herbal extracts utilizing neem leaves, garlic, green chilies, and fermented botanicals.
 4. **Multi-layer Agroforestry Food Forests**: Tall fruit trees paired with understory ginger, turmeric, and tubers.`,
     image: "/images/ecology-collage.jpg",
+    embeddedImages: [
+      "/images/farming-collage.jpg",
+      "/images/community-collage.jpg",
+      "/images/img30.jpg",
+    ],
     methodology: [
       "মাটি পরীক্ষা ও জৈব সার সংমিশ্রণ",
       "ড্রিপ ও মালচিং নির্ভর জল ব্যবস্থাপনা",
@@ -134,13 +175,18 @@ In rural Birbhum and Burdwan, conventional petrochemical farming has trapped sma
 2. **On-Farm Bio-Input Training**: Hands-on workshops teaching farmers to prepare vermicompost and fermented bio-fertilizers.
 3. **Direct Fair-Price Links**: Connecting organic growers directly to conscious consumers, bypassing exploitative middlemen.`,
     image: "/images/paddy-planting.jpg",
+    embeddedImages: [
+      "/images/paddy-harvesting.jpg",
+      "/images/seedbed.jpg",
+      "/images/78.jpg",
+    ],
     methodology: [
       "গ্রামভিত্তিক কৃষক পাঠশালা ও কর্মশালা",
       "পারস্পরিক বীজ বিনিময় মেলা",
       "জৈব তরল সার প্রস্তুত প্রদর্শনী",
     ],
     findings: [
-      "৩৫০+ প্রান্তিক কৃষক পরিবার রাসায়নিক কীটনাশক সম্পূর্ণ বর্জন করেছে",
+      "৫০+ প্রান্তিক কৃষক পরিবার রাসায়নিক কীটনাশক সম্পূর্ণ বর্জন করেছে",
       "কৃষকদের ফসল উৎপাদন ব্যয় ৬০-৭০% হ্রাস পেয়েছে",
       "কৃষক পরিবারের পুষ্টি ও স্বাস্থ্য সূচকে উল্লেখযোগ্য উন্নতি",
     ],
@@ -179,6 +225,11 @@ Jiyonkathi runs an open-air auxiliary learning center for rural children in Aush
 - Scientific snake awareness sessions to demystify rural superstitions.
 - Creative arts, local folklore, clay modeling, and music workshops.`,
     image: "/images/education-center.jpg",
+    embeddedImages: [
+      "/images/community-collage.jpg",
+      "/images/img33.jpg",
+      "/images/education-center.jpg",
+    ],
     methodology: [
       "মুক্তাঙ্গন আনন্দময় পাঠদান",
       "বিজ্ঞানভিত্তিক সচেতনতামূলক নাটিকা",
@@ -220,6 +271,11 @@ Snakebites remain a prominent hazard during monsoons in rural Bengal. Lack of sc
 2. Standardized First Aid protocol: immobilization, avoiding tourniquets, and immediate transport to hospitals for Anti-Snake Venom (ASV).
 3. Free clinical screenings for chronic ailments.`,
     image: "/images/health-camp.jpg",
+    embeddedImages: [
+      "/images/community-collage.jpg",
+      "/images/education-center.jpg",
+      "/images/health-camp.jpg",
+    ],
     methodology: [
       "বিশেষজ্ঞ চিকিৎসকদের সরাসরি পরামর্শ",
       "গ্রাম পঞ্চায়েত ও যুবকদের সমন্বয়ে সচেতনতা দল",
@@ -261,6 +317,11 @@ Heavy reliance on diesel-driven deep tubewells depletes aquifers and burdens sma
 2. **Solar Micro-Pumping**: Pumping surface pond water via gentle solar irrigation systems, eliminating deep aquifer extraction.
 3. **Solar Seed Processing**: Deploying clean solar dehydration units for heirloom seed conservation.`,
     image: "/images/community-collage.jpg",
+    embeddedImages: [
+      "/images/farming-collage.jpg",
+      "/images/ripening-paddy.jpg",
+      "/images/community-collage.jpg",
+    ],
     methodology: [
       "বৃষ্টির জল নিষ্কাশন ও পুকুর ম্যাপিং",
       "সৌর মৃদু সেচ প্যানেল স্থাপন",
@@ -313,6 +374,11 @@ router.get("/", async (req, res) => {
               : typeof r.findings === "string"
                 ? JSON.parse(r.findings || "[]")
                 : [],
+            embeddedImages: Array.isArray(r.embedded_images)
+              ? r.embedded_images
+              : typeof r.embedded_images === "string"
+                ? JSON.parse(r.embedded_images || "[]")
+                : [],
             views: Number(r.views) || 0,
             downloadUrl: r.download_url,
             createdAt: r.created_at,
@@ -358,11 +424,72 @@ router.get("/", async (req, res) => {
   }
 });
 
+/**
+ * Fetch single report by ID or slug
+ */
+export async function getReportById(id) {
+  await ensureDbConnected();
+  let report = null;
+  const searchId = String(id).toLowerCase().trim();
+
+  if (isDbConnected) {
+    try {
+      const result = await pool.query(
+        "SELECT * FROM research_reports WHERE id = $1",
+        [id],
+      );
+      if (result.rows && result.rows.length > 0) {
+        const r = result.rows[0];
+        report = {
+          id: r.id,
+          title: r.title,
+          titleEnglish: r.title_english,
+          topic: r.topic,
+          topicEnglish: r.topic_english,
+          author: r.author,
+          publishedDate: r.published_date,
+          summary: r.summary,
+          summaryEnglish: r.summary_english,
+          content: r.content,
+          contentEnglish: r.content_english,
+          image: r.image,
+          methodology: Array.isArray(r.methodology)
+            ? r.methodology
+            : typeof r.methodology === "string"
+              ? JSON.parse(r.methodology || "[]")
+              : [],
+          findings: Array.isArray(r.findings)
+            ? r.findings
+            : typeof r.findings === "string"
+              ? JSON.parse(r.findings || "[]")
+              : [],
+          views: Number(r.views) || 0,
+          downloadUrl: r.download_url,
+          embeddedImages: Array.isArray(r.embedded_images)
+            ? r.embedded_images
+            : typeof r.embedded_images === "string"
+              ? JSON.parse(r.embedded_images || "[]")
+              : [],
+          createdAt: r.created_at,
+        };
+      }
+    } catch (err) {
+      console.warn("DB query for report by id failed:", err.message);
+    }
+  }
+
+  if (!report) {
+    report = memoryReports.find((r) => String(r.id).toLowerCase() === searchId) || null;
+  }
+  return report;
+}
+
 // GET /api/reports/:id - Fetch single report
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const report = memoryReports.find((r) => String(r.id) === String(id));
+    const report = await getReportById(id);
+
     if (!report) {
       return res
         .status(404)
@@ -375,11 +502,158 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// POST /api/reports/:id/view - Increment views for analytics
+// GET /api/reports/:id/download - Direct file download for browser (never preview)
+router.get("/:id/download", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await ensureDbConnected();
+
+    let report = null;
+    if (isDbConnected) {
+      try {
+        const result = await pool.query(
+          "SELECT * FROM research_reports WHERE id = $1",
+          [id],
+        );
+        if (result.rows && result.rows.length > 0) {
+          const r = result.rows[0];
+          report = {
+            id: r.id,
+            title: r.title,
+            downloadUrl: r.download_url,
+            content: r.content,
+            summary: r.summary,
+            author: r.author,
+            publishedDate: r.published_date,
+            embeddedImages: Array.isArray(r.embedded_images)
+              ? r.embedded_images
+              : typeof r.embedded_images === "string"
+                ? JSON.parse(r.embedded_images || "[]")
+                : [],
+          };
+        }
+      } catch (dbErr) {
+        console.warn("DB query for report download failed:", dbErr.message);
+      }
+    }
+
+    if (!report) {
+      report = memoryReports.find((r) => String(r.id) === String(id));
+    }
+
+    if (!report) {
+      return res.status(404).json({ success: false, error: "Report not found" });
+    }
+
+    const cleanTitle = (report.title || "jiyonkathi-report")
+      .replace(/[^\w\u0980-\u09FF\s-]/g, "")
+      .trim()
+      .replace(/\s+/g, "_") || "report";
+    const filename = `${cleanTitle}.pdf`;
+    const asciiFilename = (cleanTitle.replace(/[^\x20-\x7E]/g, "_") || "report") + ".pdf";
+
+    // 1. If report has an uploaded PDF/document
+    if (report.downloadUrl) {
+      const downloadUrl = report.downloadUrl;
+
+      // Local DB file storage (/api/files/:id)
+      if (downloadUrl.startsWith("/api/files/")) {
+        const fileId = downloadUrl.replace("/api/files/", "");
+        if (isDbConnected) {
+          try {
+            const fileRes = await pool.query(
+              "SELECT filename, mimetype, data FROM site_files WHERE id = $1",
+              [fileId],
+            );
+            if (fileRes.rows.length > 0) {
+              const file = fileRes.rows[0];
+              res.setHeader("Content-Type", file.mimetype || "application/pdf");
+              res.setHeader(
+                "Content-Disposition",
+                `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+              );
+              return res.send(file.data);
+            }
+          } catch (e) {
+            console.warn("Error streaming local db file:", e.message);
+          }
+        }
+      }
+
+      // Remote URL (Cloudinary / External): Stream buffer directly to browser to force attachment download
+      if (downloadUrl.startsWith("http://") || downloadUrl.startsWith("https://")) {
+        try {
+          const upstreamRes = await fetch(downloadUrl, {
+            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+          });
+          if (upstreamRes.ok) {
+            const contentType = upstreamRes.headers.get("content-type") || "application/pdf";
+            res.setHeader("Content-Type", contentType);
+            res.setHeader(
+              "Content-Disposition",
+              `attachment; filename="${asciiFilename}"; filename*=UTF-8''${encodeURIComponent(filename)}`,
+            );
+            const arrayBuffer = await upstreamRes.arrayBuffer();
+            return res.send(Buffer.from(arrayBuffer));
+          }
+        } catch (streamErr) {
+          console.warn("Remote stream fetch failed, falling back to direct attachment redirect:", streamErr.message);
+        }
+      }
+
+      // If streaming fails or if Cloudinary: redirect with fl_attachment transformation to force Cloudinary to send Content-Disposition: attachment
+      if (downloadUrl.includes("cloudinary.com") && downloadUrl.includes("/upload/")) {
+        const directCldUrl = downloadUrl.replace(
+          /\/upload\/(?:fl_attachment(?::[^/]+)?\/)?/,
+          `/upload/fl_attachment:${encodeURIComponent(cleanTitle)}/`,
+        );
+        return res.redirect(directCldUrl);
+      }
+
+      return res.redirect(downloadUrl);
+    }
+
+    // 2. If no PDF exists, serve printable HTML document as download
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${asciiFilename}.html"; filename*=UTF-8''${encodeURIComponent(cleanTitle)}.html`,
+    );
+    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${report.title}</title></head><body><h1>${report.title}</h1><p>${report.summary || ""}</p><div>${report.content || ""}</div></body></html>`);
+  } catch (err) {
+    console.error("Error downloading report:", err);
+    res.status(500).json({ success: false, error: "Download failed" });
+  }
+});
+
+// Simple in-memory rate limiter per IP + report ID (1 view increment allowed every 10 seconds per IP per report)
+const recentViewRecordMap = new Map();
+
+// POST /api/reports/:id/view - Increment views for analytics with throttling
 router.post("/:id/view", async (req, res) => {
   try {
     const { id } = req.params;
+    const clientIp = req.ip || req.headers["x-forwarded-for"] || "anonymous";
+    const rateKey = `${clientIp}:${id}`;
+    const now = Date.now();
+
     const report = memoryReports.find((r) => String(r.id) === String(id));
+
+    // Throttle if viewed within the last 10 seconds by the same client
+    const lastViewTime = recentViewRecordMap.get(rateKey);
+    if (lastViewTime && now - lastViewTime < 10000) {
+      return res.json({ success: true, views: report ? report.views : 1, throttled: true });
+    }
+    recentViewRecordMap.set(rateKey, now);
+
+    // Periodic cleanup of stale rate entries
+    if (recentViewRecordMap.size > 2000) {
+      const cutoff = now - 60000;
+      for (const [k, v] of recentViewRecordMap.entries()) {
+        if (v < cutoff) recentViewRecordMap.delete(k);
+      }
+    }
+
     if (report) {
       report.views = (report.views || 0) + 1;
     }
@@ -402,28 +676,80 @@ router.post("/:id/view", async (req, res) => {
   }
 });
 
-// POST /api/reports/extract-docx - Extract text from uploaded .docx file
-router.post("/extract-docx", upload.single("docxFile"), async (req, res) => {
+// POST /api/reports/extract-pdf - Extract text and embedded images from uploaded PDF file & store original PDF
+router.post("/extract-pdf", adminAuthMiddleware, upload.any(), async (req, res) => {
   try {
-    if (!req.file) {
+    const file = req.file || (req.files && req.files[0]);
+    if (!file) {
       return res
         .status(400)
-        .json({ success: false, error: "No .docx file uploaded" });
+        .json({ success: false, error: "কোনো PDF ফাইল পাওয়া যায়নি (No PDF file uploaded)" });
     }
 
-    const { buffer, originalname } = req.file;
+    const { buffer, originalname, mimetype } = file;
 
-    // Use mammoth to extract raw text & formatted HTML
-    const [rawResult, htmlResult] = await Promise.all([
-      mammoth.extractRawText({ buffer }),
-      mammoth.convertToHtml({ buffer }),
-    ]);
+    // 1. Store original PDF file to get permanent download URL
+    let downloadUrl = "";
+    try {
+      const fileUploadRes = await storeUploadedFile({
+        originalname,
+        mimetype: mimetype || "application/pdf",
+        buffer,
+      });
+      if (fileUploadRes && fileUploadRes.url) {
+        downloadUrl = fileUploadRes.url;
+      }
+    } catch (saveErr) {
+      console.warn("Could not save original PDF file:", saveErr.message);
+    }
 
-    const extractedText = rawResult.value || "";
-    const extractedHtml = htmlResult.value || "";
+    // 2. Parse PDF and extract text per page using unpdf
+    const pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const textObj = await extractText(pdf, { mergePages: false });
+    const pageTexts = Array.isArray(textObj.text)
+      ? textObj.text
+      : typeof textObj.text === "string"
+        ? [textObj.text]
+        : [];
 
-    // Clean up lines and attempt smart title / summary detection if available
-    const lines = extractedText
+    // 3. Extract images per page and interleave text & images in exact original order
+    const embeddedImages = [];
+    const contentBlocks = [];
+    const rawTextParts = [];
+
+    for (let p = 1; p <= pdf.numPages; p++) {
+      let pageText = (pageTexts[p - 1] || "").trim();
+      // Terminology change: Replace গবেষণা with অন্বেষণ
+      pageText = pageText.replace(/গবেষণা/g, "অন্বেষণ");
+      if (pageText) {
+        rawTextParts.push(pageText);
+        contentBlocks.push(pageText);
+      }
+
+      try {
+        const pageImgs = await extractImages(pdf, p);
+        if (Array.isArray(pageImgs) && pageImgs.length > 0) {
+          let pageImgIdx = 0;
+          for (const img of pageImgs) {
+            if (img.width >= 40 && img.height >= 40) {
+              pageImgIdx++;
+              const dataUrl = convertRawImageToPng(img);
+              embeddedImages.push(dataUrl);
+              // Interleave image directly under the page text in document order
+              contentBlocks.push(`![চিত্র (পৃষ্ঠা ${p}) - #${pageImgIdx}](${dataUrl})`);
+            }
+          }
+        }
+      } catch (imgErr) {
+        console.warn(`Could not extract images from page ${p}:`, imgErr.message);
+      }
+    }
+
+    const rawText = rawTextParts.join("\n\n");
+    const interleavedContent = contentBlocks.join("\n\n");
+
+    // Clean up lines and infer title & summary
+    const lines = rawText
       .split("\n")
       .map((l) => l.trim())
       .filter(Boolean);
@@ -435,22 +761,34 @@ router.post("/extract-docx", upload.single("docxFile"), async (req, res) => {
       filename: originalname,
       title: inferredTitle,
       summary: inferredSummary,
-      rawText: extractedText,
-      html: extractedHtml,
+      rawText: rawText,
+      text: interleavedContent,
+      content: interleavedContent,
+      embeddedImages: embeddedImages,
+      images: embeddedImages,
+      downloadUrl: downloadUrl,
+      pagesCount: pdf.numPages,
       linesCount: lines.length,
     });
   } catch (error) {
-    console.error("Error extracting .docx:", error);
+    console.error("Error extracting PDF:", error);
     res.status(500).json({
       success: false,
-      error:
-        "Failed to extract text from .docx file. Please verify the document format.",
+      error: "PDF ফাইল থেকে টেক্সট ও চিত্র বের করতে ত্রুটি হয়েছে: " + error.message,
     });
   }
 });
 
+// Alias for any legacy extract requests
+router.post("/extract-docx", upload.single("docxFile"), async (req, res) => {
+  return res.status(400).json({
+    success: false,
+    error: "DOCX ফরম্যাট আর সমর্থিত নয়। অনুগ্রহ করে শুধুমাত্র PDF আপলোড করুন (DOCX is no longer supported, please upload PDF).",
+  });
+});
+
 // POST /api/reports - Create new report
-router.post("/", async (req, res) => {
+router.post("/", adminAuthMiddleware, async (req, res) => {
   try {
     const {
       title,
@@ -467,6 +805,7 @@ router.post("/", async (req, res) => {
       methodology,
       findings,
       downloadUrl,
+      embeddedImages,
     } = req.body;
 
     if (!title || !content) {
@@ -475,24 +814,31 @@ router.post("/", async (req, res) => {
         .json({ success: false, error: "Title and Content are required" });
     }
 
+    const safeTitle = (title || "").replace(/গবেষণা/g, "অন্বেষণ");
+    const safeTopic = (topic || "সাধারণ অন্বেষণ").replace(/গবেষণা/g, "অন্বেষণ");
+    const safeAuthor = (author || "জিয়নকাঠি অন্বেষণ দল").replace(/গবেষণা/g, "অন্বেষণ");
+    const safeSummary = (summary || content.slice(0, 160) + "...").replace(/গবেষণা/g, "অন্বেষণ");
+    const safeContent = (content || "").replace(/গবেষণা/g, "অন্বেষণ");
+
     const newReport = {
       id: `rep-${Date.now()}`,
-      title,
+      title: safeTitle,
       titleEnglish: titleEnglish || title,
-      topic: topic || "সাধারণ গবেষণা",
+      topic: safeTopic,
       topicEnglish: topicEnglish || "General Research",
-      author: author || "জিয়নকাঠি গবেষণা দল",
+      author: safeAuthor,
       publishedDate: publishedDate || new Date().toISOString().split("T")[0],
-      summary: summary || content.slice(0, 160) + "...",
+      summary: safeSummary,
       summaryEnglish:
         summaryEnglish ||
         (contentEnglish ? contentEnglish.slice(0, 160) + "..." : ""),
-      content,
+      content: safeContent,
       contentEnglish: contentEnglish || "",
-      image: image || "/images/farming-collage.jpg",
+      image: image || (Array.isArray(embeddedImages) && embeddedImages[0]) || "/images/farming-collage.jpg",
       methodology: Array.isArray(methodology) ? methodology : [],
       findings: Array.isArray(findings) ? findings : [],
       downloadUrl: downloadUrl || "",
+      embeddedImages: Array.isArray(embeddedImages) ? embeddedImages : [],
       views: 0,
       createdAt: new Date().toISOString(),
     };
@@ -503,8 +849,8 @@ router.post("/", async (req, res) => {
     if (isDbConnected) {
       try {
         await pool.query(
-          `INSERT INTO research_reports (id, title, title_english, topic, topic_english, author, published_date, summary, summary_english, content, content_english, image, methodology, findings, download_url, views)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+          `INSERT INTO research_reports (id, title, title_english, topic, topic_english, author, published_date, summary, summary_english, content, content_english, image, methodology, findings, download_url, embedded_images, views)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
           [
             newReport.id,
             newReport.title,
@@ -521,6 +867,7 @@ router.post("/", async (req, res) => {
             JSON.stringify(newReport.methodology),
             JSON.stringify(newReport.findings),
             newReport.downloadUrl,
+            JSON.stringify(newReport.embeddedImages),
             0,
           ],
         );
@@ -537,7 +884,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT /api/reports/:id - Update report
-router.put("/:id", async (req, res) => {
+router.put("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const index = memoryReports.findIndex((r) => String(r.id) === String(id));
@@ -551,6 +898,14 @@ router.put("/:id", async (req, res) => {
     const updated = {
       ...memoryReports[index],
       ...req.body,
+      title: req.body.title ? req.body.title.replace(/গবেষণা/g, "অন্বেষণ") : memoryReports[index].title,
+      topic: req.body.topic ? req.body.topic.replace(/গবেষণা/g, "অন্বেষণ") : memoryReports[index].topic,
+      author: req.body.author ? req.body.author.replace(/গবেষণা/g, "অন্বেষণ") : memoryReports[index].author,
+      content: req.body.content ? req.body.content.replace(/গবেষণা/g, "অন্বেষণ") : memoryReports[index].content,
+      summary: req.body.summary ? req.body.summary.replace(/গবেষণা/g, "অন্বেষণ") : memoryReports[index].summary,
+      embeddedImages: Array.isArray(req.body.embeddedImages)
+        ? req.body.embeddedImages
+        : (memoryReports[index].embeddedImages || []),
       id: memoryReports[index].id,
       updatedAt: new Date().toISOString(),
     };
@@ -562,8 +917,8 @@ router.put("/:id", async (req, res) => {
       try {
         await pool.query(
           `UPDATE research_reports
-           SET title=$1, title_english=$2, topic=$3, topic_english=$4, author=$5, published_date=$6, summary=$7, summary_english=$8, content=$9, content_english=$10, image=$11, methodology=$12, findings=$13, download_url=$14
-           WHERE id=$15`,
+           SET title=$1, title_english=$2, topic=$3, topic_english=$4, author=$5, published_date=$6, summary=$7, summary_english=$8, content=$9, content_english=$10, image=$11, methodology=$12, findings=$13, download_url=$14, embedded_images=$15
+           WHERE id=$16`,
           [
             updated.title,
             updated.titleEnglish,
@@ -579,6 +934,7 @@ router.put("/:id", async (req, res) => {
             JSON.stringify(updated.methodology || []),
             JSON.stringify(updated.findings || []),
             updated.downloadUrl || "",
+            JSON.stringify(updated.embeddedImages || []),
             id,
           ],
         );
@@ -595,7 +951,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE /api/reports/:id - Delete report
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     memoryReports = memoryReports.filter((r) => String(r.id) !== String(id));

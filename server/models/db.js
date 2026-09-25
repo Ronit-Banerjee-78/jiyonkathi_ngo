@@ -139,6 +139,16 @@ export const initDB = async () => {
           rejected_at TIMESTAMP,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS blog_comments (
+          id TEXT PRIMARY KEY,
+          blog_id TEXT NOT NULL,
+          author TEXT NOT NULL,
+          text TEXT NOT NULL,
+          status TEXT DEFAULT 'approved',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        ALTER TABLE research_reports ADD COLUMN IF NOT EXISTS embedded_images JSONB;
+        ALTER TABLE research_reports ADD COLUMN IF NOT EXISTS download_url TEXT;
       `);
 
       // Seed / Sync research reports into DB
@@ -151,8 +161,8 @@ export const initDB = async () => {
               `INSERT INTO research_reports (
                 id, title, title_english, topic, topic_english, author,
                 published_date, summary, summary_english, content, content_english,
-                image, methodology, findings, views
-              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+                image, methodology, findings, views, embedded_images, download_url
+              ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
               ON CONFLICT (id) DO UPDATE SET
                 title = EXCLUDED.title,
                 title_english = EXCLUDED.title_english,
@@ -166,7 +176,13 @@ export const initDB = async () => {
                 content_english = EXCLUDED.content_english,
                 image = EXCLUDED.image,
                 methodology = EXCLUDED.methodology,
-                findings = EXCLUDED.findings`,
+                findings = EXCLUDED.findings,
+                embedded_images = CASE 
+                  WHEN research_reports.embedded_images IS NULL OR research_reports.embedded_images = '[]'::jsonb 
+                  THEN EXCLUDED.embedded_images 
+                  ELSE research_reports.embedded_images 
+                END,
+                download_url = COALESCE(research_reports.download_url, EXCLUDED.download_url)`,
               [
                 rep.id,
                 rep.title,
@@ -183,6 +199,8 @@ export const initDB = async () => {
                 JSON.stringify(rep.methodology || []),
                 JSON.stringify(rep.findings || []),
                 rep.views || 0,
+                JSON.stringify(rep.embeddedImages || []),
+                rep.downloadUrl || null,
               ],
             );
           }
@@ -210,7 +228,7 @@ export const initDB = async () => {
           // If settings exist, ensure pillars and other core fields are populated
           const currentData = settingsRes.rows[0].data || {};
           let needsUpdate = false;
-          const mergedData = { ...FULL_INITIAL_SITE_DATA, ...currentData };
+          let mergedData = { ...FULL_INITIAL_SITE_DATA, ...currentData };
           if (!currentData.pillars || currentData.pillars.length !== 2 || !currentData.pillars[0]?.titleBn?.includes("পরিবেশ সংকটকালে")) {
             mergedData.pillars = DEFAULT_PILLARS_DATA.slice(0, 2);
             needsUpdate = true;
@@ -219,12 +237,34 @@ export const initDB = async () => {
             mergedData.general = FULL_INITIAL_SITE_DATA.general;
             needsUpdate = true;
           }
+
+          const rawStr = JSON.stringify(mergedData);
+          if (
+            rawStr.includes("টানে") ||
+            rawStr.includes("৩৫০+") ||
+            rawStr.includes("যতটা কম সম্ভব") ||
+            rawStr.includes("বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে") ||
+            rawStr.includes("সমাজ") ||
+            rawStr.includes("বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা")
+          ) {
+            const cleanStr = rawStr
+              .replace(/প্রাণ-প্রকৃতি-পরিবেশের টানে/g, "প্রাণ-প্রকৃতি-পরিবেশের আহ্বানে")
+              .replace(/টানে/g, "আহ্বানে")
+              .replace(/৩৫০\+/g, "৫০+")
+              .replace(/বীরভূম,\s*বর্ধমান\s*ও\s*আউশগ্রামের\s*গ্রামাঞ্চলে/g, "বাংলার গ্রামাঞ্চলে")
+              .replace(/নিয়োজিত একটি অলাভজনক সমাজ/g, "নিয়োজিত একটি অলাভজনক সংস্থা")
+              .replace(/যতটা কম সম্ভব/g, "যতটা সম্ভব কম")
+              .replace(/বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা/g, "ফল-সব্জির বিষমুক্ত চাষ");
+            mergedData = JSON.parse(cleanStr);
+            needsUpdate = true;
+          }
+
           if (needsUpdate) {
             await client.query(
               "UPDATE site_settings SET data = $1::jsonb WHERE id = $2",
               [JSON.stringify(mergedData), settingsRes.rows[0].id],
             );
-            console.log("Updated site_settings with missing default structures.");
+            console.log("Updated site_settings with sanitized Bengali data.");
           }
         }
       } catch (settingsSeedErr) {

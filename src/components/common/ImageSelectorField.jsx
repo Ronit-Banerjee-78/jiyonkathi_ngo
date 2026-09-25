@@ -74,6 +74,16 @@ export default function ImageSelectorField({
         if (!file) return;
 
         setIsUploading(true);
+
+        // Immediate responsive preview using blob object URL
+        let previewObjectUrl = null;
+        try {
+            previewObjectUrl = URL.createObjectURL(file);
+            onChange(previewObjectUrl);
+        } catch (objErr) {
+            console.warn('Could not create object URL preview:', objErr);
+        }
+
         const formData = new FormData();
         formData.append('file', file);
 
@@ -85,15 +95,37 @@ export default function ImageSelectorField({
             const json = await res.json();
             if (json.success && json.url) {
                 onChange(json.url);
-                // If an auto-add callback is provided (e.g. for blogs or general uploads), trigger it
                 if (onUploadAutoAddToGallery) {
                     onUploadAutoAddToGallery(json.url, file);
                 }
             } else {
-                alert(json.error || 'ছবি আপলোড করতে ব্যর্থ হয়েছে');
+                // If server file upload failed, convert to persistent base64 data URL
+                const reader = new FileReader();
+                reader.onload = (loadEvt) => {
+                    const dataUrl = loadEvt.target?.result;
+                    if (dataUrl) {
+                        onChange(dataUrl);
+                        if (onUploadAutoAddToGallery) {
+                            onUploadAutoAddToGallery(dataUrl, file);
+                        }
+                    }
+                };
+                reader.readAsDataURL(file);
             }
         } catch (err) {
-            alert('Upload error: ' + err.message);
+            console.warn('Upload endpoint error, using data URL fallback:', err.message);
+            // Fallback to base64 Data URL so the user's selected file always works
+            const reader = new FileReader();
+            reader.onload = (loadEvt) => {
+                const dataUrl = loadEvt.target?.result;
+                if (dataUrl) {
+                    onChange(dataUrl);
+                    if (onUploadAutoAddToGallery) {
+                        onUploadAutoAddToGallery(dataUrl, file);
+                    }
+                }
+            };
+            reader.readAsDataURL(file);
         } finally {
             setIsUploading(false);
             e.target.value = '';
@@ -111,7 +143,7 @@ export default function ImageSelectorField({
                     <button
                         type="button"
                         onClick={() => setShowManualUrl(!showManualUrl)}
-                        className="text-[11px] text-amber-700 hover:text-amber-900 font-semibold cursor-pointer underline"
+                        className="text-xs text-amber-700 hover:text-amber-900 font-semibold cursor-pointer underline"
                     >
                         {showManualUrl ? 'URL লুকান' : 'সরাসরি URL লিঙ্ক দিন'}
                     </button>
@@ -119,23 +151,26 @@ export default function ImageSelectorField({
             )}
 
             {/* Selected Image Preview & Control Box */}
-            <div className="p-3 bg-stone-50 rounded-2xl border border-stone-200 space-y-3">
+            <div className="p-3 bg-stone-50 rounded-lg border border-stone-200 space-y-3">
                 {value ? (
-                    <div className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-xl border border-stone-200">
+                    <div className="flex items-center justify-between gap-3 bg-white p-2.5 rounded-md border border-stone-200">
                         <div className="flex items-center space-x-3 overflow-hidden">
-                            <div className="w-14 h-14 shrink-0 rounded-lg overflow-hidden bg-stone-100 border border-stone-200 relative group">
+                            <div className="w-12 h-12 shrink-0 rounded-md overflow-hidden bg-stone-100 border border-stone-200 relative group">
                                 <img
+                                    key={value}
                                     src={value}
                                     alt="Selected preview"
                                     className="w-full h-full object-cover"
                                     onError={(e) => {
-                                        e.currentTarget.src = '/images/farming-collage.jpg';
+                                        if (!e.currentTarget.src.includes('/images/farming-collage.jpg')) {
+                                            e.currentTarget.src = '/images/farming-collage.jpg';
+                                        }
                                     }}
                                 />
                             </div>
                             <div className="truncate">
-                                <div className="text-xs font-bold text-stone-800 truncate">{value}</div>
-                                <div className="text-[10px] text-emerald-700 font-bold flex items-center space-x-1 mt-0.5">
+                                <div className="text-xs font-semibold text-stone-800 truncate">{value}</div>
+                                <div className="text-xs text-emerald-700 font-semibold flex items-center space-x-1 mt-0.5">
                                     <Check className="w-3 h-3 text-emerald-600" />
                                     <span>ছবি সক্রিয় রয়েছে</span>
                                 </div>
@@ -145,14 +180,14 @@ export default function ImageSelectorField({
                         <button
                             type="button"
                             onClick={() => onChange('')}
-                            className="p-1.5 text-stone-400 hover:text-red-600 rounded-lg hover:bg-stone-100 shrink-0 cursor-pointer"
+                            className="p-1.5 text-stone-400 hover:text-red-600 rounded-md hover:bg-stone-100 shrink-0 cursor-pointer"
                             title="ছবি বাদ দিন"
                         >
                             <X className="w-4 h-4" />
                         </button>
                     </div>
                 ) : (
-                    <div className="py-2 text-center text-xs text-stone-500 font-medium">
+                    <div className="py-2 text-center text-xs text-stone-500">
                         কোনো ছবি এখনো নির্বাচন করা হয়নি
                     </div>
                 )}
@@ -163,14 +198,14 @@ export default function ImageSelectorField({
                     <button
                         type="button"
                         onClick={() => setShowGalleryModal(true)}
-                        className="flex items-center justify-center space-x-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-300 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer"
+                        className="flex items-center justify-center space-x-2 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 font-semibold text-xs px-3.5 py-2 rounded-md transition-colors shadow-sm cursor-pointer"
                     >
                         <FolderOpen className="w-4 h-4 text-amber-700" />
                         <span>গ্যালারি থেকে নির্বাচন (Choose from Gallery)</span>
                     </button>
 
                     {/* Option 2: Upload from Device */}
-                    <label className="flex items-center justify-center space-x-2 bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 font-bold text-xs px-4 py-2.5 rounded-xl transition-all shadow-2xs cursor-pointer">
+                    <label className="flex items-center justify-center space-x-2 bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 font-semibold text-xs px-3.5 py-2 rounded-md transition-colors shadow-sm cursor-pointer">
                         <Upload className="w-4 h-4 text-stone-600" />
                         <span>
                             {isUploading ? 'আপলোড হচ্ছে...' : 'ডিভাইস থেকে আপলোড (Upload)'}
@@ -187,41 +222,41 @@ export default function ImageSelectorField({
 
                 {/* Optional Manual URL Input */}
                 {showManualUrl && (
-                    <div className="pt-2 border-t border-stone-200/80">
+                    <div className="pt-2 border-t border-stone-200">
                         <input
                             type="text"
                             value={value || ''}
                             onChange={(e) => onChange(e.target.value)}
                             placeholder={placeholder}
-                            className="w-full p-2 bg-white border border-stone-300 rounded-xl text-xs"
+                            className="w-full px-3 py-2 bg-white border border-stone-300 rounded-md text-xs focus:outline-none focus:ring-1 focus:ring-amber-700 focus:border-amber-700"
                         />
                     </div>
                 )}
 
                 {helperText && (
-                    <p className="text-[11px] text-stone-500">{helperText}</p>
+                    <p className="text-xs text-stone-500">{helperText}</p>
                 )}
             </div>
 
             {/* GALLERY SELECTION MODAL */}
             {showGalleryModal && (
                 <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 bg-stone-950/75 backdrop-blur-xs">
-                    <div className="relative bg-white w-full max-w-4xl rounded-3xl shadow-2xl border border-stone-200 p-6 space-y-5 max-h-[85vh] flex flex-col">
+                    <div className="relative bg-white w-full max-w-4xl rounded-lg shadow-2xl border border-stone-200 p-5 space-y-4 max-h-[85vh] flex flex-col">
                         {/* Modal Header */}
                         <div className="flex items-center justify-between border-b border-stone-200 pb-3">
                             <div className="flex items-center space-x-2">
-                                <span className="bg-amber-100 text-amber-900 font-black text-xs px-3 py-1 rounded-full flex items-center space-x-1">
+                                <span className="bg-amber-50 text-amber-800 border border-amber-200 font-semibold text-xs px-2.5 py-0.5 rounded-md flex items-center space-x-1">
                                     <ImageIcon className="w-3.5 h-3.5 text-amber-700" />
                                     <span>গ্যালারি ও লাইব্রেরি থেকে ছবি নির্বাচন করুন</span>
                                 </span>
-                                <span className="text-xs text-stone-500 font-medium">
+                                <span className="text-xs text-stone-500">
                                     ({filteredImages.length} টি ছবি উপলব্ধ)
                                 </span>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setShowGalleryModal(false)}
-                                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100 cursor-pointer"
+                                className="p-1.5 text-stone-400 hover:text-stone-700 rounded-md hover:bg-stone-100 cursor-pointer"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -230,13 +265,13 @@ export default function ImageSelectorField({
                         {/* Filter and Search Bar */}
                         <div className="flex flex-col sm:flex-row gap-3">
                             <div className="relative flex-1">
-                                <Search className="w-4 h-4 absolute left-3 top-3 text-stone-400" />
+                                <Search className="w-4 h-4 absolute left-3 top-2.5 text-stone-400" />
                                 <input
                                     type="text"
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     placeholder="ছবির নাম বা ক্যাটাগরি দিয়ে খুঁজুন..."
-                                    className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                                    className="w-full pl-9 pr-3 py-2 bg-stone-50 border border-stone-200 rounded-md text-xs focus:bg-white focus:outline-none focus:ring-1 focus:ring-amber-700 focus:border-amber-700"
                                 />
                             </div>
 
@@ -254,10 +289,11 @@ export default function ImageSelectorField({
                                         key={cat.id}
                                         type="button"
                                         onClick={() => setSelectedCategory(cat.id)}
-                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${selectedCategory === cat.id
-                                            ? 'bg-amber-600 text-white shadow-2xs'
-                                            : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                                            }`}
+                                        className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer ${
+                                            selectedCategory === cat.id
+                                                ? 'bg-amber-700 text-white shadow-sm'
+                                                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                                        }`}
                                     >
                                         {cat.label}
                                     </button>
@@ -270,10 +306,10 @@ export default function ImageSelectorField({
                             {filteredImages.length === 0 ? (
                                 <div className="text-center py-12 text-stone-400 space-y-2">
                                     <ImageIcon className="w-10 h-10 mx-auto text-stone-300" />
-                                    <p className="text-xs font-bold">কোনো ছবি পাওয়া যায়নি</p>
+                                    <p className="text-xs font-semibold">কোনো ছবি পাওয়া যায়নি</p>
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3.5">
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                                     {filteredImages.map((img) => {
                                         const isSelected = value === img.url;
                                         return (
@@ -283,10 +319,11 @@ export default function ImageSelectorField({
                                                     onChange(img.url);
                                                     setShowGalleryModal(false);
                                                 }}
-                                                className={`group relative rounded-2xl overflow-hidden border cursor-pointer transition-all duration-200 hover:shadow-md ${isSelected
-                                                    ? 'border-amber-600 ring-2 ring-amber-500 shadow-sm'
-                                                    : 'border-stone-200 hover:border-amber-300'
-                                                    }`}
+                                                className={`group relative rounded-lg overflow-hidden border cursor-pointer transition-colors ${
+                                                    isSelected
+                                                        ? 'border-amber-700 ring-1 ring-amber-700'
+                                                        : 'border-stone-200 hover:border-amber-700'
+                                                }`}
                                             >
                                                 <div className="aspect-square bg-stone-100 overflow-hidden relative">
                                                     <img
@@ -298,22 +335,22 @@ export default function ImageSelectorField({
                                                         }}
                                                     />
                                                     {isSelected && (
-                                                        <div className="absolute top-2 right-2 bg-amber-600 text-white rounded-full p-1 shadow-md">
+                                                        <div className="absolute top-2 right-2 bg-amber-700 text-white rounded-full p-1 shadow-sm">
                                                             <Check className="w-3.5 h-3.5" />
                                                         </div>
                                                     )}
                                                     <div className="absolute inset-0 bg-stone-950/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                                        <span className="bg-white text-stone-900 font-extrabold text-[11px] px-3 py-1.5 rounded-xl shadow-md">
+                                                        <span className="bg-white text-stone-900 font-semibold text-xs px-2.5 py-1 rounded-md shadow-sm">
                                                             নির্বাচন করুন
                                                         </span>
                                                     </div>
                                                 </div>
 
                                                 <div className="p-2 bg-white border-t border-stone-100">
-                                                    <div className="text-xs font-bold text-stone-800 truncate" title={img.title}>
+                                                    <div className="text-xs font-semibold text-stone-800 truncate" title={img.title}>
                                                         {img.title}
                                                     </div>
-                                                    <div className="text-[10px] text-stone-500 truncate mt-0.5">
+                                                    <div className="text-xs text-stone-500 truncate mt-0.5">
                                                         {img.category}
                                                     </div>
                                                 </div>
@@ -332,7 +369,7 @@ export default function ImageSelectorField({
                             <button
                                 type="button"
                                 onClick={() => setShowGalleryModal(false)}
-                                className="px-5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-bold text-xs rounded-xl cursor-pointer"
+                                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 font-semibold text-xs rounded-md transition-colors cursor-pointer"
                             >
                                 বন্ধ করুন
                             </button>

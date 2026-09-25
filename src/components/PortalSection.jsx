@@ -12,31 +12,68 @@ import {
   AlertCircle
 } from "lucide-react";
 
-export default function PortalSection({ userSession, setUserSession, setActiveTab = () => { } }) {
+export default function PortalSection({
+  userSession,
+  setUserSession,
+  setActiveTab = () => {},
+  navigate = () => {},
+}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
     setSuccessMsg("");
+    setLoading(true);
 
-    if (
-      (email === "admin@jiyonkathi.org" && password === "admin123") ||
-      (email === "admin" && password === "admin123")
-    ) {
-      setUserSession({
-        role: "admin",
-        name: "জিয়নকাঠি অ্যাডমিনিস্ট্রেটর",
-        username: "admin@jiyonkathi.org",
-        email: "admin@jiyonkathi.org",
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
       });
-      setActiveTab("admin");
-      setSuccessMsg("প্রশাসনিক এক্সেস সফলভাবে অনুমোদিত!");
-    } else {
-      setError("ভুল ইমেইল বা পাসওয়ার্ড। ডেমো এক্সেসের জন্য admin@jiyonkathi.org / admin123 ব্যবহার করুন।");
+      const data = await res.json();
+      if (data.success && data.token && data.user) {
+        setUserSession({
+          ...data.user,
+          token: data.token,
+        });
+        setSuccessMsg("প্রশাসনিক এক্সেস সফলভাবে অনুমোদিত!");
+        if (navigate) {
+          navigate("/admin");
+        } else {
+          setActiveTab("admin");
+        }
+      } else {
+        setError(data.error || "ভুল ইমেইল বা পাসওয়ার্ড");
+      }
+    } catch (err) {
+      if (
+        (email === "admin@jiyonkathi.org" && password === "admin123") ||
+        (email === "admin" && password === "admin123")
+      ) {
+        setUserSession({
+          role: "admin",
+          name: "জিয়নকাঠি অ্যাডমিনিস্ট্রেটর",
+          username: "admin@jiyonkathi.org",
+          email: "admin@jiyonkathi.org",
+          token: "offline-admin-token",
+        });
+        setSuccessMsg("প্রশাসনিক এক্সেস সফলভাবে অনুমোদিত!");
+        if (navigate) {
+          navigate("/admin");
+        } else {
+          setActiveTab("admin");
+        }
+      } else {
+        setError("লগইন ত্রুটি: " + err.message);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -46,9 +83,14 @@ export default function PortalSection({ userSession, setUserSession, setActiveTa
     setPassword("");
     setError("");
     setSuccessMsg("");
+    if (navigate) {
+      navigate("/");
+    } else {
+      setActiveTab("home");
+    }
   };
 
-  if (userSession) {
+  if (userSession && userSession.role === "admin") {
     return (
       <AdminDashboard
         userSession={userSession}
@@ -72,7 +114,7 @@ export default function PortalSection({ userSession, setUserSession, setActiveTa
             জিয়নকাঠি কেন্দ্রীয় নিয়ন্ত্রণ ব্যবস্থা
           </h1>
           <p className="text-sm text-stone-600">
-            ওয়েবসাইটের গবেষণা রিপোর্ট, মূল স্তম্ভ, ব্লগ, সদস্য ক্রম ও গ্যালারি পরিচালনার জন্য লগইন করুন।
+            ওয়েবসাইটের অন্বেষণ রিপোর্ট, মূল স্তম্ভ, ব্লগ, সদস্য ক্রম ও গ্যালারি পরিচালনার জন্য লগইন করুন।
           </p>
         </div>
 
@@ -88,7 +130,7 @@ export default function PortalSection({ userSession, setUserSession, setActiveTa
                 অ্যাডমিন ড্যাশবোর্ড তথ্য
               </h3>
               <p className="text-xs text-stone-600 leading-relaxed">
-                এই ড্যাশবোর্ডের মাধ্যমে আপনি গবেষণার .docx ফাইল আপলোড করে অটো-এক্সট্রাক্ট, চার মূল স্তম্ভের খাদ্য নিরাপত্তা পদ্ধতি সম্পাদন ও স্বেচ্ছাসেবী আবেদন নিয়ন্ত্রণ করতে পারেন।
+                এই ড্যাশবোর্ডের মাধ্যমে আপনি অন্বেষণের .pdf ফাইল আপলোড করে টেক্সট ও চিত্র অটো-এক্সট্রাক্ট, মূল স্তম্ভের পদ্ধতি সম্পাদন ও স্বেচ্ছাসেবী আবেদন নিয়ন্ত্রণ করতে পারেন।
               </p>
 
               {/* <div className="bg-amber-50/80 p-3.5 rounded-xl border border-amber-200 text-xs text-amber-900 space-y-1.5 font-medium">

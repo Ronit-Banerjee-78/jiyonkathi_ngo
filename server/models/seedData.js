@@ -20,7 +20,7 @@ export const DEFAULT_PILLARS_DATA = [
         subPoints: [
           "রাসায়নিক সার ও কীটনাশক একবারে ব্যবহার না করা।",
           "মাটির তলার জল না তোলা।",
-          "যতটা কম সম্ভব জীবাশ্ম জ্বালানী ব্যবহার করা।"
+          "যতটা সম্ভব কম জীবাশ্ম জ্বালানী ব্যবহার করা।"
         ],
         subPointsEn: [
           "Complete avoidance of synthetic fertilizers and chemical pesticides.",
@@ -39,7 +39,7 @@ export const DEFAULT_PILLARS_DATA = [
       {
         id: "p1-t3",
         number: "৩",
-        titleBn: "বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা",
+        titleBn: "ফল-সব্জির বিষমুক্ত চাষ",
         titleEn: "Chemical-free horticulture and natural food security.",
         subPoints: [],
         subPointsEn: []
@@ -48,9 +48,9 @@ export const DEFAULT_PILLARS_DATA = [
     goals: [
       "রাসায়নিক সার ও কীটনাশক একবারে ব্যবহার না করা",
       "মাটির তলার জল না তোলা",
-      "যতটা কম সম্ভব জীবাশ্ম জ্বালানী ব্যবহার করা",
+      "যতটা সম্ভব কম জীবাশ্ম জ্বালানী ব্যবহার করা",
       "পুনর্ব্যবহারযোগ্য শক্তি কে নিজেদের কাজে ব্যবহার করা",
-      "বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা"
+      "ফল-সব্জির বিষমুক্ত চাষ"
     ],
     methodologyBn: "১. বৃষ্টির জল নির্ভর দেশীয় ধানের বীজতলা তৈরি ও জৈব সার প্রয়োগ।\n২. মাটির জৈব কার্বন বৃদ্ধি ও সৌরশক্তি চালিত মৃদু সেচ।\n৩. বহুমুখী বিষমুক্ত মাচায় সবজি ও দেশীয় ফলের বাগান সম্প্রসারণ।",
     linkedReportId: "rep-1"
@@ -116,13 +116,13 @@ export const FULL_INITIAL_SITE_DATA = {
   general: {
     logoText: "Jiyonkathi",
     bannerHeading: "Transitioning to a Post-Petroleum World",
-    bannerTitleBengali: "প্রাণ-প্রকৃতি-পরিবেশের টানে",
+    bannerTitleBengali: "প্রাণ-প্রকৃতি-পরিবেশের আহ্বানে",
     bannerHighlightBengali: "জিয়নকাঠির সুস্থায়ী পথচলা",
-    bannerHeadingBengali: "প্রাণ-প্রকৃতি-পরিবেশের টানে জিয়নকাঠির সুস্থায়ী পথচলা",
+    bannerHeadingBengali: "প্রাণ-প্রকৃতি-পরিবেশের আহ্বানে জিয়নকাঠির সুস্থায়ী পথচলা",
     bannerSubtitle:
       "Dedicated to pesticide-free organic farming, conserving 56 indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal.",
     bannerSubtitleBengali:
-      "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।",
+      "বাংলার গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সংস্থা।",
     quoteBengali:
       "পরিবেশের এই চরম সংকটকালে বিশ্বব্যাপী হুমকির সামনে আমরা স্থানীয় স্তরে একজোট হয়ে প্রকৃতি, মানুষ ও জীবজগতকে রক্ষা করার যে প্রচেষ্টা চালাচ্ছি... তার নামই জিয়নকাঠি।",
     quoteEnglish:
@@ -132,7 +132,7 @@ export const FULL_INITIAL_SITE_DATA = {
     heroImage: "/images/paddy-harvesting.jpg",
     statSeeds: "৫৬ রকম",
     statYears: "১৩+",
-    statFamilies: "৩৫০+",
+    statFamilies: "৫০+",
     address:
       "প্লট নং ১৯৪২, গ্রাম ও ডাকঘর: প্রতাপপুর, থানা: আউশগ্রাম, জেলা: পূর্ব বর্ধমান, পশ্চিমবঙ্গ",
     addressEnglish:
@@ -339,3 +339,5 @@ export const FULL_INITIAL_SITE_DATA = {
   ],
 };
 
+export const initialSiteData = FULL_INITIAL_SITE_DATA;
+export default FULL_INITIAL_SITE_DATA;

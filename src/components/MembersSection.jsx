@@ -59,45 +59,39 @@ export default function MembersSection({ setActiveTab }) {
   };
 
   return (
-    <div id="members-section" className="py-16 sm:py-20 bg-[#faf7f0] w-full min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-16 sm:space-y-20">
+    <div id="members-section" className="py-10 sm:py-16 bg-stone-50 w-full min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
 
         {/* Top Members Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
+        <div className="border-b border-stone-200 pb-6 text-center max-w-3xl mx-auto space-y-3">
 
-
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-stone-900 tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-stone-900 tracking-tight">
             {language === "bn" ? "আমাদের নির্বাহী সদস্যবৃন্দ" : "Executive Members"}
           </h1>
 
-          <p className="text-base sm:text-lg text-stone-600 leading-relaxed font-medium">
-            {language === "bn"
-              ? "জিয়নকাঠির দৈনন্দিন সুপরিচালনা, দেশীয় বীজ রক্ষা ও সমাজভিত্তিক উন্নয়নের মূল চালিকাশক্তি।"
-              : "Meet the dedicated core leadership driving Jiyonkathi forward every single day."}
-          </p>
         </div>
 
         {/* Core Executive Members Section */}
-        <div className="space-y-12 sm:space-y-16">
+        <div className="space-y-8 sm:space-y-10">
           {members.map((member, index) => {
             const isEven = index % 2 === 0;
             return (
               <motion.div
                 key={member.id || index}
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5, ease: "easeOut" }}
-                className={`flex flex-col lg:flex-row items-center gap-8 lg:gap-14 bg-white p-7 sm:p-10 rounded-3xl border border-stone-200/90 shadow-xs hover:shadow-md transition-shadow ${isEven ? "" : "lg:flex-row-reverse"
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className={`flex flex-col lg:flex-row items-center gap-6 lg:gap-10 bg-white p-6 sm:p-8 rounded-lg border border-stone-200 shadow-sm hover:border-amber-700 transition-colors ${isEven ? "" : "lg:flex-row-reverse"
                   }`}
               >
                 {/* Photo Side */}
                 <div className="w-full lg:w-4/12 flex justify-center">
-                  <div className="w-48 h-48 sm:w-60 sm:h-60 rounded-3xl overflow-hidden shadow-md ring-4 ring-amber-100/60 bg-stone-100 flex-shrink-0 flex items-center justify-center">
+                  <div className="w-44 h-44 sm:w-52 sm:h-52 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 shrink-0 flex items-center justify-center">
                     {member.image ? (
                       <img src={member.image} alt={member.name} className="w-full h-full object-cover" />
                     ) : (
-                      <Users className="w-20 h-20 text-stone-400" />
+                      <Users className="w-16 h-16 text-stone-400" />
                     )}
                   </div>
                 </div>
@@ -105,20 +99,20 @@ export default function MembersSection({ setActiveTab }) {
                 {/* Details Side */}
                 <div className={`w-full lg:w-8/12 flex flex-col ${isEven ? "lg:items-start lg:text-left" : "lg:items-start lg:text-left"} space-y-3`}>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="w-7 h-7 rounded-lg bg-amber-50 text-amber-800 font-bold text-xs flex items-center justify-center border border-amber-200">
+                    <span className="w-6 h-6 rounded bg-amber-50 text-amber-800 font-semibold text-xs flex items-center justify-center border border-amber-200">
                       #{index + 1}
                     </span>
-                    <span className="inline-flex items-center space-x-1.5 bg-emerald-50 text-emerald-800 px-3 py-1 rounded-full text-xs font-bold border border-emerald-200">
+                    <span className="inline-flex items-center space-x-1.5 bg-emerald-50 text-emerald-800 px-2.5 py-0.5 rounded text-xs font-semibold border border-emerald-200">
                       <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
                       <span>{member.role}</span>
                     </span>
                   </div>
 
-                  <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
+                  <h2 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
                     {member.name}
                   </h2>
 
-                  <p className="text-stone-600 text-sm sm:text-base leading-relaxed font-normal">
+                  <p className="text-stone-600 text-sm leading-relaxed">
                     {member.bio}
                   </p>
                 </div>
@@ -128,16 +122,16 @@ export default function MembersSection({ setActiveTab }) {
         </div>
 
         {/* Dedicated Members & Community Volunteers Carousel Section */}
-        <div id="members-carousel-container" className="border-t border-stone-200/80 pt-16 space-y-10">
+        <div id="members-carousel-container" className="border-t border-stone-200 pt-12 space-y-8">
 
           {/* Section Heading with Navigation Buttons */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white p-7 sm:p-9 rounded-3xl border border-stone-200 shadow-2xs">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 bg-white p-6 sm:p-8 rounded-lg border border-stone-200 shadow-sm">
             <div className="space-y-2">
-              <span className="text-xs font-bold text-emerald-800 uppercase tracking-wide flex items-center space-x-1.5">
-                <Sparkles className="w-4 h-4 text-emerald-600" />
+              <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wide flex items-center space-x-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
                 <span>{language === "bn" ? "সাধারণ সদস্য ও স্বেচ্ছাসেবক পরিজন" : "Members & Volunteers Showcase"}</span>
               </span>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
                 {language === "bn" ? "আমাদের সাধারণ সদস্যবৃন্দ" : "Community Members & Volunteers"}
               </h2>
               <p className="text-xs sm:text-sm text-stone-600 max-w-xl leading-relaxed">
@@ -153,7 +147,7 @@ export default function MembersSection({ setActiveTab }) {
                 <button
                   onClick={handlePrev}
                   id="members-carousel-prev"
-                  className="bg-stone-50 hover:bg-amber-600 text-stone-700 hover:text-white p-3 rounded-2xl transition-all border border-stone-200 active:scale-95"
+                  className="bg-white hover:bg-stone-100 text-stone-700 p-2 rounded-md transition-colors border border-stone-200 active:scale-95"
                   title="Previous Member"
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -161,7 +155,7 @@ export default function MembersSection({ setActiveTab }) {
                 <button
                   onClick={handleNext}
                   id="members-carousel-next"
-                  className="bg-stone-50 hover:bg-amber-600 text-stone-700 hover:text-white p-3 rounded-2xl transition-all border border-stone-200 active:scale-95"
+                  className="bg-white hover:bg-stone-100 text-stone-700 p-2 rounded-md transition-colors border border-stone-200 active:scale-95"
                   title="Next Member"
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -177,15 +171,15 @@ export default function MembersSection({ setActiveTab }) {
                 <AnimatePresence mode="wait">
                   <motion.div
                     key={carouselIndex}
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.98 }}
-                    transition={{ duration: 0.25 }}
-                    className="bg-white rounded-3xl border border-stone-200 shadow-xs p-7 sm:p-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="bg-white rounded-lg border border-stone-200 shadow-sm p-6 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center"
                   >
                     {/* Photo Column */}
                     <div className="lg:col-span-4 flex justify-center">
-                      <div className="w-44 h-44 sm:w-56 sm:h-56 rounded-3xl overflow-hidden border-2 border-stone-100 shadow-sm bg-stone-100 shrink-0 flex items-center justify-center">
+                      <div className="w-40 h-40 sm:w-48 sm:h-48 rounded-lg overflow-hidden border border-stone-200 bg-stone-100 shrink-0 flex items-center justify-center">
                         {volunteersList[carouselIndex].image ? (
                           <img
                             src={volunteersList[carouselIndex].image}
@@ -199,41 +193,41 @@ export default function MembersSection({ setActiveTab }) {
                     </div>
 
                     {/* Info Column */}
-                    <div className="lg:col-span-8 space-y-4">
-                      <div className="flex flex-wrap items-center gap-2.5">
-                        <span className="bg-emerald-50 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full border border-emerald-200 flex items-center space-x-1">
+                    <div className="lg:col-span-8 space-y-3">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="bg-emerald-50 text-emerald-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-emerald-200 flex items-center space-x-1">
                           <Award className="w-3.5 h-3.5 text-emerald-600" />
                           <span>{volunteersList[carouselIndex].designation || "Community Member"}</span>
                         </span>
 
                         {/* DDBMPBS Special Badge */}
                         {volunteersList[carouselIndex].isDdbmpbs && (
-                          <span className="bg-amber-100 text-amber-900 text-xs font-extrabold px-3 py-1 rounded-full border border-amber-300 flex items-center space-x-1 shadow-2xs">
+                          <span className="bg-amber-100 text-amber-900 text-xs font-semibold px-2.5 py-0.5 rounded border border-amber-300 flex items-center space-x-1">
                             <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
                             <span>DDBMPBS Affiliate</span>
                           </span>
                         )}
 
-                        <span className="bg-stone-50 text-stone-600 text-xs font-semibold px-3 py-1 rounded-full border border-stone-200 flex items-center space-x-1">
+                        <span className="bg-stone-50 text-stone-600 text-xs font-medium px-2.5 py-0.5 rounded border border-stone-200 flex items-center space-x-1">
                           <MapPin className="w-3.5 h-3.5 text-stone-500" />
                           <span>{volunteersList[carouselIndex].location || "Purba Bardhaman, WB"}</span>
                         </span>
                       </div>
 
-                      <h3 className="text-2xl sm:text-3xl font-extrabold text-stone-900">
+                      <h3 className="text-xl sm:text-2xl font-bold text-stone-900">
                         {volunteersList[carouselIndex].name}
                       </h3>
 
-                      <p className="text-stone-700 text-sm sm:text-base leading-relaxed bg-[#fdfbf7] p-4 sm:p-5 rounded-2xl border border-stone-200/80">
+                      <p className="text-stone-700 text-sm leading-relaxed bg-stone-50 p-4 rounded-md border border-stone-200">
                         &quot;{volunteersList[carouselIndex].bio || "Active community member dedicated to environmental conservation and village children education."}&quot;
                       </p>
 
                       <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center space-x-2 text-xs font-bold text-amber-800">
-                          <HandHelping className="w-4 h-4 text-amber-600" />
+                        <div className="flex items-center space-x-2 text-xs font-semibold text-amber-800">
+                          <HandHelping className="w-4 h-4 text-amber-700" />
                           <span>{language === "bn" ? `সদস্য নং ${carouselIndex + 1}` : `Member #${carouselIndex + 1}`}</span>
                         </div>
-                        <div className="text-xs text-stone-500 font-medium">
+                        <div className="text-xs text-stone-500">
                           {carouselIndex + 1} / {volunteersList.length}
                         </div>
                       </div>
@@ -242,12 +236,12 @@ export default function MembersSection({ setActiveTab }) {
                 </AnimatePresence>
 
                 {/* Dot Indicators */}
-                <div className="flex justify-center space-x-2 mt-6">
+                <div className="flex justify-center space-x-1.5 mt-4">
                   {volunteersList.map((_, idx) => (
                     <button
                       key={idx}
                       onClick={() => setCarouselIndex(idx)}
-                      className={`h-2.5 rounded-full transition-all duration-300 ${idx === carouselIndex ? "w-8 bg-amber-600" : "w-2.5 bg-stone-300 hover:bg-stone-400"
+                      className={`h-2 rounded-full transition-colors ${idx === carouselIndex ? "w-6 bg-amber-700" : "w-2 bg-stone-300 hover:bg-stone-400"
                         }`}
                       title={`Go to member ${idx + 1}`}
                     />
@@ -256,38 +250,38 @@ export default function MembersSection({ setActiveTab }) {
               </div>
 
               {/* Grid View of All Members */}
-              <div className="pt-8">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-stone-500 mb-6 text-center">
+              <div className="pt-6">
+                <h4 className="text-xs font-semibold uppercase tracking-wider text-stone-500 mb-4 text-center">
                   {language === "bn" ? "সকল সাধারণ সদস্যদের তালিকা" : "All Community Members"}
                 </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {volunteersList.map((vol, idx) => (
                     <div
                       key={vol.id || idx}
                       onClick={() => setCarouselIndex(idx)}
-                      className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center space-x-3.5 ${idx === carouselIndex
-                        ? "bg-amber-50/70 border-amber-300 ring-2 ring-amber-400/40 shadow-xs"
-                        : "bg-white border-stone-200 hover:border-amber-200 hover:bg-stone-50/50"
+                      className={`p-3 rounded-lg border transition-colors cursor-pointer flex items-center space-x-3 ${idx === carouselIndex
+                        ? "bg-amber-50 border-amber-300 ring-1 ring-amber-400"
+                        : "bg-white border-stone-200 hover:border-amber-700 hover:bg-stone-50"
                         }`}
                     >
-                      <div className="w-12 h-12 rounded-xl overflow-hidden bg-stone-100 shrink-0 flex items-center justify-center border border-stone-200">
+                      <div className="w-11 h-11 rounded-md overflow-hidden bg-stone-100 shrink-0 flex items-center justify-center border border-stone-200">
                         {vol.image ? (
                           <img src={vol.image} alt={vol.name} className="w-full h-full object-cover" />
                         ) : (
-                          <Users className="w-6 h-6 text-stone-400" />
+                          <Users className="w-5 h-5 text-stone-400" />
                         )}
                       </div>
                       <div className="overflow-hidden space-y-0.5">
                         <div className="flex items-center space-x-1.5">
-                          <h5 className="text-sm font-bold text-stone-900 truncate">{vol.name}</h5>
+                          <h5 className="text-xs font-bold text-stone-900 truncate">{vol.name}</h5>
                           {vol.isDdbmpbs && (
-                            <span className="bg-amber-100 text-amber-900 text-[9px] font-black px-1.5 py-0.2 rounded border border-amber-200 shrink-0">
+                            <span className="bg-amber-100 text-amber-900 text-xs font-semibold px-1 py-0.5 rounded border border-amber-200 shrink-0">
                               DDBMPBS
                             </span>
                           )}
                         </div>
                         <p className="text-xs text-emerald-800 font-medium truncate">{vol.designation || "Community Member"}</p>
-                        <p className="text-[11px] text-stone-400 truncate">{vol.location || "Purba Bardhaman, WB"}</p>
+                        <p className="text-xs text-stone-500 truncate">{vol.location || "Purba Bardhaman, WB"}</p>
                       </div>
                     </div>
                   ))}
@@ -295,14 +289,14 @@ export default function MembersSection({ setActiveTab }) {
               </div>
             </>
           ) : (
-            <div className="bg-white rounded-3xl border border-stone-200 p-8 sm:p-12 text-center max-w-2xl mx-auto space-y-4 shadow-2xs">
-              <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-700 flex items-center justify-center mx-auto border border-amber-200">
-                <Users className="w-8 h-8" />
+            <div className="bg-white rounded-lg border border-stone-200 p-8 sm:p-10 text-center max-w-xl mx-auto space-y-4 shadow-sm">
+              <div className="w-12 h-12 rounded-md bg-amber-50 text-amber-700 flex items-center justify-center mx-auto border border-amber-200">
+                <Users className="w-6 h-6" />
               </div>
-              <h3 className="text-xl font-extrabold text-stone-900">
+              <h3 className="text-lg font-bold text-stone-900">
                 {language === "bn" ? "সাধারণ সদস্য ও স্বেচ্ছাসেবী হিসেবে যুক্ত হোন" : "Join as a Volunteer or Community Member"}
               </h3>
-              <p className="text-sm text-stone-600 leading-relaxed max-w-lg mx-auto">
+              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed max-w-md mx-auto">
                 {language === "bn"
                   ? "বর্তমানে সাধারণ সদস্যের তালিকা প্রস্তুত করা হচ্ছে। আপনি জিয়নকাঠির প্রাকৃতিক কৃষি, বীজ সংরক্ষণ ও শিশুদের পাঠদানে অংশ নিতে এখনই আবেদন করতে পারেন।"
                   : "We are currently compiling our community volunteers registry. You can submit an application to join our agricultural conservation and village learning initiatives."}
@@ -311,7 +305,7 @@ export default function MembersSection({ setActiveTab }) {
                 <div className="pt-2">
                   <button
                     onClick={() => setActiveTab("volunteer")}
-                    className="inline-flex items-center space-x-2 bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs sm:text-sm px-6 py-3 rounded-2xl transition-all shadow-xs cursor-pointer active:scale-95"
+                    className="inline-flex items-center space-x-2 bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs sm:text-sm px-5 py-2.5 rounded-md transition-colors"
                   >
                     <HandHelping className="w-4 h-4" />
                     <span>{language === "bn" ? "স্বেচ্ছাসেবী আবেদন ফর্ম খুলুন" : "Open Volunteer Application Form"}</span>

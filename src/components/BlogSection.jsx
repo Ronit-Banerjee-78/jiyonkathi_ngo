@@ -20,8 +20,9 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { BLOGS, DEFAULT_VIDEOS } from "../data";
+import { getShareUrl, shareContent } from "../utils/urlUtils";
 
-export default function BlogSection() {
+export default function BlogSection({ targetBlogId = null, onSelectBlog = null, onClearTarget = null }) {
   const { siteData, language: globalLanguage } = useContext(SiteContext);
   const [selectedBlog, setSelectedBlog] = useState(null);
   const [overrideLang, setOverrideLang] = useState(null);
@@ -78,68 +79,139 @@ export default function BlogSection() {
     };
   }, [selectedBlog]);
 
-  const handleAddComment = (e) => {
+  // Handle opening targeted blog (from deep link or direct URL)
+  useEffect(() => {
+    if (targetBlogId && allBlogs.length > 0) {
+      const targetStr = String(targetBlogId).toLowerCase();
+      const matched = allBlogs.find(
+        (b) => String(b.id).toLowerCase() === targetStr || String(b.slug || "").toLowerCase() === targetStr
+      );
+      if (matched) {
+        setSelectedBlog(matched);
+      }
+    }
+  }, [targetBlogId, allBlogs]);
+
+  const handleOpenBlog = (blog) => {
+    setSelectedBlog(blog);
+    if (onSelectBlog && blog?.id) {
+      onSelectBlog(blog.id);
+    }
+  };
+
+  const handleCloseBlog = () => {
+    setSelectedBlog(null);
+    if (onClearTarget) {
+      onClearTarget();
+    }
+  };
+
+  const handleShareBlog = async (blog) => {
+    if (!blog) return;
+    const title = blogViewLang === "bn"
+      ? (blog.titleBengali || blog.title)
+      : (blog.titleEnglish || blog.title);
+    const excerpt = blogViewLang === "bn"
+      ? (blog.excerptBengali || blog.excerpt)
+      : (blog.excerptEnglish || blog.excerpt || blog.description);
+    const url = getShareUrl(`/blog/${blog.id}`);
+
+    await shareContent({
+      title,
+      text: excerpt ? `${title}\n${excerpt}` : title,
+      url,
+    });
+  };
+
+  const [commentsLoading, setCommentsLoading] = useState(false);
+  const [commentSubmitting, setCommentSubmitting] = useState(false);
+
+  // Fetch comments when blog modal opens
+  useEffect(() => {
+    if (!selectedBlog?.id) return;
+    const blogId = selectedBlog.id;
+    setCommentsLoading(true);
+    fetch(`/api/blogs/${encodeURIComponent(blogId)}/comments`)
+      .then((res) => res.json())
+      .then((json) => {
+        if (json.success && Array.isArray(json.comments)) {
+          setComments((prev) => ({
+            ...prev,
+            [blogId]: json.comments,
+          }));
+        }
+      })
+      .catch((err) => console.warn("Failed to load comments:", err))
+      .finally(() => setCommentsLoading(false));
+  }, [selectedBlog?.id]);
+
+  const handleAddComment = async (e) => {
     e.preventDefault();
-    if (!newComment.trim() || !selectedBlog) return;
+    if (!newComment.trim() || !selectedBlog || commentSubmitting) return;
 
     const blogId = selectedBlog.id;
-    const currentList = comments[blogId] || [];
-    const newEntry = {
-      id: Date.now(),
-      author: authorName.trim() || (blogViewLang === "bn" ? "হিতৈষী পাঠক" : "Anonymous Reader"),
-      text: newComment.trim(),
-      date: blogViewLang === "bn" ? "এখনই" : "Just now"
-    };
+    const author = authorName.trim() || (blogViewLang === "bn" ? "হিতৈষী পাঠক" : "Anonymous Reader");
+    const text = newComment.trim();
 
-    setComments({
-      ...comments,
-      [blogId]: [newEntry, ...currentList]
-    });
-
-    setNewComment("");
-    setCommentSuccess(true);
-    setTimeout(() => setCommentSuccess(false), 3000);
+    setCommentSubmitting(true);
+    try {
+      const res = await fetch(`/api/blogs/${encodeURIComponent(blogId)}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ author, text }),
+      });
+      const json = await res.json();
+      if (json.success && json.comment) {
+        setComments((prev) => ({
+          ...prev,
+          [blogId]: [json.comment, ...(prev[blogId] || [])],
+        }));
+        setNewComment("");
+        setAuthorName("");
+        setCommentSuccess(true);
+        setTimeout(() => setCommentSuccess(false), 3000);
+      } else {
+        alert(json.error || "Failed to post comment");
+      }
+    } catch (err) {
+      alert("Error posting comment: " + err.message);
+    } finally {
+      setCommentSubmitting(false);
+    }
   };
 
   return (
-    <div className="py-14 sm:py-20 bg-[#faf7f0] w-full min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+    <div className="py-8 sm:py-14 bg-stone-50 w-full min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
 
         {/* Header & Language Switcher for Blog */}
-        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 border-b border-stone-200/90 pb-8">
-          <div className="space-y-3 max-w-2xl">
-            {/* <span className="text-amber-800 bg-amber-100/80 px-3.5 py-1 rounded-full text-xs font-black uppercase tracking-wider border border-amber-300/70 inline-block">
-              {blogViewLang === "bn" ? "জিয়নকাঠি বার্তা ও ব্লগ" : "Jiyonkathi Blog & Stories"}
-            </span> */}
-            <h1 className="text-3xl sm:text-4xl font-black text-stone-900 leading-tight">
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 border-b border-stone-200 pb-6">
+          <div className="space-y-2 max-w-2xl">
+            <h1 className="text-3xl sm:text-4xl font-bold text-stone-900 leading-tight">
               {blogViewLang === "bn"
                 ? "প্রকৃতি, পরিবেশ ও গ্রামীণ জীবনের অভিজ্ঞতা"
                 : "Stories of Sustainable Living & Rural Joy"}
             </h1>
-            <p className="text-sm sm:text-base text-stone-600 leading-relaxed font-medium">
-              {blogViewLang === "bn"
-                ? "দেশীয় ধান ও বীজ সংরক্ষণ, বিষমুক্ত কৃষি, সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতিবান্ধব জীবনযাপনের সচিত্র প্রতিবেদন।"
-                : "Documented stories of indigenous heirloom seed conservation, organic farming, and village learning centers."}
-            </p>
+
           </div>
 
           {/* Bilingual Reading Switcher */}
-          <div className="flex items-center space-x-2 self-start md:self-end bg-white p-1.5 rounded-2xl border border-stone-200 shadow-2xs">
-            <Globe className="w-4 h-4 text-amber-700 ml-2" />
+          <div className="flex items-center space-x-1.5 self-start md:self-end bg-white p-1 rounded-lg border border-stone-200">
+            <Globe className="w-4 h-4 text-amber-800 ml-1.5" />
             <button
               onClick={() => setOverrideLang("bn")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${blogViewLang === "bn"
-                  ? "bg-amber-600 text-white shadow-2xs"
-                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${blogViewLang === "bn"
+                ? "bg-amber-700 text-white"
+                : "text-stone-600 hover:text-stone-900"
                 }`}
             >
               বাংলায় পড়ুন
             </button>
             <button
               onClick={() => setOverrideLang("en")}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${blogViewLang === "en"
-                  ? "bg-amber-600 text-white shadow-2xs"
-                  : "text-stone-600 hover:text-stone-900 hover:bg-stone-50"
+              className={`px-3 py-1 rounded-md text-xs font-semibold transition-colors ${blogViewLang === "en"
+                ? "bg-amber-700 text-white"
+                : "text-stone-600 hover:text-stone-900"
                 }`}
             >
               Read in English
@@ -149,14 +221,14 @@ export default function BlogSection() {
 
         {/* Category Filters */}
         {categories.length > 2 && (
-          <div className="flex items-center space-x-2 overflow-x-auto pb-2 no-scrollbar">
+          <div className="flex items-center space-x-2 overflow-x-auto pb-1 no-scrollbar">
             {categories.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setActiveCategory(cat)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${activeCategory === cat
-                    ? "bg-stone-900 text-white shadow-2xs"
-                    : "bg-white text-stone-600 border border-stone-200 hover:border-amber-300"
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold whitespace-nowrap transition-colors ${activeCategory === cat
+                  ? "bg-stone-900 text-white"
+                  : "bg-white text-stone-700 border border-stone-200 hover:border-stone-400"
                   }`}
               >
                 {cat === "all" ? (blogViewLang === "bn" ? "সকল বার্তা" : "All Stories") : cat}
@@ -166,7 +238,7 @@ export default function BlogSection() {
         )}
 
         {/* Blogs Grid */}
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {filteredBlogs.map((blog, idx) => {
             const isVideo = blog.type === "video" || Boolean(blog.videoUrl);
             const title = blogViewLang === "bn"
@@ -183,24 +255,24 @@ export default function BlogSection() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.35, delay: idx * 0.06 }}
-                onClick={() => setSelectedBlog(blog)}
-                className="bg-white rounded-3xl border border-stone-200/90 overflow-hidden hover:shadow-xl hover:border-amber-300 transition-all cursor-pointer flex flex-col h-full group"
+                onClick={() => handleOpenBlog(blog)}
+                className="bg-white rounded-lg border border-stone-200 overflow-hidden hover:border-amber-700 transition-colors cursor-pointer flex flex-col h-full group shadow-sm"
               >
                 {/* Thumbnail / Video Banner */}
-                <div className="relative h-52 bg-stone-900 overflow-hidden shrink-0">
+                <div className="relative h-48 bg-stone-900 overflow-hidden shrink-0">
                   {isVideo ? (
                     <div className="w-full h-full relative flex items-center justify-center bg-stone-950">
                       <video
                         src={blog.videoUrl}
-                        className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover opacity-60 group-hover:scale-105 transition-transform duration-300"
                         muted
                         playsInline
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-stone-950/80 via-black/20 to-transparent" />
-                      <div className="w-14 h-14 rounded-full bg-amber-600 text-white flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform z-10">
-                        <Play className="w-6 h-6 fill-white translate-x-0.5" />
+                      <div className="w-12 h-12 rounded-full bg-amber-700 text-white flex items-center justify-center shadow-md z-10">
+                        <Play className="w-5 h-5 fill-white translate-x-0.5" />
                       </div>
-                      <span className="absolute bottom-3 left-3 bg-stone-900/90 text-amber-400 text-[10px] font-bold px-2.5 py-1 rounded-md border border-stone-700 flex items-center space-x-1">
+                      <span className="absolute bottom-2.5 left-2.5 bg-stone-900/90 text-amber-400 text-xs font-semibold px-2 py-0.5 rounded border border-stone-700 flex items-center space-x-1">
                         <Video className="w-3 h-3" />
                         <span>{blogViewLang === "bn" ? "ভিডিও ডকুমেন্টারি" : "Video Documentary"}</span>
                       </span>
@@ -210,15 +282,15 @@ export default function BlogSection() {
                       <img
                         src={blog.image}
                         alt={title || "Blog image"}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                     </div>
                   ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-amber-900 via-stone-900 to-stone-950 p-6 flex flex-col justify-between text-white relative">
-                      <div className="flex items-center space-x-2 text-amber-400 text-xs font-bold uppercase tracking-wider">
-                        <Sparkles className="w-4 h-4" />
+                    <div className="w-full h-full bg-stone-900 p-5 flex flex-col justify-between text-white relative">
+                      <div className="flex items-center space-x-1.5 text-amber-400 text-xs font-semibold uppercase tracking-wider">
+                        <Sparkles className="w-3.5 h-3.5" />
                         <span>{blog.category || "Jiyonkathi Story"}</span>
                       </div>
                       <p className="text-sm font-bold line-clamp-3 text-stone-100 leading-snug">
@@ -227,17 +299,17 @@ export default function BlogSection() {
                     </div>
                   )}
 
-                  <span className="absolute top-3 right-3 bg-white/90 backdrop-blur-md text-stone-800 text-[11px] font-bold px-3 py-1 rounded-full shadow-2xs">
+                  <span className="absolute top-2.5 right-2.5 bg-stone-900/80 text-white text-xs font-semibold px-2 py-0.5 rounded">
                     {blog.category || (blogViewLang === "bn" ? "ব্লগ" : "Article")}
                   </span>
                 </div>
 
                 {/* Body Content */}
-                <div className="p-6 flex-grow flex flex-col justify-between space-y-4">
-                  <div className="space-y-3">
-                    <div className="flex items-center space-x-3 text-xs font-semibold text-stone-400">
+                <div className="p-5 flex-grow flex flex-col justify-between space-y-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center space-x-2 text-xs text-stone-500">
                       <span className="flex items-center space-x-1">
-                        <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                        <Calendar className="w-3.5 h-3.5 text-amber-800" />
                         <span>{blog.date}</span>
                       </span>
                       {blog.readTime && (
@@ -251,25 +323,25 @@ export default function BlogSection() {
                       )}
                     </div>
 
-                    <h3 className="text-lg font-extrabold text-stone-900 group-hover:text-amber-700 transition-colors leading-snug line-clamp-2">
+                    <h3 className="text-base font-bold text-stone-900 group-hover:text-amber-800 transition-colors leading-snug line-clamp-2">
                       {title}
                     </h3>
 
-                    <p className="text-xs sm:text-sm text-stone-600 leading-relaxed line-clamp-3 font-medium">
+                    <p className="text-xs text-stone-600 leading-relaxed line-clamp-3">
                       {excerpt}
                     </p>
                   </div>
 
                   {/* Footer Bar */}
-                  <div className="flex items-center justify-between pt-4 border-t border-stone-100">
-                    <div className="flex items-center space-x-2 text-xs font-semibold text-stone-600">
-                      <div className="w-7 h-7 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center font-bold text-xs border border-amber-200">
-                        <User className="w-3.5 h-3.5" />
+                  <div className="flex items-center justify-between pt-3 border-t border-stone-100">
+                    <div className="flex items-center space-x-2 text-xs font-medium text-stone-600">
+                      <div className="w-6 h-6 bg-stone-100 text-stone-700 rounded-full flex items-center justify-center font-semibold text-xs border border-stone-200">
+                        <User className="w-3 h-3" />
                       </div>
                       <span className="truncate max-w-[120px]">{blog.author || "জিয়নকাঠি টিম"}</span>
                     </div>
 
-                    <button className="text-amber-700 font-black text-xs flex items-center space-x-1 group-hover:space-x-2 transition-all">
+                    <button className="text-amber-800 font-semibold text-xs flex items-center space-x-1">
                       <span>{blogViewLang === "bn" ? "বিস্তারিত পড়ুন" : "Read Full Story"}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
@@ -284,13 +356,13 @@ export default function BlogSection() {
       {/* FULL BLOG MODAL DIALOG */}
       <AnimatePresence>
         {selectedBlog && (
-          <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6 lg:p-8">
+          <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4 sm:p-6">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              onClick={() => setSelectedBlog(null)}
-              className="fixed inset-0 bg-stone-950/70 backdrop-blur-xs"
+              onClick={handleCloseBlog}
+              className="fixed inset-0 bg-stone-900/60"
             />
 
             <motion.div
@@ -298,15 +370,15 @@ export default function BlogSection() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 20 }}
               transition={{ duration: 0.25 }}
-              className="relative bg-white w-full max-w-3xl rounded-3xl shadow-2xl overflow-hidden border border-stone-200 z-10 max-h-[90vh] flex flex-col my-auto"
+              className="relative bg-white w-full max-w-2xl rounded-lg shadow-lg overflow-hidden border border-stone-300 z-10 max-h-[90vh] flex flex-col my-auto"
             >
               {/* Sticky Top Header */}
-              <div className="sticky top-0 bg-white/95 backdrop-blur-md border-b border-stone-200 px-6 py-4 flex items-center justify-between z-20">
-                <div className="flex items-center space-x-3">
-                  <span className="bg-amber-100 text-amber-900 text-xs font-extrabold px-3 py-1 rounded-full border border-amber-200">
+              <div className="sticky top-0 bg-stone-50 border-b border-stone-200 px-5 py-3 flex items-center justify-between z-20">
+                <div className="flex items-center space-x-2.5">
+                  <span className="bg-stone-100 text-stone-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-stone-200">
                     {selectedBlog.category || (blogViewLang === "bn" ? "ব্লগ বিবরণ" : "Blog Details")}
                   </span>
-                  <span className="text-xs text-stone-400 font-medium">
+                  <span className="text-xs text-stone-500">
                     {selectedBlog.date}
                   </span>
                 </div>
@@ -314,15 +386,15 @@ export default function BlogSection() {
                 <div className="flex items-center space-x-2">
                   <button
                     onClick={() => setOverrideLang(blogViewLang === "bn" ? "en" : "bn")}
-                    className="text-xs font-bold px-3 py-1 bg-stone-100 hover:bg-stone-200 rounded-lg text-stone-700 flex items-center space-x-1"
+                    className="text-xs font-semibold px-2.5 py-1 bg-white hover:bg-stone-100 rounded-md border border-stone-300 text-stone-700 flex items-center space-x-1"
                   >
-                    <Globe className="w-3.5 h-3.5 text-amber-700" />
+                    <Globe className="w-3.5 h-3.5 text-amber-800" />
                     <span>{blogViewLang === "bn" ? "English Version" : "বাংলা সংস্করণ"}</span>
                   </button>
 
                   <button
-                    onClick={() => setSelectedBlog(null)}
-                    className="p-1.5 rounded-full text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors"
+                    onClick={handleCloseBlog}
+                    className="p-1 rounded-md text-stone-400 hover:text-stone-800 hover:bg-stone-100 transition-colors"
                     title="Close Modal"
                   >
                     <X className="w-5 h-5" />
@@ -331,38 +403,36 @@ export default function BlogSection() {
               </div>
 
               {/* Scrollable Body */}
-              <div className="p-6 sm:p-8 overflow-y-auto space-y-6 flex-grow">
-                <h2 className="text-2xl sm:text-3xl font-black text-stone-900 leading-tight">
+              <div className="p-6 overflow-y-auto space-y-5 flex-grow text-stone-800">
+                <h2 className="text-xl sm:text-2xl font-bold text-stone-900 leading-tight">
                   {blogViewLang === "bn"
                     ? (selectedBlog.titleBengali || selectedBlog.title)
                     : (selectedBlog.titleEnglish || selectedBlog.title)}
                 </h2>
 
-                <div className="flex items-center justify-between pb-4 border-b border-stone-100 text-xs text-stone-500">
+                <div className="flex items-center justify-between pb-3 border-b border-stone-100 text-xs text-stone-500">
                   <div className="flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center font-bold">
-                      <User className="w-4 h-4" />
+                    <div className="w-7 h-7 rounded-full bg-amber-700 text-white flex items-center justify-center font-bold">
+                      <User className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <p className="font-bold text-stone-800 text-sm">{selectedBlog.author || "জিয়নকাঠি টিম"}</p>
-                      <p className="text-[11px] text-stone-400">{selectedBlog.date}</p>
+                      <p className="font-semibold text-stone-800 text-xs">{selectedBlog.author || "জিয়নকাঠি টিম"}</p>
+                      <p className="text-[11px] text-stone-500">{selectedBlog.date}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
-                    <span className="bg-stone-100 text-stone-600 px-2.5 py-1 rounded-lg font-medium flex items-center space-x-1">
-                      <MessageSquare className="w-3.5 h-3.5 text-amber-600" />
-                      <span>
-                        {(selectedBlog.commentsCount || 0) + (comments[selectedBlog.id]?.length || 0)}{" "}
-                        {blogViewLang === "bn" ? "মন্তব্য" : "comments"}
-                      </span>
+                  <div className="flex items-center space-x-1.5 text-stone-600">
+                    <MessageSquare className="w-3.5 h-3.5 text-amber-800" />
+                    <span>
+                      {(selectedBlog.commentsCount || 0) + (comments[selectedBlog.id]?.length || 0)}{" "}
+                      {blogViewLang === "bn" ? "মন্তব্য" : "comments"}
                     </span>
                   </div>
                 </div>
 
                 {/* Media Player / Image Display */}
                 {selectedBlog.type === "video" || selectedBlog.videoUrl ? (
-                  <div className="bg-black rounded-2xl overflow-hidden shadow-lg aspect-video relative">
+                  <div className="bg-black rounded-lg overflow-hidden shadow-sm aspect-video relative">
                     <video
                       src={selectedBlog.videoUrl}
                       controls
@@ -373,7 +443,7 @@ export default function BlogSection() {
                   </div>
                 ) : (
                   selectedBlog.image && (
-                    <div className="rounded-2xl overflow-hidden shadow-md max-h-96">
+                    <div className="rounded-lg overflow-hidden shadow-sm max-h-80">
                       <img
                         src={selectedBlog.image}
                         alt={selectedBlog.title}
@@ -385,27 +455,27 @@ export default function BlogSection() {
                 )}
 
                 {/* Full Article Text */}
-                <div className="prose prose-stone max-w-none space-y-4 text-stone-700 leading-relaxed text-sm sm:text-base font-normal whitespace-pre-line">
+                <div className="text-sm text-stone-700 leading-relaxed whitespace-pre-line">
                   {blogViewLang === "bn"
                     ? (selectedBlog.contentBengali || selectedBlog.content || selectedBlog.excerpt)
                     : (selectedBlog.contentEnglish || selectedBlog.content || selectedBlog.excerptEnglish || selectedBlog.excerpt)}
                 </div>
 
                 {/* Interactive Comments Section */}
-                <div className="pt-8 border-t border-stone-200 space-y-6">
-                  <h3 className="text-xl font-bold text-stone-900 flex items-center space-x-2">
-                    <MessageSquare className="w-5 h-5 text-amber-600" />
+                <div className="pt-6 border-t border-stone-200 space-y-4">
+                  <h3 className="text-base font-bold text-stone-900 flex items-center space-x-2">
+                    <MessageSquare className="w-4 h-4 text-amber-800" />
                     <span>{blogViewLang === "bn" ? "পাঠকদের মতামত ও মন্তব্য" : "Comments & Reactions"}</span>
                   </h3>
 
-                  <form onSubmit={handleAddComment} className="bg-[#faf7f0] p-4 sm:p-5 rounded-2xl border border-stone-200 space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <form onSubmit={handleAddComment} className="bg-stone-50 p-4 rounded-lg border border-stone-200 space-y-2.5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                       <input
                         type="text"
                         placeholder={blogViewLang === "bn" ? "আপনার নাম (ঐচ্ছিক)" : "Your Name (Optional)"}
                         value={authorName}
                         onChange={(e) => setAuthorName(e.target.value)}
-                        className="px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                        className="px-3 py-1.5 rounded-md border border-stone-300 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-amber-700 bg-white"
                       />
                     </div>
                     <textarea
@@ -414,38 +484,49 @@ export default function BlogSection() {
                       placeholder={blogViewLang === "bn" ? "আপনার মন্তব্য বা মতামত এখানে লিখুন..." : "Write your thoughts or comment here..."}
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
-                      className="w-full px-3.5 py-2.5 rounded-xl border border-stone-200 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                      className="w-full px-3 py-1.5 rounded-md border border-stone-300 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-amber-700 bg-white"
                     />
 
                     <div className="flex items-center justify-between pt-1">
                       {commentSuccess && (
-                        <span className="text-xs text-emerald-700 font-bold flex items-center space-x-1">
+                        <span className="text-xs text-emerald-700 font-semibold flex items-center space-x-1">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                           <span>{blogViewLang === "bn" ? "মন্তব্য পোস্ট করা হয়েছে!" : "Comment posted successfully!"}</span>
                         </span>
                       )}
                       <button
                         type="submit"
-                        className="bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-xs ml-auto flex items-center space-x-1.5 transition-all cursor-pointer"
+                        disabled={commentSubmitting}
+                        className="bg-amber-700 hover:bg-amber-800 disabled:opacity-60 text-white text-xs font-semibold px-4 py-2 rounded-md ml-auto flex items-center space-x-1.5 transition-colors cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" />
-                        <span>{blogViewLang === "bn" ? "পোস্ট করুন" : "Post Comment"}</span>
+                        <span>
+                          {commentSubmitting
+                            ? (blogViewLang === "bn" ? "পোস্ট হচ্ছে..." : "Posting...")
+                            : (blogViewLang === "bn" ? "পোস্ট করুন" : "Post Comment")}
+                        </span>
                       </button>
                     </div>
                   </form>
 
                   {/* Comment List */}
-                  <div className="space-y-3">
-                    {(comments[selectedBlog.id] || []).length === 0 ? (
-                      <p className="text-xs text-stone-400 italic">
+                  <div className="space-y-2">
+                    {commentsLoading ? (
+                      <p className="text-xs text-stone-500 italic py-2">
+                        {blogViewLang === "bn" ? "মন্তব্য লোড হচ্ছে..." : "Loading comments..."}
+                      </p>
+                    ) : (comments[selectedBlog.id] || []).length === 0 ? (
+                      <p className="text-xs text-stone-500 italic">
                         {blogViewLang === "bn" ? "এখনও কোনো নতুন মন্তব্য দেওয়া হয়নি। আপনার মতপ্রকাশ করুন!" : "No new comments yet. Be the first to share your thoughts!"}
                       </p>
                     ) : (
                       (comments[selectedBlog.id] || []).map((c) => (
-                        <div key={c.id} className="bg-white p-4 rounded-xl border border-stone-150 space-y-1">
-                          <div className="flex justify-between items-center text-xs font-bold text-stone-800">
+                        <div key={c.id} className="bg-white p-3 rounded-md border border-stone-200 space-y-1">
+                          <div className="flex justify-between items-center text-xs font-semibold text-stone-800">
                             <span>{c.author}</span>
-                            <span className="text-[10px] text-stone-400 font-normal">{c.date}</span>
+                            <span className="text-[10px] text-stone-400 font-normal">
+                              {c.created_at ? new Date(c.created_at).toLocaleDateString() : (c.date || (blogViewLang === "bn" ? "সম্প্রতি" : "Recently"))}
+                            </span>
                           </div>
                           <p className="text-xs text-stone-600 leading-relaxed">{c.text}</p>
                         </div>
@@ -456,28 +537,18 @@ export default function BlogSection() {
               </div>
 
               {/* Modal Footer */}
-              <div className="bg-stone-50 border-t border-stone-200 px-6 py-4 flex items-center justify-between">
+              <div className="bg-stone-50 border-t border-stone-200 px-5 py-3 flex items-center justify-between">
                 <button
-                  onClick={() => {
-                    if (navigator.share) {
-                      navigator.share({
-                        title: selectedBlog.title,
-                        url: window.location.href
-                      });
-                    } else {
-                      navigator.clipboard.writeText(window.location.href);
-                      alert(blogViewLang === "bn" ? "লিঙ্ক কপি করা হয়েছে!" : "Link copied to clipboard!");
-                    }
-                  }}
-                  className="text-stone-600 hover:text-stone-900 font-bold text-xs flex items-center space-x-1.5 px-3.5 py-2 rounded-xl border border-stone-200 bg-white cursor-pointer"
+                  onClick={() => handleShareBlog(selectedBlog)}
+                  className="text-stone-700 hover:text-stone-900 font-semibold text-xs flex items-center space-x-1.5 px-3 py-1.5 rounded-md border border-stone-300 bg-white cursor-pointer"
                 >
-                  <Share2 className="w-3.5 h-3.5" />
+                  <Share2 className="w-3.5 h-3.5 text-stone-600" />
                   <span>{blogViewLang === "bn" ? "শেয়ার করুন" : "Share"}</span>
                 </button>
 
                 <button
-                  onClick={() => setSelectedBlog(null)}
-                  className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-6 py-2.5 rounded-xl shadow-xs transition-all cursor-pointer"
+                  onClick={handleCloseBlog}
+                  className="bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs px-4 py-2 rounded-md transition-colors cursor-pointer"
                 >
                   {blogViewLang === "bn" ? "বন্ধ করুন" : "Close"}
                 </button>

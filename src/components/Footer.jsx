@@ -41,16 +41,16 @@ export default function Footer({ setActiveTab }) {
       {/* Top Newsletter CTA */}
       <div
         id="footer-cta-banner"
-        className="border-b border-stone-800/80 bg-stone-900/60 py-10 px-4 sm:px-6 lg:px-8"
+        className="border-b border-stone-800 bg-stone-900 py-8 px-4 sm:px-6 lg:px-8"
       >
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
-          <div className="flex items-center space-x-4">
-            <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-2xl text-amber-400">
-              <HeartHandshake className="w-7 h-7" />
+          <div className="flex items-center space-x-3.5">
+            <div className="p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-lg text-amber-400 shrink-0">
+              <HeartHandshake className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg sm:text-xl font-bold text-white">
-                {language === "bn" ? "মাঠ গবেষণা ও ত্রৈমাসিক বুলেটিন" : "Field Research & Quarterly Bulletin"}
+              <h3 className="text-base sm:text-lg font-bold text-white">
+                {language === "bn" ? "মাঠ অন্বেষণ ও ত্রৈমাসিক বুলেটিন" : "Field Research & Quarterly Bulletin"}
               </h3>
               <p className="text-xs sm:text-sm text-stone-400 mt-0.5">
                 {language === "bn"
@@ -71,13 +71,13 @@ export default function Footer({ setActiveTab }) {
                 placeholder={language === "bn" ? "আপনার ইমেইল লিখুন..." : "Enter your email..."}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-stone-900 border border-stone-800 text-xs sm:text-sm rounded-xl py-2.5 pl-4 pr-10 text-white placeholder-stone-500 focus:outline-none focus:border-amber-500 transition-colors"
+                className="w-full bg-stone-950 border border-stone-800 text-xs sm:text-sm rounded-md py-2 pl-3.5 pr-9 text-white placeholder-stone-500 focus:outline-none focus:border-amber-600 transition-colors"
               />
-              <Mail className="absolute right-3.5 top-3 w-4 h-4 text-stone-500" />
+              <Mail className="absolute right-3 top-2.5 w-4 h-4 text-stone-500" />
             </div>
             <button
               type="submit"
-              className="bg-amber-600 hover:bg-amber-700 text-white px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all flex items-center space-x-1.5 shrink-0 active:scale-95 cursor-pointer"
+              className="bg-amber-600 hover:bg-amber-700 text-white px-4 py-2 rounded-md font-semibold text-xs sm:text-sm transition-colors flex items-center space-x-1.5 shrink-0"
             >
               <span>{subscribed ? (language === "bn" ? "যুক্ত হয়েছেন!" : "Subscribed!") : (language === "bn" ? "সাবস্ক্রাইব" : "Subscribe")}</span>
               {!subscribed && <ArrowRight className="w-3.5 h-3.5" />}
@@ -100,17 +100,17 @@ export default function Footer({ setActiveTab }) {
       </div>
 
       {/* Main Footer Links */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
 
           {/* Column 1: Brand & Logo */}
-          <div className="space-y-4">
+          <div className="space-y-3.5">
             <div className="flex items-center space-x-3 cursor-pointer" onClick={() => handleLinkClick("home")}>
-              <div className="p-1 bg-stone-900 border border-stone-800 rounded-xl">
+              <div className="p-1 bg-stone-900 border border-stone-800 rounded-lg">
                 <img
                   src="/images/logo.svg"
                   alt="Jiyonkathi Logo"
-                  className="h-10 w-10 object-contain"
+                  className="h-9 w-9 object-contain"
                   onError={(e) => {
                     e.target.src = "/logo.svg";
                   }}
@@ -119,9 +119,9 @@ export default function Footer({ setActiveTab }) {
               <div>
                 <span className="text-lg font-black text-white tracking-tight flex items-center space-x-1.5">
                   <span>Jiyonkathi</span>
-                  <span className="text-amber-400 font-extrabold text-sm">(জিয়নকাঠি)</span>
+                  <span className="text-amber-400 font-bold text-sm">(জিয়নকাঠি)</span>
                 </span>
-                <span className="text-[11px] text-stone-400 block font-semibold">A Sustainable Living Community</span>
+                <span className="text-xs text-stone-400 block font-medium">A Sustainable Living Community</span>
               </div>
             </div>
             <p className="text-xs text-stone-400 leading-relaxed font-medium">
@@ -138,7 +138,7 @@ export default function Footer({ setActiveTab }) {
           {/* Column 2: Core Programs & Research */}
           <div className="space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-amber-400">
-              {language === "bn" ? "কার্যক্রম ও গবেষণা" : "Programs & Research"}
+              {language === "bn" ? "কার্যক্রম ও অন্বেষণ" : "Programs & Research"}
             </h4>
             <ul className="space-y-2.5 text-xs text-stone-300 font-medium">
               <li>
@@ -147,7 +147,7 @@ export default function Footer({ setActiveTab }) {
                   className="text-stone-300 hover:text-amber-400 transition-colors flex items-center space-x-1.5"
                 >
                   {/* <FileText className="w-3.5 h-3.5 text-amber-500" /> */}
-                  <span>{language === "bn" ? "আমাদের কাজ ও গবেষণা" : "Work & Research Reports"}</span>
+                  <span>{language === "bn" ? "আমাদের কাজ ও অন্বেষণ" : "Work & Research Reports"}</span>
                 </button>
               </li>
               <li>
@@ -233,16 +233,6 @@ export default function Footer({ setActiveTab }) {
                 <Phone className="w-3.5 h-3.5 text-amber-500 shrink-0" />
                 <span>+91 94340 12345 / 98000 54321</span>
               </div>
-            </div>
-
-            <div className="pt-3 border-t border-stone-800">
-              <button
-                onClick={() => handleLinkClick("portal")}
-                className="inline-flex items-center space-x-1.5 text-xs text-stone-400 hover:text-amber-400 bg-stone-900 border border-stone-800 px-3 py-1.5 rounded-lg transition-colors cursor-pointer"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-500" />
-                <span>{language === "bn" ? "অ্যাডমিন পোর্টাল লগইন" : "Admin Portal Login"}</span>
-              </button>
             </div>
           </div>
         </div>

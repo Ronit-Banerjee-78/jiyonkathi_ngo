@@ -40,7 +40,7 @@ export default function Header({
   const navigationItems = [
     { id: "home", label: language === "bn" ? "প্রচ্ছদ" : "Home", icon: <Home className="w-4 h-4" /> },
     { id: "about", label: language === "bn" ? "আমাদের কথা ও লক্ষ্য" : "About Us & Mission", icon: <Info className="w-4 h-4" /> },
-    { id: "reports", label: language === "bn" ? "আমাদের কাজ ও গবেষণা" : "Work & Reports", icon: <FileText className="w-4 h-4" /> },
+    { id: "reports", label: language === "bn" ? "আমাদের কাজ ও অন্বেষণ" : "Work & Reports", icon: <FileText className="w-4 h-4" /> },
     { id: "volunteer", label: language === "bn" ? "স্বেচ্ছাসেবী" : "Volunteer", icon: <UserPlus className="w-4 h-4" /> },
     { id: "gallery", label: language === "bn" ? "গ্যালারি" : "Gallery", icon: <ImageIcon className="w-4 h-4" /> },
     { id: "blog", label: language === "bn" ? "ব্লগ" : "Blog", icon: <BookOpen className="w-4 h-4" /> },
@@ -50,7 +50,9 @@ export default function Header({
     { id: "events", label: language === "bn" ? "অনুষ্ঠানসূচী" : "Events", icon: <Calendar className="w-4 h-4" /> },
     { id: "members", label: language === "bn" ? "সদস্যবৃন্দ" : "Members", icon: <Users className="w-4 h-4" /> },
     { id: "contact", label: language === "bn" ? "যোগাযোগ" : "Contact", icon: <Mail className="w-4 h-4" /> },
-    { id: "portal", label: language === "bn" ? "অ্যাডমিন পোর্টাল" : "Admin Portal", icon: <ShieldCheck className="w-4 h-4" /> },
+    ...(isAdmin
+      ? [{ id: "admin", label: language === "bn" ? "অ্যাডমিন ড্যাশবোর্ড" : "Admin Dashboard", icon: <ShieldCheck className="w-4 h-4" /> }]
+      : []),
   ];
 
   const handleTabClick = (tabId) => {
@@ -71,21 +73,21 @@ export default function Header({
   return (
     <header
       id="main-header"
-      className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-amber-100/80 shadow-xs transition-all duration-300"
+      className="sticky top-0 z-50 bg-white/95 border-b border-stone-200 backdrop-blur-sm"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-16 sm:h-20">
           {/* Logo container with verified image */}
           <div
             id="header-logo-container"
-            className="flex items-center space-x-3.5 cursor-pointer group select-none shrink-0 mr-6 lg:mr-10"
+            className="flex items-center space-x-3 cursor-pointer group select-none shrink-0 mr-4 lg:mr-8"
             onClick={() => handleTabClick(isAdmin ? "admin" : "home")}
           >
-            <div className="relative flex items-center justify-center p-1.5 bg-amber-50 rounded-2xl border border-amber-200 shadow-2xs group-hover:border-amber-300 transition-colors">
+            <div className="flex items-center justify-center p-1 bg-amber-50 rounded-lg border border-amber-200 group-hover:border-amber-300 transition-colors">
               <img
                 src={siteData?.general?.logoImage || "/images/logo.svg"}
                 alt="Jiyonkathi (জিয়নকাঠি) Logo"
-                className="h-10 w-10 sm:h-11 sm:w-11 object-contain transition-transform group-hover:scale-105"
+                className="h-9 w-9 sm:h-10 sm:w-10 object-contain"
                 onError={(e) => {
                   e.currentTarget.src = "/logo.svg";
                 }}
@@ -96,11 +98,11 @@ export default function Header({
                 <span className="text-xl sm:text-2xl font-black tracking-tight text-stone-900 leading-tight">
                   Jiyonkathi
                 </span>
-                <span className="text-amber-600 text-sm sm:text-base font-extrabold">
+                <span className="text-amber-700 text-sm sm:text-base font-bold">
                   (জিয়নকাঠি)
                 </span>
               </div>
-              <span className="text-[11px] text-stone-500 font-semibold block leading-none mt-0.5">
+              <span className="text-xs text-stone-500 font-medium block leading-none mt-0.5">
                 {isAdmin ? "Admin Control Panel" : "A Sustainable Living Community"}
               </span>
             </div>
@@ -109,16 +111,16 @@ export default function Header({
           {/* Desktop Navigation */}
           <nav
             id="desktop-nav"
-            className="hidden xl:flex items-center space-x-1.5 flex-1 justify-center"
+            className="hidden xl:flex items-center space-x-1 flex-1 justify-center"
           >
             {navigationItems.map((item) => (
               <button
                 key={item.id}
                 id={`nav-${item.id}`}
                 onClick={() => handleTabClick(item.id)}
-                className={`flex items-center space-x-1.5 px-3 py-2 rounded-xl text-xs sm:text-[13px] cursor-pointer font-bold transition-all duration-150 ${(activeTab === item.id || (item.id === "about" && activeTab === "mission"))
-                  ? "bg-amber-100/80 text-amber-900 shadow-2xs border border-amber-200"
-                  : "text-stone-700 hover:text-amber-700 hover:bg-amber-50/60"
+                className={`flex items-center space-x-1.5 px-3 py-2 rounded-md text-xs sm:text-sm font-semibold transition-colors ${(activeTab === item.id || (item.id === "about" && activeTab === "mission"))
+                  ? "bg-amber-100 text-amber-900 border border-amber-300"
+                  : "text-stone-700 hover:text-amber-800 hover:bg-stone-100"
                   }`}
               >
                 {item.icon}
@@ -132,9 +134,9 @@ export default function Header({
                 id="nav-more-dropdown"
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 onBlur={() => setTimeout(() => setIsDropdownOpen(false), 200)}
-                className={`flex items-center space-x-1 px-3 py-2 rounded-xl text-xs cursor-pointer sm:text-[13px] font-bold transition-all ${moreItems.some((item) => item.id === activeTab)
-                  ? "bg-amber-100/80 text-amber-900 shadow-2xs border border-amber-200"
-                  : "text-stone-700 hover:text-amber-700 hover:bg-amber-50/60"
+                className={`flex items-center space-x-1 px-3 py-2 rounded-md text-xs sm:text-sm font-semibold transition-colors ${moreItems.some((item) => item.id === activeTab)
+                  ? "bg-amber-100 text-amber-900 border border-amber-300"
+                  : "text-stone-700 hover:text-amber-800 hover:bg-stone-100"
                   }`}
               >
                 <span>{language === "bn" ? "আরও" : "More"}</span>
@@ -146,19 +148,19 @@ export default function Header({
               {isDropdownOpen && (
                 <div
                   id="more-dropdown-menu"
-                  className="absolute right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-stone-200/90 py-2 z-50 animate-in fade-in slide-in-from-top-2 duration-150"
+                  className="absolute right-0 mt-1.5 w-48 bg-white rounded-lg shadow-md border border-stone-200 py-1 z-50"
                 >
                   {moreItems.map((item) => (
                     <button
                       key={item.id}
                       id={`dropdown-${item.id}`}
                       onClick={() => handleTabClick(item.id)}
-                      className={`flex items-center space-x-2.5 w-full px-4 py-2.5 cursor-pointer text-left text-xs font-bold transition-colors ${activeTab === item.id
-                        ? "bg-amber-50 text-amber-900 font-extrabold"
-                        : "text-stone-700 hover:text-amber-700 hover:bg-stone-50"
+                      className={`flex items-center space-x-2 w-full px-3 py-2 text-left text-xs font-semibold transition-colors ${activeTab === item.id
+                        ? "bg-amber-50 text-amber-900 font-bold"
+                        : "text-stone-700 hover:text-amber-800 hover:bg-stone-50"
                         }`}
                     >
-                      <span className="text-amber-600">{item.icon}</span>
+                      <span className="text-amber-700">{item.icon}</span>
                       <span>{item.label}</span>
                     </button>
                   ))}
@@ -168,11 +170,11 @@ export default function Header({
           </nav>
 
           {/* Desktop Right Controls (Language & Admin Controls) */}
-          <div className="hidden lg:flex items-center space-x-3 shrink-0">
+          <div className="hidden lg:flex items-center space-x-2 shrink-0">
             <button
               id="language-switcher-btn"
               onClick={toggleLanguage}
-              className="bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-extrabold px-3.5 py-2 rounded-xl border border-amber-200 transition-all flex items-center space-x-1.5 shadow-2xs cursor-pointer"
+              className="bg-stone-100 hover:bg-stone-200 text-stone-800 text-xs font-semibold px-3 py-2 rounded-md border border-stone-200 transition-colors flex items-center space-x-1.5"
               title="Change Language / ভাষা পরিবর্তন"
             >
               <span>🇮🇳</span>
@@ -184,7 +186,7 @@ export default function Header({
                 <button
                   id="header-admin-dashboard-btn"
                   onClick={() => handleTabClick("admin")}
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 shadow-xs cursor-pointer"
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-xs px-3 py-2 rounded-md transition-colors flex items-center space-x-1.5"
                   title="Admin Dashboard"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
@@ -194,7 +196,7 @@ export default function Header({
                 <button
                   id="header-logout-btn"
                   onClick={handleLogout}
-                  className="bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold text-xs px-3.5 py-2 rounded-xl transition-all flex items-center space-x-1.5 cursor-pointer"
+                  className="bg-stone-100 hover:bg-red-50 text-stone-700 hover:text-red-700 border border-stone-200 hover:border-red-200 font-semibold text-xs px-3 py-2 rounded-md transition-colors flex items-center space-x-1.5"
                   title="Logout from Admin account"
                 >
                   <LogOut className="w-3.5 h-3.5 text-red-600" />
@@ -209,7 +211,7 @@ export default function Header({
             <button
               id="mobile-language-switcher-btn"
               onClick={toggleLanguage}
-              className="bg-amber-50 text-amber-900 text-xs font-extrabold px-2.5 py-2 rounded-xl border border-amber-200 flex items-center space-x-1"
+              className="bg-stone-100 text-stone-800 text-xs font-semibold px-2.5 py-1.5 rounded-md border border-stone-200 flex items-center space-x-1"
             >
               <span>{language === "bn" ? "🇮🇳 বাংলা" : "🇮🇳 ENG"}</span>
             </button>
@@ -218,7 +220,7 @@ export default function Header({
               <button
                 id="mobile-admin-dashboard-btn"
                 onClick={() => handleTabClick("admin")}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white p-2 rounded-xl shadow-2xs flex items-center justify-center cursor-pointer"
+                className="bg-emerald-700 hover:bg-emerald-800 text-white p-2 rounded-md flex items-center justify-center"
                 title="Admin Dashboard"
               >
                 <LayoutDashboard className="w-4 h-4" />
@@ -228,7 +230,7 @@ export default function Header({
             <button
               id="mobile-hamburger-btn"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="p-2 rounded-xl text-stone-700 bg-stone-100 hover:bg-amber-50 hover:text-amber-700 focus:outline-none transition-colors cursor-pointer"
+              className="p-2 rounded-md text-stone-700 bg-stone-100 hover:bg-stone-200 focus:outline-none transition-colors"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -240,17 +242,17 @@ export default function Header({
       {isMobileMenuOpen && (
         <div
           id="mobile-nav-drawer"
-          className="xl:hidden border-t border-amber-100 bg-[#fffdfa] py-4 px-4 space-y-1.5 shadow-lg animate-in slide-in-from-top-2 duration-200"
+          className="xl:hidden border-t border-stone-200 bg-white py-3 px-4 space-y-1 shadow-md"
         >
           {isAdmin && (
-            <div className="flex items-center justify-between px-3 py-2 bg-emerald-50 rounded-xl border border-emerald-200 mb-2">
+            <div className="flex items-center justify-between px-3 py-2 bg-emerald-50 rounded-md border border-emerald-200 mb-2">
               <div className="flex items-center space-x-2 text-emerald-900 text-xs font-bold">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 <span>Admin Session Active</span>
               </div>
               <button
                 onClick={() => handleTabClick("admin")}
-                className="bg-emerald-700 hover:bg-emerald-800 text-white px-2.5 py-1 rounded-lg text-xs font-bold cursor-pointer"
+                className="bg-emerald-700 hover:bg-emerald-800 text-white px-2.5 py-1 rounded text-xs font-semibold"
               >
                 {language === "bn" ? "ড্যাশবোর্ড" : "Dashboard"}
               </button>
@@ -262,17 +264,17 @@ export default function Header({
               key={item.id}
               id={`mobile-nav-${item.id}`}
               onClick={() => handleTabClick(item.id)}
-              className={`flex items-center space-x-3 w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${(activeTab === item.id || (item.id === "about" && activeTab === "mission"))
-                ? "bg-amber-100 text-amber-900 shadow-2xs border border-amber-200"
-                : "text-stone-700 hover:bg-amber-50/70"
+              className={`flex items-center space-x-2.5 w-full px-3 py-2 rounded-md text-xs font-semibold transition-colors ${(activeTab === item.id || (item.id === "about" && activeTab === "mission"))
+                ? "bg-amber-100 text-amber-900 border border-amber-300"
+                : "text-stone-700 hover:bg-stone-100"
                 }`}
             >
-              <span className="text-amber-600">{item.icon}</span>
+              <span className="text-amber-700">{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}
 
-          <div className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-3 pt-3 pb-1 border-t border-stone-200">
+          <div className="text-xs font-bold text-stone-400 uppercase tracking-wider px-3 pt-2.5 pb-1 border-t border-stone-200">
             {language === "bn" ? "অন্যান্য সংযোগ" : "More Links"}
           </div>
           {moreItems.map((item) => (
@@ -280,12 +282,12 @@ export default function Header({
               key={item.id}
               id={`mobile-more-${item.id}`}
               onClick={() => handleTabClick(item.id)}
-              className={`flex items-center space-x-3 w-full px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${activeTab === item.id
+              className={`flex items-center space-x-2.5 w-full px-3 py-2 rounded-md text-xs font-semibold transition-colors ${activeTab === item.id
                 ? "bg-amber-100 text-amber-900 font-bold"
-                : "text-stone-700 hover:bg-amber-50"
+                : "text-stone-700 hover:bg-stone-100"
                 }`}
             >
-              <span className="text-amber-600">{item.icon}</span>
+              <span className="text-amber-700">{item.icon}</span>
               <span>{item.label}</span>
             </button>
           ))}
@@ -295,7 +297,7 @@ export default function Header({
               <button
                 id="mobile-drawer-logout-btn"
                 onClick={handleLogout}
-                className="w-full bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold text-xs py-2.5 rounded-xl text-center flex items-center justify-center space-x-2 cursor-pointer transition-colors"
+                className="w-full bg-stone-100 hover:bg-red-50 text-stone-700 hover:text-red-700 border border-stone-200 font-semibold text-xs py-2 rounded-md text-center flex items-center justify-center space-x-2 transition-colors"
               >
                 <LogOut className="w-4 h-4 text-red-600" />
                 <span>{language === "bn" ? "লগআউট" : "Logout Admin Account"}</span>

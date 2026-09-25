@@ -20,6 +20,78 @@ const upload = multer({
 const memoryFiles = new Map();
 let nextFileId = 1;
 
+export async function storeUploadedFile({ originalname, mimetype, buffer }) {
+  // 1. Try Cloudinary first (Recommended for Images & Videos)
+  if (isCloudinaryConfigured()) {
+    try {
+      const cldRes = await uploadToCloudinary({
+        buffer,
+        mimetype,
+        originalname,
+      });
+      return {
+        success: true,
+        url: cldRes.url,
+        public_id: cldRes.public_id,
+        storage: "cloudinary",
+      };
+    } catch (cldErr) {
+      console.warn("Cloudinary upload failed, falling back:", cldErr.message);
+    }
+  }
+
+  // 2. Try Firebase Storage if configured
+  if (isFirebaseConfigured()) {
+    try {
+      const firebaseRes = await uploadToFirebaseStorage({
+        filename: originalname,
+        mimetype,
+        buffer,
+      });
+      return {
+        success: true,
+        url: firebaseRes.url,
+        storage: "firebase",
+      };
+    } catch (fbErr) {
+      console.warn("Firebase upload fallback to DB/Memory:", fbErr.message);
+    }
+  }
+
+  // 3. Try PostgreSQL storage
+  await ensureDbConnected();
+  if (isDbConnected) {
+    try {
+      const result = await pool.query(
+        "INSERT INTO site_files (filename, mimetype, data) VALUES ($1, $2, $3) RETURNING id",
+        [originalname, mimetype, buffer],
+      );
+      return {
+        success: true,
+        fileId: result.rows[0].id,
+        url: `/api/files/${result.rows[0].id}`,
+        storage: "postgres",
+      };
+    } catch (dbErr) {
+      console.warn("Database storage failed, falling back to in-memory:", dbErr.message);
+    }
+  }
+
+  // 4. Fallback to in-memory storage
+  const fileId = nextFileId++;
+  memoryFiles.set(String(fileId), {
+    filename: originalname,
+    mimetype,
+    data: buffer,
+  });
+  return {
+    success: true,
+    fileId,
+    url: `/api/files/${fileId}`,
+    storage: "memory",
+  };
+}
+
 router.post(
   "/",
   strictUploadLimiter,
@@ -46,83 +118,8 @@ router.post(
           .json({ success: false, error: "No file uploaded" });
       }
 
-      const { originalname, mimetype, buffer } = req.file;
-
-      // 1. Try Cloudinary first (Recommended for Images & Videos)
-      if (isCloudinaryConfigured()) {
-        try {
-          const cldRes = await uploadToCloudinary({
-            buffer,
-            mimetype,
-            originalname,
-          });
-          return res.json({
-            success: true,
-            url: cldRes.url,
-            public_id: cldRes.public_id,
-            storage: "cloudinary",
-          });
-        } catch (cldErr) {
-          console.warn(
-            "Cloudinary upload failed, falling back:",
-            cldErr.message,
-          );
-        }
-      }
-
-      // 2. Try Firebase Storage if configured
-      if (isFirebaseConfigured()) {
-        try {
-          const firebaseRes = await uploadToFirebaseStorage({
-            filename: originalname,
-            mimetype,
-            buffer,
-          });
-          return res.json({
-            success: true,
-            url: firebaseRes.url,
-            storage: "firebase",
-          });
-        } catch (fbErr) {
-          console.warn("Firebase upload fallback to DB/Memory:", fbErr.message);
-        }
-      }
-
-      // 3. Try PostgreSQL storage
-      await ensureDbConnected();
-      if (isDbConnected) {
-        try {
-          const result = await pool.query(
-            "INSERT INTO site_files (filename, mimetype, data) VALUES ($1, $2, $3) RETURNING id",
-            [originalname, mimetype, buffer],
-          );
-          return res.json({
-            success: true,
-            fileId: result.rows[0].id,
-            url: `/api/files/${result.rows[0].id}`,
-            storage: "postgres",
-          });
-        } catch (dbErr) {
-          console.warn(
-            "Database storage failed, falling back to in-memory:",
-            dbErr.message,
-          );
-        }
-      }
-
-      // 4. Fallback to in-memory storage
-      const fileId = nextFileId++;
-      memoryFiles.set(String(fileId), {
-        filename: originalname,
-        mimetype,
-        data: buffer,
-      });
-      return res.json({
-        success: true,
-        fileId,
-        url: `/api/files/${fileId}`,
-        storage: "memory",
-      });
+      const result = await storeUploadedFile(req.file);
+      return res.json(result);
     } catch (error) {
       console.error("Error uploading file:", error.message);
       res
@@ -137,17 +134,21 @@ router.get("/:id", async (req, res) => {
     const { id } = req.params;
     let file = null;
 
-    if (isDbConnected) {
-      try {
-        const result = await pool.query(
-          "SELECT filename, mimetype, data FROM site_files WHERE id = $1",
-          [id],
-        );
-        if (result.rows.length > 0) {
-          file = result.rows[0];
+    const isNumericId = /^\d+$/.test(id);
+    if (isNumericId) {
+      await ensureDbConnected();
+      if (isDbConnected) {
+        try {
+          const result = await pool.query(
+            "SELECT filename, mimetype, data FROM site_files WHERE id = $1",
+            [id],
+          );
+          if (result.rows.length > 0) {
+            file = result.rows[0];
+          }
+        } catch (err) {
+          console.warn("Error fetching file from DB:", err.message);
         }
-      } catch (err) {
-        console.warn("Error fetching file from DB:", err.message);
       }
     }
 
@@ -159,10 +160,13 @@ router.get("/:id", async (req, res) => {
       return res.status(404).json({ success: false, error: "File not found" });
     }
 
-    const buffer = file.data;
+    const buffer = Buffer.isBuffer(file.data)
+      ? file.data
+      : Buffer.from(file.data);
 
-    res.setHeader("Content-Type", file.mimetype);
-    res.setHeader("Content-Disposition", `inline; filename="${file.filename}"`);
+    res.setHeader("Content-Type", file.mimetype || "image/jpeg");
+    res.setHeader("Content-Disposition", `inline; filename="${file.filename || "image"}"`);
+    res.setHeader("Cache-Control", "public, max-age=86400");
     res.setHeader("Accept-Ranges", "bytes");
 
     if (req.headers.range) {
@@ -178,10 +182,10 @@ router.get("/:id", async (req, res) => {
       res.status(206);
       res.setHeader("Content-Range", `bytes ${start}-${end}/${buffer.length}`);
       res.setHeader("Content-Length", chunksize);
-      res.send(buffer.slice(start, end + 1));
+      res.end(buffer.slice(start, end + 1));
     } else {
       res.setHeader("Content-Length", buffer.length);
-      res.send(buffer);
+      res.end(buffer);
     }
   } catch (error) {
     console.error("Error fetching file:", error.message);

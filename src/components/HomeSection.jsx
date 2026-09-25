@@ -42,7 +42,7 @@ function getYouTubeEmbedUrl(url) {
 }
 
 export default function HomeSection({ setActiveTab }) {
-  const { siteData, language, reports: contextReports, setSelectedReportId } = useContext(SiteContext);
+  const { siteData, language, reports: contextReports, setSelectedReportId, setSelectedPillarId } = useContext(SiteContext);
 
   const general = siteData.general || {};
 
@@ -67,7 +67,7 @@ export default function HomeSection({ setActiveTab }) {
           subPoints: [
             "রাসায়নিক সার ও কীটনাশক একবারে ব্যবহার না করা।",
             "মাটির তলার জল না তোলা।",
-            "যতটা কম সম্ভব জীবাশ্ম জ্বালানী ব্যবহার করা।"
+            "যতটা সম্ভব কম জীবাশ্ম জ্বালানী ব্যবহার করা।"
           ]
         },
         {
@@ -80,7 +80,7 @@ export default function HomeSection({ setActiveTab }) {
         {
           id: "p1-t3",
           number: "৩",
-          titleBn: "বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা",
+          titleBn: "ফল-সব্জির বিষমুক্ত চাষ",
           titleEn: "Chemical-free horticulture and natural food security.",
           subPoints: []
         }
@@ -88,9 +88,9 @@ export default function HomeSection({ setActiveTab }) {
       goals: [
         "রাসায়নিক সার ও কীটনাশক একবারে ব্যবহার না করা",
         "মাটির তলার জল না তোলা",
-        "যতটা কম সম্ভব জীবাশ্ম জ্বালানী ব্যবহার করা",
+        "যতটা সম্ভব কম জীবাশ্ম জ্বালানী ব্যবহার করা",
         "পুনর্ব্যবহারযোগ্য শক্তি কে নিজেদের কাজে ব্যবহার করা",
-        "বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা"
+        "ফল-সব্জির বিষমুক্ত চাষ"
       ],
       linkedReportId: "rep-1"
     },
@@ -144,18 +144,30 @@ export default function HomeSection({ setActiveTab }) {
     siteData.pillars.length === 2 &&
     siteData.pillars[0]?.titleBn?.includes("পরিবেশ সংকটকালে") &&
     siteData.pillars[1]?.titleBn?.includes("DDMPBS");
-  const pillars = (hasValidPillars ? siteData.pillars : defaultPillars).slice(0, 2);
+  const rawPillars = (hasValidPillars ? siteData.pillars : defaultPillars).slice(0, 2);
+  const pillars = JSON.parse(
+    JSON.stringify(rawPillars)
+      .replace(/যতটা কম সম্ভব/g, "যতটা সম্ভব কম")
+      .replace(/বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা/g, "ফল-সব্জির বিষমুক্ত চাষ")
+  );
+
+  const bannerTitleBn = (general.bannerTitleBengali || "প্রাণ-প্রকৃতি-পরিবেশের আহ্বানে").replace("টানে", "আহ্বানে");
+  const bannerSubtitleBn = (general.bannerSubtitleBengali || "বাংলার গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সংস্থা।")
+    .replace(/বীরভূম,\s*বর্ধমান\s*ও\s*আউশগ্রামের\s*গ্রামাঞ্চলে/g, "বাংলার গ্রামাঞ্চলে")
+    .replace(/সমাজ।?$/, "সংস্থা।")
+    .replace(/সমাজ/g, "সংস্থা");
+  const statFamilies = (general.statFamilies === "৩৫০+" || !general.statFamilies) ? "৫০+" : general.statFamilies;
 
   const reports = (Array.isArray(contextReports) && contextReports.length > 0)
     ? contextReports
     : (siteData.researchReports || [
       {
         id: "rep-1",
-        title: "দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ গবেষণা প্রতিবেদন (২০১৩-২০২৬)",
+        title: "দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ অন্বেষণ প্রতিবেদন (২০১৩-২০২৬)",
         titleEnglish: "Indigenous Rice Cultivars & Seed Conservation Field Report",
         topic: "বীজ সংরক্ষণ ও দেশীয় ধান",
         topicEnglish: "Agro-Ecology",
-        author: "জিয়নকাঠি কৃষি গবেষণা দল",
+        author: "জিয়নকাঠি কৃষি অন্বেষণ দল",
         publishedDate: "২০২৬-০৮-১৫",
         summary: "১২০টিরও বেশি বিলুপ্তপ্রায় দেশীয় ধানের প্রজাতির ফলন বিশ্লেষণ, রাসায়নিক সার ব্যতিরেকে প্রাকৃতিক পুষ্টি ব্যবস্থাপনা ও ভূগর্ভস্থ জল সংরক্ষণ পদ্ধতি।"
       },
@@ -185,11 +197,11 @@ export default function HomeSection({ setActiveTab }) {
     if (setSelectedReportId && r.id) {
       setSelectedReportId(r.id);
     }
-    setActiveTab("reports");
+    setActiveTab("reports", r.id);
   };
 
   return (
-    <div id="home-section" className="bg-[#faf7f0] text-stone-900 space-y-16 sm:space-y-24 pb-20">
+    <div id="home-section" className="bg-stone-50 text-stone-900 space-y-16 sm:space-y-24 pb-20">
       {/* 1. HERO SECTION (Warm, Clean, Inviting) */}
       <section className="relative pt-8 sm:pt-14 pb-12 sm:pb-20 overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -198,19 +210,18 @@ export default function HomeSection({ setActiveTab }) {
             {/* Left Content */}
             <div className="lg:col-span-7 space-y-6">
 
-
               <h1 className="text-3xl sm:text-5xl lg:text-6xl font-black text-stone-900 tracking-tight leading-[1.15]">
                 {language === "bn" ? (
                   <>
-                    {general.bannerTitleBengali || "প্রাণ-প্রকৃতি-পরিবেশের টানে"} <br className="hidden sm:inline" />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700">
+                    {bannerTitleBn} <br className="hidden sm:inline" />
+                    <span className="text-amber-800">
                       {general.bannerHighlightBengali || "জিয়নকাঠির সুস্থায়ী পথচলা"}
                     </span>
                   </>
                 ) : (
                   <>
                     {general.bannerTitleEnglish || "Cultivating Life, Ecology &"} <br className="hidden sm:inline" />
-                    <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-600 via-orange-600 to-amber-700">
+                    <span className="text-amber-800">
                       {general.bannerHighlightEnglish || "Sustainable Heritage"}
                     </span>
                   </>
@@ -219,16 +230,16 @@ export default function HomeSection({ setActiveTab }) {
 
               <p className="text-base sm:text-lg text-stone-700 leading-relaxed font-medium max-w-2xl">
                 {language === "bn"
-                  ? (general.bannerSubtitleBengali || "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।")
+                  ? bannerSubtitleBn
                   : (general.bannerSubtitle || general.bannerSubtitleEnglish || "Dedicated to pesticide-free organic farming, conserving 56 types of indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal.")}
               </p>
 
               {/* Exact Hero Action Buttons: "See Work" and "Report" */}
-              <div className="flex flex-wrap items-center gap-3.5 pt-2">
+              <div className="flex flex-wrap items-center gap-3 pt-2">
                 <button
                   id="hero-see-work-btn"
                   onClick={() => setActiveTab("reports")}
-                  className="bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white font-black text-sm px-7 py-3.5 rounded-2xl shadow-xs transition-all flex items-center space-x-2 cursor-pointer active:scale-95"
+                  className="bg-amber-700 hover:bg-amber-800 text-white font-semibold text-sm px-5 py-2.5 rounded-lg flex items-center space-x-2 transition-colors"
                 >
                   <Briefcase className="w-4 h-4" />
                   <span>{language === "bn" ? "আমাদের কাজ (See Work)" : "See Work"}</span>
@@ -237,30 +248,30 @@ export default function HomeSection({ setActiveTab }) {
                 <button
                   id="hero-report-btn"
                   onClick={() => setActiveTab("reports")}
-                  className="bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-bold text-sm px-6 py-3.5 rounded-2xl shadow-2xs transition-all flex items-center space-x-2 cursor-pointer active:scale-95"
+                  className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 font-semibold text-sm px-5 py-2.5 rounded-lg flex items-center space-x-2 transition-colors"
                 >
                   <FileText className="w-4 h-4 text-amber-700" />
-                  <span>{language === "bn" ? "গবেষণা রিপোর্ট (Report)" : "Report"}</span>
+                  <span>{language === "bn" ? "অন্বেষণ রিপোর্ট (Report)" : "Report"}</span>
                 </button>
               </div>
 
               {/* Quick Trust Highlights */}
-              <div className="grid grid-cols-3 gap-3 pt-6 border-t border-stone-200/80">
-                <div className="bg-white p-3.5 rounded-2xl border border-stone-200/80 shadow-2xs text-center">
-                  <div className="text-xl sm:text-2xl font-black text-amber-700">{general.statSeeds || "৫৬ রকম"}</div>
-                  <div className="text-[11px] font-bold text-stone-600 mt-0.5">
+              <div className="grid grid-cols-3 gap-3 pt-6 border-t border-stone-200">
+                <div className="bg-white p-3 rounded-lg border border-stone-200 text-center">
+                  <div className="text-xl sm:text-2xl font-black text-amber-800">{general.statSeeds || "৫৬ রকম"}</div>
+                  <div className="text-xs font-semibold text-stone-600 mt-0.5">
                     {language === "bn" ? "দেশীয় ধান সংরক্ষণ" : "Rice Cultivars"}
                   </div>
                 </div>
-                <div className="bg-white p-3.5 rounded-2xl border border-stone-200/80 shadow-2xs text-center">
-                  <div className="text-xl sm:text-2xl font-black text-emerald-700">{general.statYears || "১৩+"}</div>
-                  <div className="text-[11px] font-bold text-stone-600 mt-0.5">
-                    {language === "bn" ? "বছরের মাঠ গবেষণা" : "Years Experience"}
+                <div className="bg-white p-3 rounded-lg border border-stone-200 text-center">
+                  <div className="text-xl sm:text-2xl font-black text-emerald-800">{general.statYears || "১৩+"}</div>
+                  <div className="text-xs font-semibold text-stone-600 mt-0.5">
+                    {language === "bn" ? "বছরের মাঠ অন্বেষণ" : "Years Experience"}
                   </div>
                 </div>
-                <div className="bg-white p-3.5 rounded-2xl border border-stone-200/80 shadow-2xs text-center">
-                  <div className="text-xl sm:text-2xl font-black text-orange-700">{general.statFamilies || "৩৫০+"}</div>
-                  <div className="text-[11px] font-bold text-stone-600 mt-0.5">
+                <div className="bg-white p-3 rounded-lg border border-stone-200 text-center">
+                  <div className="text-xl sm:text-2xl font-black text-amber-800">{statFamilies}</div>
+                  <div className="text-xs font-semibold text-stone-600 mt-0.5">
                     {language === "bn" ? "কৃষক পরিবার" : "Partner Families"}
                   </div>
                 </div>
@@ -269,18 +280,20 @@ export default function HomeSection({ setActiveTab }) {
 
             {/* Right Visual Card */}
             <div className="lg:col-span-5 relative">
-              <div className="bg-white p-3 sm:p-4 rounded-3xl border border-amber-200/90 shadow-md relative">
-                <div className="aspect-4/3 rounded-2xl overflow-hidden bg-stone-100 relative">
+              <div className="bg-white p-3 sm:p-4 rounded-xl border border-stone-200 shadow-sm relative">
+                <div className="aspect-4/3 rounded-lg overflow-hidden bg-stone-100 relative">
                   <img
                     key={general.heroImage || "/images/paddy-harvesting.jpg"}
                     src={general.heroImage || "/images/paddy-harvesting.jpg"}
                     alt={language === "bn" ? (general.heroTitleBengali || "জিয়নকাঠি কার্যক্রম") : (general.heroTitleEnglish || "Jiyonkathi Action")}
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      e.currentTarget.src = "/images/paddy-harvesting.jpg";
+                      if (!e.currentTarget.src.includes("/images/paddy-harvesting.jpg")) {
+                        e.currentTarget.src = "/images/paddy-harvesting.jpg";
+                      }
                     }}
                   />
-                  <div className="absolute top-3 left-3 bg-stone-900/80 backdrop-blur-xs text-amber-300 text-[11px] font-black px-3 py-1 rounded-full flex items-center space-x-1.5 shadow-xs">
+                  <div className="absolute top-2.5 left-2.5 bg-stone-900/90 text-amber-300 text-xs font-semibold px-2.5 py-1 rounded-md flex items-center space-x-1.5">
                     <Sprout className="w-3.5 h-3.5 text-emerald-400" />
                     <span>
                       {language === "bn"
@@ -290,18 +303,18 @@ export default function HomeSection({ setActiveTab }) {
                   </div>
                 </div>
 
-                <div className="p-4 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-stone-500 font-semibold">
+                <div className="p-3.5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs text-stone-500 font-medium">
                     <span>
                       {language === "bn"
                         ? (general.heroLocationBengali || "স্থান: আউশগ্রাম, বর্ধমান")
                         : (general.heroLocationEnglish || "Location: Aushgram, Burdwan")}
                     </span>
-                    <span className="text-amber-700 font-bold">
-                      {language === "bn" ? (general.heroStationBengali || "মাঠ গবেষণা কেন্দ্র") : (general.heroStationEnglish || "Field Station")}
+                    <span className="text-amber-800 font-semibold">
+                      {language === "bn" ? (general.heroStationBengali || "মাঠ অন্বেষণ কেন্দ্র") : (general.heroStationEnglish || "Field Station")}
                     </span>
                   </div>
-                  <h3 className="text-base font-black text-stone-900 leading-snug">
+                  <h3 className="text-base font-bold text-stone-900 leading-snug">
                     {language === "bn"
                       ? (general.heroTitleBengali || "রাসায়নিক সার ও কীটনাশকমুক্ত দেশীয় ধান ও ফল-সবজি উৎপাদনের মডেল")
                       : (general.heroTitleEnglish || "Heirloom Agro-Ecology & Sustainable Food Sovereignty")}
@@ -336,46 +349,46 @@ export default function HomeSection({ setActiveTab }) {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-200 pb-5">
           <div className="space-y-1">
-            <span className="text-amber-700 font-black text-xs uppercase tracking-wider">
+            <span className="text-amber-800 font-bold text-xs uppercase tracking-wider">
               {language === "bn" ? "মৌলিক আদর্শ" : "Core Philosophy"}
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+            <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
               {language === "bn" ? "জিয়নকাঠির ২ টি মূল স্তম্ভ" : "Our 2 Guiding Pillars"}
             </h2>
           </div>
           <button
             onClick={() => setActiveTab("about")}
-            className="inline-flex items-center space-x-1.5 text-xs font-extrabold text-amber-800 hover:text-amber-900 bg-amber-100/70 hover:bg-amber-100 px-4 py-2 rounded-xl transition-all w-fit cursor-pointer"
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-md transition-colors w-fit"
           >
             <span>{language === "bn" ? "স্তম্ভগুলির বিশদ বিবরণ দেখুন" : "View Pillar Deep Dives"}</span>
             <ChevronRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-6xl mx-auto">
           {pillars.map((p, idx) => {
             const isPillar2 = idx === 1 || p.id === "pillar-2";
             return (
               <div
                 key={p.id || idx}
-                onClick={() => setActiveTab("about")}
-                className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/90 shadow-2xs hover:shadow-md hover:border-amber-400/80 transition-all cursor-pointer group flex flex-col justify-between"
+                onClick={() => {
+                  if (setSelectedPillarId) setSelectedPillarId(p.id);
+                  setActiveTab("about");
+                }}
+                className="bg-white rounded-lg p-6 border border-stone-200 hover:border-amber-700 transition-colors cursor-pointer group flex flex-col justify-between"
               >
-                <div className="space-y-5">
+                <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center font-black text-lg ${isPillar2 ? "bg-orange-100 text-orange-800" : "bg-amber-100 text-amber-800"
+                      className={`w-10 h-10 rounded-md flex items-center justify-center font-bold text-base ${isPillar2 ? "bg-orange-50 text-orange-800 border border-orange-200" : "bg-amber-50 text-amber-800 border border-amber-200"
                         }`}
                     >
-                      {isPillar2 ? <Users className="w-6 h-6" /> : <Leaf className="w-6 h-6" />}
+                      {isPillar2 ? <Users className="w-5 h-5" /> : <Leaf className="w-5 h-5" />}
                     </div>
-                    {/* <span className="text-xs font-black px-3 py-1 rounded-full bg-stone-100 text-stone-600 group-hover:bg-amber-100 group-hover:text-amber-800 transition-colors">
-                      {language === "bn" ? `স্তম্ভ ০${idx + 1}` : `Pillar 0${idx + 1}`}
-                    </span> */}
                   </div>
 
-                  <div className="space-y-2">
-                    <h3 className="text-xl sm:text-2xl font-black text-stone-900 leading-snug group-hover:text-amber-700 transition-colors">
+                  <div className="space-y-1.5">
+                    <h3 className="text-lg sm:text-xl font-bold text-stone-900 leading-snug group-hover:text-amber-800 transition-colors">
                       {language === "bn" ? p.titleBn : p.titleEn}
                     </h3>
                   </div>
@@ -385,17 +398,17 @@ export default function HomeSection({ setActiveTab }) {
                     <div className="space-y-3 pt-3 border-t border-stone-100 text-xs text-stone-700">
                       {p.topics.map((t, tIdx) => (
                         <div key={t.id || tIdx} className="space-y-1">
-                          <div className="font-bold text-stone-900 flex items-start space-x-1.5">
-                            <span className="text-amber-700 font-black shrink-0">{t.number || tIdx + 1})</span>
+                          <div className="font-semibold text-stone-900 flex items-start space-x-1.5">
+                            <span className="text-amber-800 font-bold shrink-0">{t.number || tIdx + 1})</span>
                             <span className="leading-snug">{language === "bn" ? t.titleBn : t.titleEn}</span>
                           </div>
                           {t.descriptionBn && (
-                            <p className="pl-4 text-[11px] text-stone-600 font-medium">
+                            <p className="pl-4 text-xs text-stone-600 font-normal">
                               {language === "bn" ? t.descriptionBn : t.descriptionEn}
                             </p>
                           )}
                           {Array.isArray(t.subPoints) && t.subPoints.length > 0 && (
-                            <ul className="pl-5 space-y-0.5 list-disc text-[11px] text-stone-600 font-medium">
+                            <ul className="pl-5 space-y-0.5 list-disc text-xs text-stone-600 font-normal">
                               {(language === "bn" ? t.subPoints : (t.subPointsEn || t.subPoints)).map((sp, sIdx) => (
                                 <li key={sIdx} className="leading-relaxed">{sp}</li>
                               ))}
@@ -407,7 +420,7 @@ export default function HomeSection({ setActiveTab }) {
                   )}
                 </div>
 
-                <div className="pt-4 mt-6 border-t border-stone-100 flex items-center justify-between text-xs font-extrabold text-amber-700 group-hover:text-amber-800">
+                <div className="pt-3 mt-5 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-amber-800 group-hover:text-amber-900">
                   <span>{language === "bn" ? "পদ্ধতি ও বিস্তারিত তথ্য জানুন" : "Explore Methodology & Details"}</span>
                   <ArrowRight className="w-3.5 h-3.5 transform group-hover:translate-x-1 transition-transform" />
                 </div>
@@ -422,16 +435,16 @@ export default function HomeSection({ setActiveTab }) {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-200 pb-5">
           <div className="space-y-1">
-            <span className="text-orange-700 font-black text-xs uppercase tracking-wider">
+            <span className="text-amber-800 font-bold text-xs uppercase tracking-wider">
               {language === "bn" ? "বিজ্ঞানভিত্তিক ক্ষেত্র পর্যালোচনা" : "Empirical Field Research"}
             </span>
-            <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
-              {language === "bn" ? "সাম্প্রতিক গবেষণা ও প্রতিবেদন" : "Recent Research Reports"}
+            <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
+              {language === "bn" ? "সাম্প্রতিক অন্বেষণ ও প্রতিবেদন" : "Recent Research Reports"}
             </h2>
           </div>
           <button
             onClick={() => setActiveTab("reports")}
-            className="inline-flex items-center space-x-1.5 text-xs font-extrabold text-amber-800 hover:text-amber-900 bg-amber-100/70 hover:bg-amber-100 px-4 py-2 rounded-xl transition-all w-fit cursor-pointer"
+            className="inline-flex items-center space-x-1.5 text-xs font-semibold text-amber-800 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-3 py-1.5 rounded-md transition-colors w-fit"
           >
             <span>{language === "bn" ? "সকল রিপোর্ট ও কাজ" : "All Reports & Work"}</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -443,30 +456,30 @@ export default function HomeSection({ setActiveTab }) {
             <div
               key={r.id || i}
               onClick={() => handleReportCardClick(r)}
-              className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs hover:shadow-md hover:border-amber-400 transition-all cursor-pointer group flex flex-col justify-between"
+              className="bg-white rounded-lg p-5 border border-stone-200 hover:border-amber-700 transition-colors cursor-pointer group flex flex-col justify-between"
             >
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                  <span className="bg-stone-100 text-stone-800 text-xs font-semibold px-2 py-0.5 rounded border border-stone-200 uppercase tracking-wider">
                     {language === "bn"
-                      ? (r.topic || r.categoryBn || "কৃষি গবেষণা")
+                      ? (r.topic || r.categoryBn || "কৃষি অন্বেষণ")
                       : (r.topicEnglish || r.categoryEn || "Research")}
                   </span>
-                  <span className="text-[11px] font-bold text-stone-400">
-                    {r.publishedDate || r.readTime || "গবেষণা প্রতিবেদন"}
+                  <span className="text-xs text-stone-500 font-normal">
+                    {r.publishedDate || r.readTime || "অন্বেষণ প্রতিবেদন"}
                   </span>
                 </div>
 
-                <h3 className="text-base font-black text-stone-900 line-clamp-2 leading-snug group-hover:text-amber-700 transition-colors">
+                <h3 className="text-base font-bold text-stone-900 line-clamp-2 leading-snug group-hover:text-amber-800 transition-colors">
                   {language === "bn" ? (r.title || r.titleBn) : (r.titleEnglish || r.titleEn || r.title)}
                 </h3>
 
-                <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed font-medium">
+                <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed">
                   {language === "bn" ? (r.summary || r.excerptBn) : (r.summaryEnglish || r.excerptEn || r.summary)}
                 </p>
               </div>
 
-              <div className="pt-4 mt-4 border-t border-stone-100 flex items-center justify-between text-xs font-bold text-amber-700">
+              <div className="pt-3 mt-4 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-amber-800">
                 <span>{language === "bn" ? "সম্পূর্ণ রিপোর্ট পড়ুন" : "Read Full Report"}</span>
                 <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
               </div>
@@ -477,7 +490,7 @@ export default function HomeSection({ setActiveTab }) {
 
       {/* 6. NGO VIDEO / EDITABLE HOMEPAGE VIDEO SHOWCASE */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-12">
+        <div className="bg-white rounded-lg border border-stone-200 overflow-hidden shadow-sm grid grid-cols-1 lg:grid-cols-12">
           <div className="lg:col-span-7 bg-stone-900 relative flex items-center justify-center min-h-[340px]">
             {(() => {
               const videoUrl = siteData.homepageVideo?.url?.trim();
@@ -521,20 +534,20 @@ export default function HomeSection({ setActiveTab }) {
             })()}
           </div>
 
-          <div className="lg:col-span-5 p-8 sm:p-10 flex flex-col justify-between space-y-6">
+          <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between space-y-6">
             <div className="space-y-4">
-              <span className="inline-flex items-center space-x-1.5 text-xs font-black uppercase tracking-wider text-amber-800 bg-amber-100 px-3 py-1 rounded-full">
+              <span className="inline-flex items-center space-x-1.5 text-xs font-semibold uppercase tracking-wider text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded">
                 <Play className="w-3 h-3 text-amber-700 fill-amber-700" />
                 <span>{language === "bn" ? "ভিডিও ও মাঠের চিত্র" : "Visual Moments"}</span>
               </span>
 
-              <h3 className="text-xl sm:text-2xl font-black text-stone-900">
+              <h3 className="text-xl sm:text-2xl font-bold text-stone-900">
                 {language === "bn"
-                  ? (siteData.homepageVideo?.title || "মাটির টানে, মানুষের সাথে জিয়নকাঠি")
+                  ? (siteData.homepageVideo?.title || "মাটির আহ্বানে, মানুষের সাথে জিয়নকাঠি")
                   : (siteData.homepageVideo?.titleEnglish || siteData.homepageVideo?.title || "Living with Nature: Jiyonkathi in Action")}
               </h3>
 
-              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-medium">
+              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed">
                 {language === "bn"
                   ? (siteData.homepageVideo?.description || "আউশগ্রাম ও বীরভূমের প্রত্যন্ত পল্লীতে দেশীয় ধান চাষের প্রদর্শনী খামার, প্রাকৃতিক বীজতলা এবং গ্রামীণ শিশুদের সহায়ক শিক্ষা কেন্দ্রের প্রাত্যহিক মুহূর্ত।")
                   : (siteData.homepageVideo?.descriptionEnglish || siteData.homepageVideo?.description || "A window into our decentralized ecological seedbed nursery, community learning center, and indigenous rice cultivation.")}
@@ -544,14 +557,14 @@ export default function HomeSection({ setActiveTab }) {
             <div className="pt-4 border-t border-stone-100 flex items-center justify-between">
               <button
                 onClick={() => setActiveTab("gallery")}
-                className="text-xs font-black text-amber-700 hover:text-amber-800 flex items-center space-x-1 cursor-pointer"
+                className="text-xs font-semibold text-amber-800 hover:text-amber-900 flex items-center space-x-1"
               >
                 <span>{language === "bn" ? "পূর্ণাঙ্গ গ্যালারি দেখুন" : "View Photo Archive"}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
               <button
                 onClick={() => setActiveTab("volunteer")}
-                className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl transition-all"
+                className="bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs px-3.5 py-2 rounded-md transition-colors"
               >
                 {language === "bn" ? "স্বেচ্ছাসেবী হন" : "Volunteer"}
               </button>

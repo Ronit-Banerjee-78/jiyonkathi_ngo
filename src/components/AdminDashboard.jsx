@@ -21,7 +21,9 @@ import {
   Eye,
   FileText,
   Upload,
+  ArrowLeft,
   ArrowUp,
+  ArrowRight,
   ArrowDown,
   Sparkles,
   AlertCircle,
@@ -69,9 +71,15 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
   // Modals state for creation of anything
   const [showReportModal, setShowReportModal] = useState(false);
   const [editingReport, setEditingReport] = useState(null);
-  const [isDocxExtracting, setIsDocxExtracting] = useState(false);
-  const [docxProgress, setDocxProgress] = useState(0);
-  const [docxSuccessMsg, setDocxSuccessMsg] = useState("");
+  const [isPdfExtracting, setIsPdfExtracting] = useState(false);
+  const [pdfProgress, setPdfProgress] = useState(0);
+  const [pdfSuccessMsg, setPdfSuccessMsg] = useState("");
+  const [galleryFilter, setGalleryFilter] = useState("all");
+
+  const [reportImagesUploading, setReportImagesUploading] = useState(false);
+  const [reportImageUploadMsg, setReportImageUploadMsg] = useState("");
+  const [showReportGalleryPicker, setShowReportGalleryPicker] = useState(false);
+  const [customReportImageUrl, setCustomReportImageUrl] = useState("");
 
   const [videoUploading, setVideoUploading] = useState(false);
   const [videoUploadMsg, setVideoUploadMsg] = useState("");
@@ -244,44 +252,53 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
       e.target.value = "";
     }
   };
-  const autoAddImageToGallery = async (url, file, customTitle = "", customCategory = "events") => {
+  const autoAddImageToGallery = (url, file, customTitle = "", customCategory = "events") => {
     if (!url) return;
     const fileNameClean = file?.name
       ? file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " ")
-      : "ব্লগ আলোকচিত্র";
+      : "আলোকচিত্র";
     const itemTitle = customTitle || fileNameClean || "জিয়নকাঠি আলোকচিত্র";
 
-    // Prevent duplicate entries
-    const currentGallery = data.gallery || [];
-    if (currentGallery.some((g) => g.url === url)) return;
+    setData((prev) => {
+      const currentGallery = prev?.gallery || [];
+      if (currentGallery.some((g) => g.url === url)) return prev;
 
-    const newGalleryItem = {
-      id: `gal-${Date.now()}`,
-      title: itemTitle,
-      url: url,
-      category: customCategory || "events",
-      description: `ব্লগ বা সেকশন থেকে যুক্ত: ${itemTitle}`,
-      publishedAt: new Date().toISOString(),
-      rank: currentGallery.length + 1,
-    };
+      const newGalleryItem = {
+        id: `gal-${Date.now()}`,
+        title: itemTitle,
+        url: url,
+        category: customCategory || "events",
+        description: `আপলোড থেকে যুক্ত: ${itemTitle}`,
+        publishedAt: new Date().toISOString(),
+        rank: currentGallery.length + 1,
+      };
 
-    const updatedGallery = [newGalleryItem, ...currentGallery];
-    const updatedData = { ...data, gallery: updatedGallery };
-    setData(updatedData);
-    await handleSaveGlobal(updatedData);
+      const updated = {
+        ...prev,
+        gallery: [newGalleryItem, ...currentGallery],
+      };
+      // Persist without clobbering other fields
+      saveSiteData(updated);
+      return updated;
+    });
   };
 
-  // Docx File Upload & Auto-Extraction for Research Reports
-  const handleDocxUpload = async (e) => {
+  // PDF File Upload & Auto-Extraction for Research Reports
+  const handlePdfUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    setIsDocxExtracting(true);
-    setDocxProgress(15);
-    setDocxSuccessMsg("");
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      alert("অনুগ্রহ করে শুধুমাত্র .pdf ফাইল নির্বাচন করুন (Please select a .pdf file only).");
+      return;
+    }
+
+    setIsPdfExtracting(true);
+    setPdfProgress(15);
+    setPdfSuccessMsg("");
 
     const progressInterval = setInterval(() => {
-      setDocxProgress((prev) => {
+      setPdfProgress((prev) => {
         if (prev >= 90) return prev;
         return prev + 15;
       });
@@ -291,35 +308,153 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
     formData.append("file", file);
 
     try {
-      const res = await fetch("/api/docx-extract", {
+      const res = await fetch("/api/reports/extract-pdf", {
         method: "POST",
         body: formData,
       });
       clearInterval(progressInterval);
-      setDocxProgress(100);
+      setPdfProgress(100);
 
       const json = await res.json();
       if (json.success) {
+        const extractedImages = Array.isArray(json.embeddedImages) && json.embeddedImages.length > 0
+          ? json.embeddedImages
+          : [];
         setEditingReport((prev) => ({
           ...prev,
-          title: json.title || prev.title,
-          content: json.text || prev.content,
-          summary: json.summary || prev.summary || json.text.slice(0, 200),
+          title: json.title || prev?.title || "",
+          content: json.text || prev?.content || "",
+          summary: json.summary || prev?.summary || (json.rawText ? json.rawText.slice(0, 200) : ""),
+          downloadUrl: json.downloadUrl || prev?.downloadUrl || "",
+          embeddedImages: extractedImages.length > 0 ? extractedImages : (prev?.embeddedImages || []),
+          image: extractedImages[0] || prev?.image || "/images/farming-collage.jpg",
         }));
-        setDocxSuccessMsg("✓ ওয়ার্ড ফাইল (.docx) থেকে টেক্সট সফলভাবে এক্সট্রাক্ট করা হয়েছে!");
+        setPdfSuccessMsg(
+          `✓ পিডিএফ ফাইল সফলভাবে প্রক্রিয়া করা হয়েছে! ${extractedImages.length > 0 ? `(${extractedImages.length} টি সংযুক্ত চিত্র সহ)` : ""}`
+        );
       } else {
-        alert("Extraction error: " + (json.error || "Failed to parse .docx"));
+        alert("Extraction error: " + (json.error || "Failed to parse PDF"));
       }
     } catch (err) {
       clearInterval(progressInterval);
-      alert("Error reading .docx file: " + err.message);
+      alert("Error reading PDF file: " + err.message);
     } finally {
       setTimeout(() => {
-        setIsDocxExtracting(false);
-        setDocxProgress(0);
+        setIsPdfExtracting(false);
+        setPdfProgress(0);
       }, 500);
       e.target.value = "";
     }
+  };
+
+  // Upload multiple images for research report (Cloudinary/DB/Memory storage + Auto-gallery sync)
+  const handleMultipleReportImagesUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    setReportImagesUploading(true);
+    setReportImageUploadMsg(`${files.length} টি ছবি আপলোড হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন।`);
+
+    try {
+      const uploadedUrls = [];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        setReportImageUploadMsg(`ছবি ${i + 1}/${files.length} ক্লাউডে আপলোড হচ্ছে...`);
+        const url = await handleFileUpload(file);
+        if (url) {
+          uploadedUrls.push(url);
+          // Auto add to gallery for site references
+          autoAddImageToGallery(
+            url,
+            file,
+            editingReport?.title
+              ? `${editingReport.title} - চিত্র #${(editingReport.embeddedImages?.length || 0) + uploadedUrls.length}`
+              : "প্রতিবেদন রেফারেন্স ছবি",
+            "archive"
+          );
+        }
+      }
+
+      if (uploadedUrls.length > 0) {
+        setEditingReport((prev) => {
+          const currentImgs = Array.isArray(prev?.embeddedImages) ? prev.embeddedImages : [];
+          const updatedImgs = [...currentImgs, ...uploadedUrls];
+          return {
+            ...prev,
+            embeddedImages: updatedImgs,
+            // If report didn't have a cover image or had placeholder, set first uploaded as main cover
+            image: prev?.image && prev.image !== "/images/farming-collage.jpg" ? prev.image : uploadedUrls[0],
+          };
+        });
+        setReportImageUploadMsg(`✓ ${uploadedUrls.length} টি নতুন রেফারেন্স চিত্র সফলভাবে যুক্ত হয়েছে!`);
+        setTimeout(() => setReportImageUploadMsg(""), 4500);
+      }
+    } catch (err) {
+      alert("ছবি আপলোডে ত্রুটি: " + err.message);
+      setReportImageUploadMsg("");
+    } finally {
+      setReportImagesUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const handleAddReportImageFromUrl = (urlToAdd) => {
+    const cleanUrl = (urlToAdd || customReportImageUrl).trim();
+    if (!cleanUrl) return;
+
+    setEditingReport((prev) => {
+      const currentImgs = Array.isArray(prev?.embeddedImages) ? prev.embeddedImages : [];
+      if (currentImgs.includes(cleanUrl)) return prev;
+      return {
+        ...prev,
+        embeddedImages: [...currentImgs, cleanUrl],
+        image: prev?.image && prev.image !== "/images/farming-collage.jpg" ? prev.image : cleanUrl,
+      };
+    });
+    setCustomReportImageUrl("");
+  };
+
+  const handleToggleReportGalleryImage = (url) => {
+    if (!url) return;
+    setEditingReport((prev) => {
+      const currentImgs = Array.isArray(prev?.embeddedImages) ? prev.embeddedImages : [];
+      const exists = currentImgs.includes(url);
+      const updatedImgs = exists ? currentImgs.filter((u) => u !== url) : [...currentImgs, url];
+      return {
+        ...prev,
+        embeddedImages: updatedImgs,
+        image: prev?.image === url && exists
+          ? (updatedImgs[0] || "/images/farming-collage.jpg")
+          : (prev?.image || url),
+      };
+    });
+  };
+
+  const handleRemoveReportImage = (indexToRemove) => {
+    setEditingReport((prev) => {
+      const currentImgs = Array.isArray(prev?.embeddedImages) ? [...prev.embeddedImages] : [];
+      const removed = currentImgs.splice(indexToRemove, 1)[0];
+      return {
+        ...prev,
+        embeddedImages: currentImgs,
+        image: prev?.image === removed ? (currentImgs[0] || "/images/farming-collage.jpg") : prev.image,
+      };
+    });
+  };
+
+  const handleMoveReportImage = (index, direction) => {
+    setEditingReport((prev) => {
+      const currentImgs = Array.isArray(prev?.embeddedImages) ? [...prev.embeddedImages] : [];
+      const targetIndex = index + direction;
+      if (targetIndex < 0 || targetIndex >= currentImgs.length) return prev;
+      const temp = currentImgs[index];
+      currentImgs[index] = currentImgs[targetIndex];
+      currentImgs[targetIndex] = temp;
+      return {
+        ...prev,
+        embeddedImages: currentImgs,
+      };
+    });
   };
 
   // Save Research Report via API & Local SiteData
@@ -347,7 +482,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
         if (refreshReports) refreshReports();
         setEditingReport(null);
         setShowReportModal(false);
-        setDocxSuccessMsg("");
+        setPdfSuccessMsg("");
       } else {
         alert(json.error || "Failed to save report");
       }
@@ -665,7 +800,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
     {
       group: "কার্যক্রম ও প্রকাশনা",
       items: [
-        { id: "reports", label: "গবেষণা ও রিপোর্ট (.docx)", icon: <BookOpen className="w-4 h-4" /> },
+        { id: "reports", label: "অন্বেষণ ও রিপোর্ট (.pdf)", icon: <BookOpen className="w-4 h-4" /> },
         { id: "pillars", label: "২টি মূল স্তম্ভ ও লক্ষ্য", icon: <Compass className="w-4 h-4" /> },
         { id: "blogs", label: "ব্লগ ও দ্বিভাষিক বার্তা", icon: <FileText className="w-4 h-4" /> },
         { id: "gallery", label: "ফটো ও ভিডিও গ্যালারি", icon: <FolderUp className="w-4 h-4" /> },
@@ -745,8 +880,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                         setSidebarOpen(false);
                       }}
                       className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs transition-all cursor-pointer ${isActive
-                          ? "bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-xs font-black"
-                          : "text-stone-700 hover:text-emerald-950 hover:bg-emerald-100/70 font-semibold"
+                        ? "bg-gradient-to-r from-emerald-700 to-emerald-800 text-white shadow-xs font-black"
+                        : "text-stone-700 hover:text-emerald-950 hover:bg-emerald-100/70 font-semibold"
                         }`}
                     >
                       <div className="flex items-center space-x-2.5">
@@ -758,8 +893,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                       {item.badge && (
                         <span
                           className={`px-2 py-0.5 rounded-full text-[10px] font-black ${isActive
-                              ? "bg-white text-emerald-900 shadow-2xs"
-                              : "bg-amber-100 text-amber-900 border border-amber-300"
+                            ? "bg-white text-emerald-900 shadow-2xs"
+                            : "bg-amber-100 text-amber-900 border border-amber-300"
                             }`}
                         >
                           {item.badge}
@@ -787,21 +922,6 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
               <Save className="w-4 h-4" />
             )}
             <span>{saved ? "সংরক্ষিত হয়েছে!" : "সকল পরিবর্তন সংরক্ষণ করুন"}</span>
-          </button>
-
-          {/* Go to Website Button */}
-          <button
-            onClick={() => {
-              if (setMainTabFromProps) {
-                setMainTabFromProps("home");
-              } else if (setMainActiveTab) {
-                setMainActiveTab("home");
-              }
-            }}
-            className="w-full flex items-center justify-center space-x-2 bg-stone-50 hover:bg-emerald-50 text-stone-700 hover:text-emerald-900 font-bold text-xs py-2 px-3 rounded-xl border border-stone-200/90 transition-all cursor-pointer"
-          >
-            <ExternalLink className="w-3.5 h-3.5 text-emerald-700" />
-            <span>মূল ওয়েবসাইটে ফিরে যান</span>
           </button>
 
           {/* User & Logout */}
@@ -889,24 +1009,10 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
         <div className="bg-stone-50/95 border-b border-stone-200 px-4 sm:px-8 py-2.5 flex flex-wrap items-center justify-between gap-3 text-xs shadow-2xs">
           <nav aria-label="Breadcrumb" className="flex items-center space-x-1.5 flex-wrap">
             <button
-              onClick={() => {
-                if (setMainTabFromProps) setMainTabFromProps("home");
-                else if (setMainActiveTab) setMainActiveTab("home");
-              }}
-              className="flex items-center space-x-1.5 text-stone-500 hover:text-emerald-800 font-bold transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-stone-200/60"
-              title="মূল ওয়েবসাইটে ফিরে যান"
-            >
-              <Home className="w-3.5 h-3.5 text-stone-600" />
-              <span>হোম (Website)</span>
-            </button>
-
-            <ChevronRight className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-
-            <button
               onClick={() => setActiveTab("analytics")}
               className={`flex items-center space-x-1.5 font-bold transition-colors cursor-pointer px-2 py-1 rounded-lg hover:bg-stone-200/60 ${activeTab === "analytics"
-                  ? "text-emerald-900 font-extrabold bg-emerald-50 border border-emerald-200"
-                  : "text-stone-600 hover:text-emerald-800"
+                ? "text-emerald-900 font-extrabold bg-emerald-50 border border-emerald-200"
+                : "text-stone-600 hover:text-emerald-800"
                 }`}
             >
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-700" />
@@ -975,7 +1081,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
 
                 <div className="bg-white p-6 rounded-2xl border border-stone-200 shadow-2xs space-y-2">
                   <div className="flex items-center justify-between text-emerald-700">
-                    <span className="text-xs font-bold uppercase tracking-wider">গবেষণা ও রিপোর্ট</span>
+                    <span className="text-xs font-bold uppercase tracking-wider">অন্বেষণ ও রিপোর্ট</span>
                     <BookOpen className="w-5 h-5" />
                   </div>
                   <div className="text-3xl font-black text-stone-900">{reports.length} টি</div>
@@ -1005,7 +1111,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
               <div className="bg-white rounded-2xl border border-stone-200 p-6 shadow-2xs space-y-4">
                 <div className="flex items-center justify-between border-b border-stone-100 pb-4">
                   <div>
-                    <h3 className="font-extrabold text-stone-900 text-lg">সর্বাধিক পঠিত গবেষণা রিপোর্ট তালিকা</h3>
+                    <h3 className="font-extrabold text-stone-900 text-lg">সর্বাধিক পঠিত অন্বেষণ রিপোর্ট তালিকা</h3>
                     <p className="text-xs text-stone-500">ভিজিটরদের আগ্রহ ও পাঠ সংখ্যা অনুযায়ী র্যাংক</p>
                   </div>
                   <button
@@ -1093,7 +1199,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     className="bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs px-4 py-2 rounded-xl shadow-xs cursor-pointer flex items-center space-x-1.5"
                   >
                     <Save className="w-4 h-4" />
-                    <span>ছবি সংরক্ষণ করুন</span>
+                    <span>{saved ? "সংরক্ষিত হয়েছে!" : "ছবি সংরক্ষণ করুন"}</span>
                   </button>
                 </div>
 
@@ -1103,12 +1209,14 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <ImageSelectorField
                       label="হোমপেজ প্রধান ছবি (Hero Picture URL) *"
                       value={data.general?.heroImage || "/images/paddy-harvesting.jpg"}
-                      onChange={(url) =>
-                        setData({
+                      onChange={(url) => {
+                        const updated = {
                           ...data,
                           general: { ...(data.general || {}), heroImage: url },
-                        })
-                      }
+                        };
+                        setData(updated);
+                        handleSaveGlobal(updated);
+                      }}
                       galleryItems={data.gallery || []}
                       category="farming"
                       onUploadAutoAddToGallery={(url, file) => {
@@ -1190,7 +1298,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                         <label className="text-xs font-bold text-stone-700">কেন্দ্রের নাম (বাংলা)</label>
                         <input
                           type="text"
-                          value={data.general?.heroStationBengali || "মাঠ গবেষণা কেন্দ্র"}
+                          value={data.general?.heroStationBengali || "মাঠ অন্বেষণ কেন্দ্র"}
                           onChange={(e) =>
                             setData({
                               ...data,
@@ -1198,7 +1306,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                             })
                           }
                           className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
-                          placeholder="যেমন: মাঠ গবেষণা কেন্দ্র"
+                          placeholder="যেমন: মাঠ অন্বেষণ কেন্দ্র"
                         />
                       </div>
 
@@ -1260,11 +1368,14 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <div className="bg-white p-3 sm:p-4 rounded-3xl border border-amber-300 shadow-md relative">
                       <div className="aspect-4/3 rounded-2xl overflow-hidden bg-stone-100 relative">
                         <img
+                          key={data.general?.heroImage || "hero-img-preview"}
                           src={data.general?.heroImage || "/images/paddy-harvesting.jpg"}
                           alt="Hero Preview"
                           className="w-full h-full object-cover"
                           onError={(e) => {
-                            e.target.src = "/images/seedbed.jpg";
+                            if (!e.target.src.includes("/images/paddy-harvesting.jpg")) {
+                              e.target.src = "/images/paddy-harvesting.jpg";
+                            }
                           }}
                         />
                         <div className="absolute top-3 left-3 bg-stone-900/80 backdrop-blur-xs text-amber-300 text-[11px] font-black px-3 py-1 rounded-full flex items-center space-x-1.5 shadow-xs">
@@ -1276,7 +1387,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                       <div className="p-3 space-y-1.5">
                         <div className="flex items-center justify-between text-xs text-stone-500 font-semibold">
                           <span>{data.general?.heroLocationBengali || "স্থান: আউশগ্রাম, বর্ধমান"}</span>
-                          <span className="text-amber-700 font-bold">{data.general?.heroStationBengali || "মাঠ গবেষণা কেন্দ্র"}</span>
+                          <span className="text-amber-700 font-bold">{data.general?.heroStationBengali || "মাঠ অন্বেষণ কেন্দ্র"}</span>
                         </div>
                         <h3 className="text-sm font-black text-stone-900 leading-snug">
                           {data.general?.heroTitleBengali || "রাসায়নিক সার ও কীটনাশকমুক্ত দেশীয় ধান ও ফল-সবজি উৎপাদনের মডেল"}
@@ -1331,8 +1442,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                         />
                         <label
                           className={`cursor-pointer font-bold text-xs px-4 py-2.5 rounded-xl border shrink-0 flex items-center justify-center space-x-1.5 transition-all ${videoUploading
-                              ? "bg-amber-100 border-amber-300 text-amber-900 cursor-not-allowed opacity-80"
-                              : "bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
+                            ? "bg-amber-100 border-amber-300 text-amber-900 cursor-not-allowed opacity-80"
+                            : "bg-amber-50 hover:bg-amber-100 text-amber-900 border-amber-300 shadow-2xs"
                             }`}
                         >
                           <Upload className={`w-4 h-4 ${videoUploading ? "animate-spin text-amber-600" : "text-amber-700"}`} />
@@ -1350,8 +1461,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                       {videoUploadMsg && (
                         <p
                           className={`text-xs font-bold p-2 rounded-lg border ${videoUploadMsg.startsWith("✓")
-                              ? "bg-emerald-50 text-emerald-800 border-emerald-200"
-                              : "bg-amber-50 text-amber-800 border-amber-200"
+                            ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                            : "bg-amber-50 text-amber-800 border-amber-200"
                             }`}
                         >
                           {videoUploadMsg}
@@ -1870,7 +1981,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <label className="text-xs font-bold text-stone-700">ব্যানার প্রধান শিরোনাম (বাংলা - প্রথম অংশ)</label>
                     <input
                       type="text"
-                      value={data.general?.bannerTitleBengali || "প্রাণ-প্রকৃতি-পরিবেশের টানে"}
+                      value={(data.general?.bannerTitleBengali || "প্রাণ-প্রকৃতি-পরিবেশের আহ্বানে").replace(/টানে/g, "আহ্বানে")}
                       onChange={(e) =>
                         setData({ ...data, general: { ...(data.general || {}), bannerTitleBengali: e.target.value } })
                       }
@@ -1922,7 +2033,10 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <label className="text-xs font-bold text-stone-700">ব্যানার বিবরণ (বাংলা)</label>
                     <textarea
                       rows={3}
-                      value={data.general?.bannerSubtitleBengali || "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।"}
+                      value={(data.general?.bannerSubtitleBengali || "বাংলার গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সংস্থা।")
+                        .replace(/বীরভূম,\s*বর্ধমান\s*ও\s*আউশগ্রামের\s*গ্রামাঞ্চলে/g, "বাংলার গ্রামাঞ্চলে")
+                        .replace(/সমাজ।?$/, "সংস্থা।")
+                        .replace(/সমাজ/g, "সংস্থা")}
                       onChange={(e) =>
                         setData({ ...data, general: { ...(data.general || {}), bannerSubtitleBengali: e.target.value } })
                       }
@@ -2040,7 +2154,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <label className="text-xs font-bold text-stone-700">কৃষক পরিবার সংখ্যা</label>
                     <input
                       type="text"
-                      value={data.general?.statFamilies || "৩৫০+"}
+                      value={data.general?.statFamilies === "৩৫০+" ? "৫০+" : (data.general?.statFamilies || "৫০+")}
                       onChange={(e) =>
                         setData({ ...data, general: { ...(data.general || {}), statFamilies: e.target.value } })
                       }
@@ -2106,14 +2220,14 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
             </div>
           )}
 
-          {/* TAB 4: RESEARCH REPORTS MANAGER (.DOCX UPLOAD, CRUD & RANK) */}
+          {/* TAB 4: ONNESHON & REPORTS MANAGER (.PDF UPLOAD, CRUD & RANK) */}
           {activeTab === "reports" && (
             <div className="space-y-8">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between bg-white p-6 rounded-2xl border border-stone-200 gap-4 shadow-2xs">
                 <div>
-                  <h3 className="text-xl font-black text-stone-900">গবেষণা ও প্রতিবেদন ব্যবস্থাপনা</h3>
+                  <h3 className="text-xl font-black text-stone-900">অন্বেষণ ও প্রতিবেদন ব্যবস্থাপনা</h3>
                   <p className="text-xs text-stone-500 mt-0.5">
-                    নতুন প্রতিবেদন লিখুন অথবা .docx ফাইল আপলোড করে এক ক্লিকে টেক্সট এক্সট্রাক্ট করুন
+                    নতুন প্রতিবেদন লিখুন অথবা মূল .pdf ফাইল আপলোড করে এক ক্লিকে টেক্সট ও ছবি এক্সট্রাক্ট করুন
                   </p>
                 </div>
 
@@ -2126,13 +2240,15 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                         titleEnglish: "",
                         topic: "বীজ সংরক্ষণ ও দেশীয় ধান",
                         topicEnglish: "Seed Conservation",
-                        author: "জিয়নকাঠি গবেষণা দল",
+                        author: "জিয়নকাঠি অন্বেষণ দল",
                         publishedDate: new Date().toISOString().split("T")[0],
                         summary: "",
                         summaryEnglish: "",
                         content: "",
                         contentEnglish: "",
                         image: "/images/farming-collage.jpg",
+                        downloadUrl: "",
+                        embeddedImages: [],
                         rank: (reports.length || 0) + 1,
                       });
                       setShowReportModal(true);
@@ -2155,7 +2271,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <div className="space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="bg-emerald-50 text-emerald-800 border border-emerald-200 text-[10px] font-black px-2.5 py-0.5 rounded-full uppercase">
-                          {report.topic || "কৃষি গবেষণা"}
+                          {report.topic || "কৃষি অন্বেষণ"}
                         </span>
                         <span className="text-[11px] font-bold text-stone-400">
                           {report.publishedDate}
@@ -2178,15 +2294,27 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     </div>
 
                     <div className="pt-4 border-t border-stone-100 flex items-center justify-between text-xs">
-                      <div className="text-stone-500 font-semibold flex items-center space-x-1">
-                        <Eye className="w-3.5 h-3.5 text-amber-600" />
-                        <span>{report.views || 0} ভিউ</span>
+                      <div className="flex items-center space-x-3 text-stone-500 font-semibold">
+                        <div className="flex items-center space-x-1">
+                          <Eye className="w-3.5 h-3.5 text-amber-600" />
+                          <span>{report.views || 0} ভিউ</span>
+                        </div>
+                        {Array.isArray(report.embeddedImages) && report.embeddedImages.length > 0 && (
+                          <div className="flex items-center space-x-1 text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 text-[11px]">
+                            <span>📷 {report.embeddedImages.length} ছবি</span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex items-center space-x-2">
                         <button
                           onClick={() => {
-                            setEditingReport(report);
+                            setEditingReport({
+                              ...report,
+                              embeddedImages: Array.isArray(report.embeddedImages)
+                                ? report.embeddedImages
+                                : (Array.isArray(report.images) ? report.images : []),
+                            });
                             setShowReportModal(true);
                           }}
                           className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg font-bold flex items-center space-x-1 border border-amber-200 cursor-pointer"
@@ -2563,8 +2691,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <button
                       onClick={() => setVolFilter("all")}
                       className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "all"
-                          ? "bg-emerald-700 text-white border-emerald-700 shadow-xs"
-                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                        ? "bg-emerald-700 text-white border-emerald-700 shadow-xs"
+                        : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
                         }`}
                     >
                       সব ({volunteers.length})
@@ -2572,8 +2700,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <button
                       onClick={() => setVolFilter("pending")}
                       className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "pending"
-                          ? "bg-amber-600 text-white border-amber-600 shadow-xs"
-                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                        ? "bg-amber-600 text-white border-amber-600 shadow-xs"
+                        : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
                         }`}
                     >
                       অপেক্ষমান ({pendingVolunteersCount})
@@ -2581,8 +2709,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <button
                       onClick={() => setVolFilter("approved")}
                       className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "approved"
-                          ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
-                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                        ? "bg-emerald-600 text-white border-emerald-600 shadow-xs"
+                        : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
                         }`}
                     >
                       অনুমোদিত ({approvedVolunteersCount})
@@ -2590,8 +2718,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     <button
                       onClick={() => setVolFilter("rejected")}
                       className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "rejected"
-                          ? "bg-red-600 text-white border-red-600 shadow-xs"
-                          : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
+                        ? "bg-red-600 text-white border-red-600 shadow-xs"
+                        : "bg-white text-stone-700 border-stone-200 hover:bg-stone-50"
                         }`}
                     >
                       বাতিল ({volunteers.filter((v) => v.status === "rejected").length})
@@ -2625,10 +2753,10 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
 
                                 <span
                                   className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${vol.status === "approved"
-                                      ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
-                                      : vol.status === "rejected"
-                                        ? "bg-red-100 text-red-900 border border-red-200"
-                                        : "bg-amber-100 text-amber-900 border border-amber-200"
+                                    ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
+                                    : vol.status === "rejected"
+                                      ? "bg-red-100 text-red-900 border border-red-200"
+                                      : "bg-amber-100 text-amber-900 border border-amber-200"
                                     }`}
                                 >
                                   {vol.status === "approved" ? "✓ অনুমোদিত (Approved)" : vol.status === "rejected" ? "✕ বাতিল (Rejected)" : "⏳ অপেক্ষমান (Pending)"}
@@ -2674,8 +2802,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                               <button
                                 onClick={() => handleUpdateVolunteer(vol.id, vol.status, !vol.isDdbmpbs)}
                                 className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${vol.isDdbmpbs
-                                    ? "bg-indigo-600 text-white border-indigo-700"
-                                    : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
+                                  ? "bg-indigo-600 text-white border-indigo-700"
+                                  : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
                                   }`}
                               >
                                 {vol.isDdbmpbs ? "✓ DDBMPBS যুক্ত" : "+ DDBMPBS ট্যাগ"}
@@ -2747,7 +2875,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                 <div>
                   <h3 className="text-xl font-black text-stone-900">ফটো ও ভিডিও গ্যালারি ব্যবস্থাপনা</h3>
                   <p className="text-xs text-stone-500">
-                    তাত্ক্ষণিক প্রকাশ করুন অথবা ভবিষ্যতের তারিখ ও সময় নির্ধারণ করে শিডিউল করুন
+                    নির্দিষ্ট ৪টি ক্যাটাগরিতে আলোকচিত্র ও ভিডিও প্রকাশ ও ব্যবস্থাপনা করুন
                   </p>
                 </div>
 
@@ -2776,7 +2904,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                                 id: `img-${Date.now()}-${i}`,
                                 title: nameClean,
                                 url: url,
-                                category: "events",
+                                category: galleryFilter !== "all" ? galleryFilter : "pkhira",
                                 description: `${nameClean} - ফিল্ড স্টেশন কার্যক্রম ও আলোকচিত্র`,
                                 publishedAt: new Date().toISOString(),
                                 rank: (data.gallery?.length || 0) + i + 1,
@@ -2809,7 +2937,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                         isNew: true,
                         title: "",
                         url: "/images/community-collage.jpg",
-                        category: "events",
+                        category: galleryFilter !== "all" ? galleryFilter : "pkhira",
                         description: "",
                         publishedAt: new Date().toISOString(),
                         rank: (data.gallery?.length || 0) + 1,
@@ -2824,54 +2952,95 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {(data.gallery || []).map((item, gIdx) => (
-                  <div
-                    key={item.id || gIdx}
-                    className="bg-white rounded-3xl overflow-hidden border border-stone-200 shadow-2xs flex flex-col justify-between"
+              {/* 4 Category Filter Tabs */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { id: "all", nameBn: "সব ছবি", nameEn: "All Media" },
+                  { id: "pkhira", nameBn: "জিয়নকাঠির পখিরা", nameEn: "Jiyonkathir Pkhira" },
+                  { id: "ragi", nameBn: "জিয়নকাঠির রাগি চাষ", nameEn: "Jiyonkathir Ragi Chas" },
+                  { id: "dhan", nameBn: "জিয়নকাঠির ধান চাষ ও সংরক্ষণ", nameEn: "Jiyonkathir Dhan chass o Sonrokkhon" },
+                  { id: "joll", nameBn: "জল সংরক্ষণ", nameEn: "Joll Sonrokkhon" },
+                ].map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => setGalleryFilter(cat.id)}
+                    className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${galleryFilter === cat.id
+                        ? "bg-amber-600 text-white border-amber-600 shadow-xs"
+                        : "bg-white text-stone-600 border-stone-200 hover:border-amber-400 hover:text-amber-800"
+                      }`}
                   >
-                    <div className="aspect-video bg-stone-900 relative">
-                      <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
-                      <span className="absolute top-2 right-2 bg-stone-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md uppercase">
-                        {item.category || "Moment"}
-                      </span>
-                    </div>
-
-                    <div className="p-5 space-y-2">
-                      <h4 className="font-extrabold text-stone-900 text-sm">{item.title}</h4>
-                      <p className="text-xs text-stone-600 line-clamp-2">{item.description}</p>
-                      <span className="text-[11px] text-stone-400 block font-medium">
-                        {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString() : ""}
-                      </span>
-                    </div>
-
-                    <div className="p-4 bg-stone-50 border-t border-stone-100 flex items-center justify-between">
-                      <button
-                        onClick={() => {
-                          setEditingGallery({ ...item });
-                          setShowGalleryModal(true);
-                        }}
-                        className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
-                      >
-                        <Edit className="w-3.5 h-3.5" />
-                        <span>সম্পাদনা</span>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          if (!confirm("Delete this gallery item?")) return;
-                          const filtered = (data.gallery || []).filter((_, i) => i !== gIdx);
-                          const updated = { ...data, gallery: filtered };
-                          setData(updated);
-                          handleSaveGlobal(updated);
-                        }}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
+                    {cat.nameBn} <span className="opacity-70 text-[10px]">({cat.nameEn})</span>
+                  </button>
                 ))}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {(data.gallery || [])
+                  .filter((item) => {
+                    if (galleryFilter === "all") return true;
+                    const c = (item.category || "").toLowerCase();
+                    if (galleryFilter === "pkhira") return c === "pkhira" || c.includes("pkhira") || c === "birds";
+                    if (galleryFilter === "ragi") return c === "ragi" || c.includes("ragi") || c === "millet";
+                    if (galleryFilter === "dhan") return c === "dhan" || c.includes("dhan") || c === "seeds" || c === "farming";
+                    if (galleryFilter === "joll") return c === "joll" || c.includes("joll") || c.includes("water");
+                    return c === galleryFilter;
+                  })
+                  .map((item, gIdx) => {
+                    const c = (item.category || "").toLowerCase();
+                    let catLabel = "জিয়নকাঠির পখিরা";
+                    if (c === "ragi" || c.includes("ragi") || c === "millet") catLabel = "জিয়নকাঠির রাগি চাষ";
+                    else if (c === "dhan" || c.includes("dhan") || c === "seeds" || c === "farming") catLabel = "জিয়নকাঠির ধান চাষ ও সংরক্ষণ";
+                    else if (c === "joll" || c.includes("joll") || c.includes("water")) catLabel = "জল সংরক্ষণ";
+                    else if (c === "pkhira" || c.includes("pkhira") || c === "birds") catLabel = "জিয়নকাঠির পখিরা";
+
+                    return (
+                      <div
+                        key={item.id || gIdx}
+                        className="bg-white rounded-3xl overflow-hidden border border-stone-200 shadow-2xs flex flex-col justify-between"
+                      >
+                        <div className="aspect-video bg-stone-900 relative">
+                          <img src={item.url} alt={item.title} className="w-full h-full object-cover" />
+                          <span className="absolute top-2 right-2 bg-stone-900/80 text-white text-[10px] font-bold px-2 py-0.5 rounded-md">
+                            {catLabel}
+                          </span>
+                        </div>
+
+                        <div className="p-5 space-y-2">
+                          <h4 className="font-extrabold text-stone-900 text-sm">{item.title}</h4>
+                          <p className="text-xs text-stone-600 line-clamp-2">{item.description}</p>
+                          <span className="text-[11px] text-stone-400 block font-medium">
+                            {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString() : ""}
+                          </span>
+                        </div>
+
+                        <div className="p-4 bg-stone-50 border-t border-stone-100 flex items-center justify-between">
+                          <button
+                            onClick={() => {
+                              setEditingGallery({ ...item });
+                              setShowGalleryModal(true);
+                            }}
+                            className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-900 rounded-lg font-bold text-xs border border-amber-200 flex items-center space-x-1 cursor-pointer"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                            <span>সম্পাদনা</span>
+                          </button>
+
+                          <button
+                            onClick={() => {
+                              if (!confirm("Delete this gallery item?")) return;
+                              const filtered = (data.gallery || []).filter((g) => g.id !== item.id);
+                              const updated = { ...data, gallery: filtered };
+                              setData(updated);
+                              handleSaveGlobal(updated);
+                            }}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg border border-red-200 cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
               </div>
             </div>
           )}
@@ -2891,8 +3060,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                   <button
                     onClick={() => setVolFilter("all")}
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "all"
-                        ? "bg-amber-600 text-white border-amber-600"
-                        : "bg-white text-stone-600 border-stone-200"
+                      ? "bg-amber-600 text-white border-amber-600"
+                      : "bg-white text-stone-600 border-stone-200"
                       }`}
                   >
                     সব ({volunteers.length})
@@ -2900,8 +3069,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                   <button
                     onClick={() => setVolFilter("pending")}
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "pending"
-                        ? "bg-amber-600 text-white border-amber-600"
-                        : "bg-white text-stone-600 border-stone-200"
+                      ? "bg-amber-600 text-white border-amber-600"
+                      : "bg-white text-stone-600 border-stone-200"
                       }`}
                   >
                     অপেক্ষমান ({pendingVolunteersCount})
@@ -2909,8 +3078,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                   <button
                     onClick={() => setVolFilter("approved")}
                     className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all cursor-pointer ${volFilter === "approved"
-                        ? "bg-amber-600 text-white border-amber-600"
-                        : "bg-white text-stone-600 border-stone-200"
+                      ? "bg-amber-600 text-white border-amber-600"
+                      : "bg-white text-stone-600 border-stone-200"
                       }`}
                   >
                     অনুমোদিত ({approvedVolunteersCount})
@@ -2943,10 +3112,10 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                               <h4 className="font-extrabold text-stone-900 text-base">{vol.name}</h4>
                               <span
                                 className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${vol.status === "approved"
-                                    ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
-                                    : vol.status === "rejected"
-                                      ? "bg-red-100 text-red-900 border border-red-200"
-                                      : "bg-amber-100 text-amber-900 border border-amber-200"
+                                  ? "bg-emerald-100 text-emerald-900 border border-emerald-200"
+                                  : vol.status === "rejected"
+                                    ? "bg-red-100 text-red-900 border border-red-200"
+                                    : "bg-amber-100 text-amber-900 border border-amber-200"
                                   }`}
                               >
                                 {vol.status}
@@ -2974,8 +3143,8 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                             <button
                               onClick={() => handleUpdateVolunteer(vol.id, vol.status, !vol.isDdbmpbs)}
                               className={`text-xs font-bold px-3 py-1.5 rounded-xl border transition-all cursor-pointer ${vol.isDdbmpbs
-                                  ? "bg-indigo-600 text-white border-indigo-700"
-                                  : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
+                                ? "bg-indigo-600 text-white border-indigo-700"
+                                : "bg-stone-100 text-stone-700 border-stone-200 hover:bg-stone-200"
                                 }`}
                             >
                               {vol.isDdbmpbs ? "✓ DDBMPBS যুক্ত" : "+ DDBMPBS যুক্ত করুন"}
@@ -3028,7 +3197,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
             <div className="flex items-center justify-between border-b border-stone-200 pb-4">
               <div className="flex items-center space-x-2">
                 <span className="bg-amber-100 text-amber-900 font-extrabold text-xs px-3 py-1 rounded-full">
-                  {editingReport.id === "new" ? "নতুন গবেষণা ও প্রতিবেদন সৃষ্টি" : "প্রতিবেদন সম্পাদনা"}
+                  {editingReport.id === "new" ? "নতুন অন্বেষণ ও প্রতিবেদন সৃষ্টি" : "প্রতিবেদন সম্পাদনা"}
                 </span>
                 <span className="text-xs text-stone-500 font-medium">
                   (বাংলা ও ইংরেজি উভয়ের জন্য)
@@ -3038,7 +3207,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                 onClick={() => {
                   setShowReportModal(false);
                   setEditingReport(null);
-                  setDocxSuccessMsg("");
+                  setPdfSuccessMsg("");
                 }}
                 className="p-1.5 text-stone-400 hover:text-stone-700 rounded-full hover:bg-stone-100"
               >
@@ -3046,57 +3215,98 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
               </button>
             </div>
 
-            {/* Docx Extraction Upload Box */}
+            {/* PDF Extraction Upload Box */}
             <div className="bg-[#fefce8] p-5 rounded-2xl border border-amber-300 space-y-3">
               <div className="flex items-center space-x-2 text-amber-900 font-bold text-sm">
                 <FolderUp className="w-5 h-5 text-amber-600" />
-                <span>ওয়ার্ড ডকুমেন্ট (.docx) থেকে সরাসরি টেক্সট আমদানি করুন</span>
+                <span>পিডিএফ ডকুমেন্ট (.pdf) আপলোড ও স্বয়ংক্রিয় টেক্সট-চিত্র আমদানি</span>
               </div>
               <p className="text-xs text-stone-600">
-                কম্পিউটার থেকে যেকোনো .docx রিপোর্ট ফাইল নির্বাচন করুন। সিস্টেম স্বয়ংক্রিয়ভাবে বাংলা টেক্সট পড়ে নিচের ফর্মে পূর্ণ করে দেবে।
+                কম্পিউটার থেকে মূল .pdf রিপোর্ট ফাইল নির্বাচন করুন। সিস্টেম স্বয়ংক্রিয়ভাবে বাংলা টেক্সট ও এতে থাকা সমস্ত চিত্র এক্সট্রাক্ট করে নিচের ফর্মে যুক্ত করবে এবং মূল ফাইলটি ডাউনলোডের জন্য সংরক্ষিত রাখবে।
               </p>
 
               <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1">
                 <label
-                  className={`inline-flex items-center space-x-2 border font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all ${isDocxExtracting
-                      ? "bg-stone-100 border-stone-300 text-stone-400 cursor-not-allowed opacity-75"
-                      : "bg-white hover:bg-amber-50 text-amber-900 border-amber-300 cursor-pointer"
+                  className={`inline-flex items-center space-x-2 border font-bold text-xs px-4 py-2.5 rounded-xl shadow-xs transition-all ${isPdfExtracting
+                    ? "bg-stone-100 border-stone-300 text-stone-400 cursor-not-allowed opacity-75"
+                    : "bg-white hover:bg-amber-50 text-amber-900 border-amber-300 cursor-pointer"
                     }`}
                 >
-                  <Upload className={`w-4 h-4 ${isDocxExtracting ? "text-stone-400 animate-spin" : "text-amber-600"}`} />
-                  <span>{isDocxExtracting ? "এক্সট্রাক্ট হচ্ছে..." : ".docx ফাইল আপলোড করুন"}</span>
+                  <Upload className={`w-4 h-4 ${isPdfExtracting ? "text-stone-400 animate-spin" : "text-amber-600"}`} />
+                  <span>{isPdfExtracting ? "এক্সট্রাক্ট হচ্ছে..." : ".pdf ফাইল আপলোড করুন"}</span>
                   <input
                     type="file"
-                    accept=".docx"
-                    disabled={isDocxExtracting}
-                    onChange={handleDocxUpload}
+                    accept=".pdf"
+                    disabled={isPdfExtracting}
+                    onChange={handlePdfUpload}
                     className="hidden"
                   />
                 </label>
 
-                {docxSuccessMsg && !isDocxExtracting && (
+                {pdfSuccessMsg && !isPdfExtracting && (
                   <span className="text-xs text-emerald-800 font-bold bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200 flex items-center space-x-1">
                     <Check className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{docxSuccessMsg}</span>
+                    <span>{pdfSuccessMsg}</span>
+                  </span>
+                )}
+
+                {editingReport.downloadUrl && (
+                  <span className="text-xs text-stone-600 bg-stone-100 px-3 py-1.5 rounded-lg border border-stone-200 flex items-center space-x-1">
+                    <FileText className="w-3.5 h-3.5 text-red-600" />
+                    <span className="truncate max-w-[200px]" title={editingReport.downloadUrl}>
+                      মূল পিডিএফ সংরক্ষিত
+                    </span>
                   </span>
                 )}
               </div>
 
               {/* Extraction Progress Bar */}
-              {isDocxExtracting && (
+              {isPdfExtracting && (
                 <div className="space-y-1.5 pt-2">
                   <div className="flex items-center justify-between text-xs font-bold text-amber-900">
                     <span className="flex items-center space-x-1.5">
                       <RefreshCw className="w-3.5 h-3.5 text-amber-600 animate-spin" />
-                      <span>ডকুমেন্ট এক্সট্রাক্ট করা হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন</span>
+                      <span>পিডিএফ প্রক্রিয়া ও চিত্র এক্সট্রাক্ট করা হচ্ছে... অনুগ্রহ করে অপেক্ষা করুন</span>
                     </span>
-                    <span>{docxProgress}%</span>
+                    <span>{pdfProgress}%</span>
                   </div>
                   <div className="w-full h-2.5 bg-amber-100 rounded-full overflow-hidden border border-amber-200">
                     <div
                       className="h-full bg-amber-500 rounded-full transition-all duration-300 ease-out shadow-xs"
-                      style={{ width: `${docxProgress}%` }}
+                      style={{ width: `${pdfProgress}%` }}
                     />
+                  </div>
+                </div>
+              )}
+
+              {/* Display Extracted Embedded Images Preview */}
+              {Array.isArray(editingReport.embeddedImages) && editingReport.embeddedImages.length > 0 && (
+                <div className="mt-3 p-3 bg-white rounded-xl border border-amber-200 space-y-2">
+                  <div className="text-xs font-bold text-stone-700 flex items-center justify-between">
+                    <span>পিডিএফ থেকে প্রাপ্ত সংযুক্ত চিত্রসমূহ ({editingReport.embeddedImages.length} টি):</span>
+                    <span className="text-[11px] text-stone-500">ছবিতে ক্লিক করে কভার ফটো নির্বাচন করতে পারেন</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-1 max-h-36 overflow-y-auto">
+                    {editingReport.embeddedImages.map((imgSrc, imgIdx) => (
+                      <div
+                        key={imgIdx}
+                        onClick={() => setEditingReport({ ...editingReport, image: imgSrc })}
+                        className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 transition-all ${editingReport.image === imgSrc ? "border-amber-600 ring-2 ring-amber-300" : "border-stone-200 hover:border-amber-400"
+                          }`}
+                        title="কভার ফটো হিসেবে ব্যবহার করতে ক্লিক করুন"
+                      >
+                        <img
+                          src={imgSrc}
+                          alt={`PDF Image ${imgIdx + 1}`}
+                          className="w-16 h-16 object-cover bg-stone-100"
+                        />
+                        {editingReport.image === imgSrc && (
+                          <div className="absolute top-0.5 right-0.5 bg-amber-600 text-white rounded-full p-0.5">
+                            <Check className="w-2.5 h-2.5" />
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -3112,7 +3322,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     required
                     value={editingReport.title || ""}
                     onChange={(e) => setEditingReport({ ...editingReport, title: e.target.value })}
-                    placeholder="যেমন: দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ গবেষণা"
+                    placeholder="যেমন: দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ অন্বেষণ"
                     className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs font-bold"
                   />
                 </div>
@@ -3147,7 +3357,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                     type="text"
                     value={editingReport.author || ""}
                     onChange={(e) => setEditingReport({ ...editingReport, author: e.target.value })}
-                    placeholder="জিয়নকাঠি গবেষণা দল"
+                    placeholder="জিয়নকাঠি অন্বেষণ দল"
                     className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
                   />
                 </div>
@@ -3181,10 +3391,230 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                 galleryItems={data.gallery || []}
                 category="archive"
                 onUploadAutoAddToGallery={(url, file) => {
-                  autoAddImageToGallery(url, file, editingReport.title || "গবেষণা প্রতিবেদন ছবি", "archive");
+                  autoAddImageToGallery(url, file, editingReport.title || "অন্বেষণ প্রতিবেদন ছবি", "archive");
                 }}
                 helperText="গ্যালারি থেকে পছন্দ করুন অথবা নতুন ফাইল আপলোড করুন।"
               />
+
+              {/* ------------------------------------------------------------- */}
+              {/* MULTIPLE REFERENCE IMAGES SECTION FOR BETTER REFERENCES */}
+              {/* ------------------------------------------------------------- */}
+              <div className="bg-stone-50 p-4 sm:p-5 rounded-2xl border border-stone-200 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200 pb-3">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <ImageIcon className="w-4 h-4 text-amber-700" />
+                      <h4 className="text-xs sm:text-sm font-black text-stone-900">
+                        প্রতিবেদনের রেফারেন্স চিত্রসমূহ (Multiple Reference Images)
+                      </h4>
+                      <span className="bg-amber-100 text-amber-900 text-[10px] font-black px-2 py-0.5 rounded-full">
+                        {editingReport.embeddedImages?.length || 0} টি ছবি
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 mt-0.5">
+                      প্রতিবেদনের তথ্য ও মাঠ বাস্তবতার প্রমাণ হিসেবে একাধিক ছবি যোগ করুন। সাইটের প্রতিবেদনে এগুলো সরাসরি প্রদর্শিত হবে।
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Multi-file Upload */}
+                    <label
+                      className={`inline-flex items-center space-x-1.5 border font-bold text-xs px-3.5 py-2 rounded-xl shadow-xs transition-all cursor-pointer ${reportImagesUploading
+                          ? "bg-stone-100 border-stone-300 text-stone-400 cursor-not-allowed opacity-75"
+                          : "bg-amber-600 hover:bg-amber-700 text-white border-amber-600"
+                        }`}
+                    >
+                      <Upload className={`w-3.5 h-3.5 ${reportImagesUploading ? "animate-spin" : ""}`} />
+                      <span>{reportImagesUploading ? "আপলোড হচ্ছে..." : "একাধিক ছবি যোগ করুন"}</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        disabled={reportImagesUploading}
+                        onChange={handleMultipleReportImagesUpload}
+                        className="hidden"
+                      />
+                    </label>
+
+                    {/* Gallery Picker Toggle */}
+                    <button
+                      type="button"
+                      onClick={() => setShowReportGalleryPicker(!showReportGalleryPicker)}
+                      className="inline-flex items-center space-x-1.5 bg-white hover:bg-stone-100 text-stone-800 font-bold text-xs px-3 py-2 rounded-xl border border-stone-300 cursor-pointer transition-all"
+                    >
+                      <ImageIcon className="w-3.5 h-3.5 text-stone-600" />
+                      <span>{showReportGalleryPicker ? "গ্যালারি লুকান" : "গ্যালারি থেকে নিন"}</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Direct URL Input */}
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="text"
+                    placeholder="অথবা সরাসরি ছবির ওয়েব লিঙ্ক (Image URL) পেস্ট করুন..."
+                    value={customReportImageUrl}
+                    onChange={(e) => setCustomReportImageUrl(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleAddReportImageFromUrl();
+                      }
+                    }}
+                    className="flex-1 p-2 bg-white border border-stone-200 rounded-xl text-xs font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleAddReportImageFromUrl()}
+                    className="px-4 py-2 bg-stone-800 hover:bg-stone-900 text-white font-bold text-xs rounded-xl cursor-pointer shrink-0 transition-colors"
+                  >
+                    যুক্ত করুন
+                  </button>
+                </div>
+
+                {/* Progress / Status Message */}
+                {reportImageUploadMsg && (
+                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-xs font-bold text-amber-900 flex items-center space-x-2">
+                    {reportImagesUploading ? (
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-amber-600" />
+                    ) : (
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    )}
+                    <span>{reportImageUploadMsg}</span>
+                  </div>
+                )}
+
+                {/* Expandable Site Gallery Picker Panel */}
+                {showReportGalleryPicker && (
+                  <div className="p-3 bg-white border border-stone-200 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between text-xs font-bold text-stone-700 border-b border-stone-100 pb-2">
+                      <span>সাইট গ্যালারি থেকে ছবিতে ক্লিক করে রেফারেন্সে যোগ / বাদ দিন:</span>
+                      <span className="text-[11px] text-stone-500">মোট {data.gallery?.length || 0} টি ছবি উপলব্ধ</span>
+                    </div>
+                    <div className="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto p-1">
+                      {(data.gallery || []).map((gItem, gIdx) => {
+                        const isSelected = (editingReport.embeddedImages || []).includes(gItem.url);
+                        return (
+                          <div
+                            key={gItem.id || gIdx}
+                            onClick={() => handleToggleReportGalleryImage(gItem.url)}
+                            className={`relative group cursor-pointer rounded-lg overflow-hidden border-2 aspect-square transition-all ${isSelected ? "border-amber-600 ring-2 ring-amber-300" : "border-stone-200 hover:border-amber-400"
+                              }`}
+                            title={gItem.title || "গ্যালারি ছবি"}
+                          >
+                            <img src={gItem.url} alt={gItem.title} className="w-full h-full object-cover" />
+                            {isSelected && (
+                              <div className="absolute top-1 right-1 bg-amber-600 text-white rounded-full p-0.5 shadow-sm">
+                                <Check className="w-3 h-3" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Interactive Grid of Attached Images */}
+                {Array.isArray(editingReport.embeddedImages) && editingReport.embeddedImages.length > 0 ? (
+                  <div className="space-y-2 pt-1">
+                    <div className="text-xs font-bold text-stone-700 flex items-center justify-between">
+                      <span>সংযুক্ত রেফারেন্স চিত্র তালিকা ({editingReport.embeddedImages.length} টি):</span>
+                      <span className="text-[11px] text-stone-500">কভার ফটো পরিবর্তন করতে 'কভার করুন' চাপুন</span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                      {editingReport.embeddedImages.map((imgSrc, imgIdx) => {
+                        const isCover = editingReport.image === imgSrc;
+                        return (
+                          <div
+                            key={imgIdx}
+                            className={`relative rounded-xl overflow-hidden border-2 bg-white shadow-2xs group flex flex-col justify-between transition-all ${isCover ? "border-amber-600 ring-2 ring-amber-200" : "border-stone-200"
+                              }`}
+                          >
+                            <div className="relative h-28 bg-stone-100 overflow-hidden flex items-center justify-center">
+                              <img
+                                src={imgSrc}
+                                alt={`রেফারেন্স চিত্র ${imgIdx + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              {isCover && (
+                                <div className="absolute top-1.5 left-1.5 bg-amber-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full flex items-center space-x-1 shadow-sm">
+                                  <Sparkles className="w-2.5 h-2.5" />
+                                  <span>মূল কভার</span>
+                                </div>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveReportImage(imgIdx)}
+                                className="absolute top-1.5 right-1.5 bg-red-600 hover:bg-red-700 text-white rounded-full p-1 opacity-80 hover:opacity-100 transition-opacity cursor-pointer shadow-sm"
+                                title="চিত্রটি মুছে ফেলুন"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <div className="p-2 bg-stone-50 border-t border-stone-100 flex items-center justify-between text-[11px]">
+                              <span className="font-bold text-stone-700">চিত্র #{imgIdx + 1}</span>
+                              <div className="flex items-center space-x-1">
+                                {imgIdx > 0 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveReportImage(imgIdx, -1)}
+                                    className="p-1 text-stone-500 hover:text-stone-800 hover:bg-stone-200 rounded cursor-pointer"
+                                    title="বামে সরান"
+                                  >
+                                    <ArrowLeft className="w-3 h-3" />
+                                  </button>
+                                )}
+                                {imgIdx < editingReport.embeddedImages.length - 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleMoveReportImage(imgIdx, 1)}
+                                    className="p-1 text-stone-500 hover:text-stone-800 hover:bg-stone-200 rounded cursor-pointer"
+                                    title="ডানে সরান"
+                                  >
+                                    <ArrowRight className="w-3 h-3" />
+                                  </button>
+                                )}
+                                {!isCover && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setEditingReport({ ...editingReport, image: imgSrc })}
+                                    className="text-[10px] font-bold text-amber-700 hover:text-amber-900 bg-amber-50 hover:bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200 cursor-pointer ml-1"
+                                    title="কভার হিসেবে নির্ধারণ করুন"
+                                  >
+                                    কভার করুন
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    const tag = `\n\n![রেফারেন্স চিত্র #${imgIdx + 1}](${imgSrc})\n\n`;
+                                    setEditingReport((prev) => ({
+                                      ...prev,
+                                      content: (prev?.content || "") + tag,
+                                    }));
+                                  }}
+                                  className="text-[10px] font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 cursor-pointer ml-1"
+                                  title="প্রতিবেদনের লেখার মধ্যে এই ছবিটি অন্তর্ভুক্ত করুন"
+                                >
+                                  + লেখায় যোগ
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed border-stone-200 rounded-2xl p-6 text-center space-y-2 bg-white/60">
+                    <ImageIcon className="w-8 h-8 text-stone-300 mx-auto" />
+                    <p className="text-xs text-stone-500 font-medium">
+                      এখনও কোনো অতিরিক্ত রেফারেন্স চিত্র যুক্ত করা হয়নি। প্রতিবেদন লেখার সময় উপরের 'একাধিক ছবি যোগ করুন' বোতাম চেপে মাঠ পরীক্ষার ছবি, চার্ট ও প্রামাণ্য চিত্র যুক্ত করতে পারেন।
+                    </p>
+                  </div>
+                )}
+              </div>
 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700">সম্পূর্ণ প্রতিবেদন টেক্সট *</label>
@@ -3595,14 +4025,14 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
               <div className="space-y-1">
                 <label className="text-xs font-bold text-stone-700">ক্যাটাগরি</label>
                 <select
-                  value={editingGallery.category || "events"}
+                  value={editingGallery.category || "pkhira"}
                   onChange={(e) => setEditingGallery({ ...editingGallery, category: e.target.value })}
                   className="w-full p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs"
                 >
-                  <option value="farming">মাঠ ও কৃষি (Farming)</option>
-                  <option value="education">সহায়ক শিক্ষা কেন্দ্র (Education)</option>
-                  <option value="seeds">বীজ সংরক্ষণ (Seeds)</option>
-                  <option value="events">উৎসব ও কর্মশালা (Events)</option>
+                  <option value="pkhira">জিয়নকাঠির পখিরা (Jiyonkathir Pkhira)</option>
+                  <option value="ragi">জিয়নকাঠির রাগি চাষ (Jiyonkathir Ragi Chas)</option>
+                  <option value="dhan">জিয়নকাঠির ধান চাষ ও সংরক্ষণ (Jiyonkathir Dhan chass o Sonrokkhon)</option>
+                  <option value="joll">জল সংরক্ষণ (Joll Sonrokkhon)</option>
                 </select>
               </div>
 
@@ -3611,7 +4041,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
                 value={editingGallery.url || ""}
                 onChange={(url) => setEditingGallery({ ...editingGallery, url })}
                 galleryItems={data.gallery || []}
-                category={editingGallery.category || "events"}
+                category={editingGallery.category || "pkhira"}
                 required
                 helperText="গ্যালারির ছবির লিঙ্ক দিন বা ডিভাইস থেকে আপলোড করুন।"
               />

@@ -6,18 +6,26 @@ import RootPage from "./app/page";
 import { getStoredSession, saveSession, clearSession } from "./utils/session";
 
 export default function App() {
-  const [activeTab, setActiveTab] = useLocationTab("home");
+  const {
+    activeTab,
+    setActiveTab,
+    targetItemId,
+    setTargetItemId,
+    navigate,
+  } = useLocationTab("home");
+
   const [userSession, setUserSessionState] = useState(() => getStoredSession());
 
   const handleSetUserSession = (session) => {
     if (session) {
       saveSession(session);
-      setActiveTab("admin");
+      setUserSessionState(session);
+      navigate("/admin");
     } else {
       clearSession();
-      setActiveTab("home");
+      setUserSessionState(null);
+      navigate("/");
     }
-    setUserSessionState(session);
   };
 
   useEffect(() => {
@@ -35,15 +43,18 @@ export default function App() {
         setActiveTab={setActiveTab}
         userSession={userSession}
         setUserSession={handleSetUserSession}
+        navigate={navigate}
       >
         <RootPage
           activeTab={activeTab}
           setActiveTab={setActiveTab}
+          targetItemId={targetItemId}
+          setTargetItemId={setTargetItemId}
           userSession={userSession}
           setUserSession={handleSetUserSession}
+          navigate={navigate}
         />
       </RootLayout>
     </SiteProvider>
   );
 }
-

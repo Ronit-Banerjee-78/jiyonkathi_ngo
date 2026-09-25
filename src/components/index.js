@@ -1,8 +1,3 @@
-/**
- * Barrel Export File for UI Components
- * Clean Architecture Layer: Presentation Layer Exporter
- */
-
 export { default as Header } from "./Header";
 export { default as Footer } from "./Footer";
 export { default as HomeSection } from "./HomeSection";

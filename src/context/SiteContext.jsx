@@ -10,11 +10,11 @@ const defaultSiteData = {
   general: {
     logoText: "Jiyonkathi",
     bannerHeading: "Transitioning to a Post-Petroleum World",
-    bannerTitleBengali: "প্রাণ-প্রকৃতি-পরিবেশের টানে",
+    bannerTitleBengali: "প্রাণ-প্রকৃতি-পরিবেশের আহ্বানে",
     bannerHighlightBengali: "জিয়নকাঠির সুস্থায়ী পথচলা",
-    bannerHeadingBengali: "প্রাণ-প্রকৃতি-পরিবেশের টানে জিয়নকাঠির সুস্থায়ী পথচলা",
+    bannerHeadingBengali: "প্রাণ-প্রকৃতি-পরিবেশের আহ্বানে জিয়নকাঠির সুস্থায়ী পথচলা",
     bannerSubtitle: "Dedicated to pesticide-free organic farming, conserving 56 types of indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal.",
-    bannerSubtitleBengali: "বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সমাজ।",
+    bannerSubtitleBengali: "বাংলার গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সংস্থা।",
     quoteBengali: "পরিবেশের এই চরম সংকটকালে বিশ্বব্যাপী হুমকির সামনে আমরা স্থানীয় স্তরে একজোট হয়ে প্রকৃতি, মানুষ ও জীবজগতকে রক্ষা করার যে প্রচেষ্টা চালাচ্ছি... তার নামই জিয়নকাঠি।",
     quoteEnglish: "In this era of extreme environmental crisis, facing global threats, our collective effort at the local level to protect nature, humanity, and all living beings... is Jiyonkathi.",
     quoteAuthorBengali: "জিয়নকাঠির লক্ষ্য ও আদর্শ",
@@ -22,7 +22,7 @@ const defaultSiteData = {
     heroImage: "/images/paddy-harvesting.jpg",
     statSeeds: "৫৬ রকম",
     statYears: "১৩+",
-    statFamilies: "৩৫০+",
+    statFamilies: "৫০+",
     address: "প্লট নং ১৯৪২, গ্রাম ও ডাকঘর: প্রতাপপুর, থানা: আউশগ্রাম, জেলা: পূর্ব বর্ধমান, পশ্চিমবঙ্গ",
     addressEnglish: "Pratappur, Aushgram, Purba Bardhaman, West Bengal, India",
     phone: "+91 94340 12345 / 98000 54321",
@@ -38,7 +38,7 @@ const defaultSiteData = {
       titleEn: "Building a Sustainable Rural Platform in Environmental Crisis",
       taglineBn: "রাসায়নিক সার-কীটনাশকহীন চাষাবাদ, ভূগর্ভস্থ জল সুরক্ষা এবং পুনর্ব্যবহারযোগ্য শক্তির প্রয়োগ।",
       taglineEn: "Chemical-free agro-ecology, groundwater preservation, and renewable energy adoption.",
-      descBn: "পরিবেশ সংকটকালে একটি সুস্থায়ী গ্রামীণ প্ল্যাটফর্ম প্রস্তুত করার মাধ্যমে প্রকৃতিবান্ধব কৃষি, বিষমুক্ত ফল-সবজি ও খাদ্য নিরাপত্তা নিশ্চিত করা।",
+      descBn: "পরিবেশ সংকটকালে একটি সুস্থায়ী গ্রামীণ প্ল্যাটফর্ম প্রস্তুত করার মাধ্যমে প্রকৃতিবান্ধব কৃষি, ফল-সব্জির বিষমুক্ত চাষ ও খাদ্য নিরাপত্তা নিশ্চিত করা।",
       descEn: "Creating an ecologically sustainable rural platform to foster regenerative farming and chemical-free food security.",
       icon: "Leaf",
       colorTheme: "amber",
@@ -51,7 +51,7 @@ const defaultSiteData = {
           subPoints: [
             "রাসায়নিক সার ও কীটনাশক একবারে ব্যবহার না করা।",
             "মাটির তলার জল না তোলা।",
-            "যতটা কম সম্ভব জীবাশ্ম জ্বালানী ব্যবহার করা।"
+            "যতটা সম্ভব কম জীবাশ্ম জ্বালানী ব্যবহার করা।"
           ],
           subPointsEn: [
             "Complete avoidance of synthetic fertilizers and chemical pesticides.",
@@ -70,7 +70,7 @@ const defaultSiteData = {
         {
           id: "p1-t3",
           number: "৩",
-          titleBn: "বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা",
+          titleBn: "ফল-সব্জির বিষমুক্ত চাষ",
           titleEn: "Chemical-free horticulture and natural food security.",
           subPoints: [],
           subPointsEn: []
@@ -79,9 +79,9 @@ const defaultSiteData = {
       goals: [
         "রাসায়নিক সার ও কীটনাশক একবারে ব্যবহার না করা",
         "মাটির তলার জল না তোলা",
-        "যতটা কম সম্ভব জীবাশ্ম জ্বালানী ব্যবহার করা",
+        "যতটা সম্ভব কম জীবাশ্ম জ্বালানী ব্যবহার করা",
         "পুনর্ব্যবহারযোগ্য শক্তি কে নিজেদের কাজে ব্যবহার করা",
-        "বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা"
+        "ফল-সব্জির বিষমুক্ত চাষ"
       ],
       methodologyBn: "১. বৃষ্টির জল নির্ভর দেশীয় ধানের বীজতলা তৈরি ও জৈব সার প্রয়োগ।\n২. মাটির জৈব কার্বন বৃদ্ধি ও সৌরশক্তি চালিত মৃদু সেচ।\n৩. বহুমুখী বিষমুক্ত মাচায় সবজি ও দেশীয় ফলের বাগান সম্প্রসারণ।",
       linkedReportId: "rep-1"
@@ -196,15 +196,21 @@ const defaultSiteData = {
 export const DEFAULT_RESEARCH_REPORTS = [
   {
     id: "rep-1",
-    title: "দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ গবেষণা প্রতিবেদন (২০১৩-২০২৬)",
+    title: "দেশীয় ধানের প্রজাতি ও বীজ সংরক্ষণ অন্বেষণ প্রতিবেদন (২০১৩-২০২৬)",
     titleEnglish: "Indigenous Rice Cultivars & Seed Conservation Field Report (2013-2026)",
     topic: "বীজ সংরক্ষণ ও দেশীয় ধান",
     topicEnglish: "Seed Conservation & Indigenous Crops",
-    author: "জিয়নকাঠি কৃষি গবেষণা দল",
+    author: "জিয়নকাঠি কৃষি অন্বেষণ দল",
     publishedDate: "২০২৬-০৮-১৫",
     summary: "১২০টিরও বেশি বিলুপ্তপ্রায় দেশীয় ধানের প্রজাতির ফলন বিশ্লেষণ, রাসায়নিক সার ও কীটনাশক ব্যতিরেকে প্রাকৃতিক পুষ্টি ব্যবস্থাপনা এবং ভূগর্ভস্থ জল অপচয় রোধের বিস্তারিত ফলাফল।",
     summaryEnglish: "A comprehensive analysis of preserving 56+ heirloom paddy varieties without synthetic chemicals, preventing groundwater depletion, and field seed-exchange dynamics.",
     image: "/images/farming-collage.jpg",
+    embeddedImages: [
+      "/images/seedbed.jpg",
+      "/images/paddy-planting.jpg",
+      "/images/ripening-paddy.jpg",
+      "/images/paddy-harvesting.jpg",
+    ],
     views: 148,
   },
   {
@@ -218,6 +224,11 @@ export const DEFAULT_RESEARCH_REPORTS = [
     summary: "মাচা ভিত্তিক লতানো সবজি, দেশীয় বহুস্তরীয় ফলের বাগান এবং দশপর্ণী অর্ক বালাইনাশক ব্যবহারের ব্যবহারিক ক্ষেত্র পর্যালোচনা।",
     summaryEnglish: "A dedicated research methodology detailing multi-tier fruit orchards, trellis organic vegetable cultivation, bio-pest repellents, and family nutrition security.",
     image: "/images/ecology-collage.jpg",
+    embeddedImages: [
+      "/images/farming-collage.jpg",
+      "/images/community-collage.jpg",
+      "/images/img30.jpg",
+    ],
     views: 204,
   },
   {
@@ -231,6 +242,11 @@ export const DEFAULT_RESEARCH_REPORTS = [
     summary: "স্থানীয় কৃষক পরিবারের সাথে সমন্বিতভাবে কীটনাশকমুক্ত ফসল উৎপাদন, দেশীয় বীজ বিনিময় ও কৃষকদের অর্থনৈতিক স্বাবলম্বিতা অর্জনের বাস্তব তথ্য।",
     summaryEnglish: "Empirical field collaboration with smallholder agrarian households in Purba Bardhaman and Birbhum, advancing non-chemical techniques and seed autonomy.",
     image: "/images/paddy-planting.jpg",
+    embeddedImages: [
+      "/images/paddy-harvesting.jpg",
+      "/images/seedbed.jpg",
+      "/images/78.jpg",
+    ],
     views: 165,
   },
   {
@@ -244,6 +260,11 @@ export const DEFAULT_RESEARCH_REPORTS = [
     summary: "গ্রামীণ শিশুদের জন্য বিনামূল্যে সহায়ক পাঠদান, প্রকৃতি পরিচয়, লোকসংস্কৃতি চর্চা ও সর্প সচেতনতার শিক্ষামূলক প্রভাব ও সামাজিক অগ্রগতি।",
     summaryEnglish: "Evaluating the community impact of free remedial schooling, nature excursions, snakebite awareness, and folk traditions for village children.",
     image: "/images/education-center.jpg",
+    embeddedImages: [
+      "/images/community-collage.jpg",
+      "/images/img33.jpg",
+      "/images/education-center.jpg",
+    ],
     views: 96,
   },
   {
@@ -257,6 +278,11 @@ export const DEFAULT_RESEARCH_REPORTS = [
     summary: "সর্পদংশন প্রতিরোধে বিজ্ঞানসম্মত প্রাথমিক চিকিৎসা প্রশিক্ষণ, ওঝা-তান্ত্রিক নির্ভরতা দূরীকরণ এবং প্রান্তিক মানুষের মাঝে বিনামূল্যে চিকিৎসা পরিষেবা।",
     summaryEnglish: "A comprehensive report on empirical snakebite first aid training, countering unscientific quackery, and delivering free medical checkups in rural Bengal.",
     image: "/images/health-camp.jpg",
+    embeddedImages: [
+      "/images/community-collage.jpg",
+      "/images/education-center.jpg",
+      "/images/health-camp.jpg",
+    ],
     views: 112,
   },
   {
@@ -270,6 +296,11 @@ export const DEFAULT_RESEARCH_REPORTS = [
     summary: "মাটির গভীরের জল না তুলে প্রাকৃতিক পুকুর ও বৃষ্টির জল সৌরচালিত মৃদু পাম্পের সাহায্যে সেচে ব্যবহারের মাধ্যমে ভূগর্ভস্থ জলস্তর সুরক্ষা ও জীবাশ্ম জ্বালানি বর্জনের ক্ষেত্র সমীক্ষা।",
     summaryEnglish: "Field research on deploying solar micro-pumps with rainwater catchment ponds, preventing groundwater depletion, and eliminating diesel fuel dependence in agriculture.",
     image: "/images/community-collage.jpg",
+    embeddedImages: [
+      "/images/farming-collage.jpg",
+      "/images/ripening-paddy.jpg",
+      "/images/community-collage.jpg",
+    ],
     views: 88,
   }
 ];
@@ -281,6 +312,7 @@ export const SiteProvider = ({ children }) => {
   const [selectedCampaign, setSelectedCampaign] = useState(null);
   const [reports, setReports] = useState(DEFAULT_RESEARCH_REPORTS);
   const [selectedReportId, setSelectedReportId] = useState(null);
+  const [selectedPillarId, setSelectedPillarId] = useState(null);
   const [reportsLoading, setReportsLoading] = useState(true);
 
   const toggleLanguage = () => {
@@ -310,24 +342,50 @@ export const SiteProvider = ({ children }) => {
       try {
         const data = await settingsService.fetchSettings();
         if (data && data.success && data.data && typeof data.data === 'object') {
-          setSiteData((prev) => ({
-            ...prev,
-            ...data.data,
-            general: { ...prev.general, ...(data.data.general || {}) },
-            about: { ...prev.about, ...(data.data.about || {}) },
-            pillars:
-              Array.isArray(data.data.pillars) &&
+          setSiteData((prev) => {
+            const loadedGeneral = { ...prev.general, ...(data.data.general || {}) };
+            if (loadedGeneral.bannerTitleBengali?.includes("টানে")) {
+              loadedGeneral.bannerTitleBengali = loadedGeneral.bannerTitleBengali.replace(/টানে/g, "আহ্বানে");
+            }
+            if (loadedGeneral.bannerHeadingBengali?.includes("টানে")) {
+              loadedGeneral.bannerHeadingBengali = loadedGeneral.bannerHeadingBengali.replace(/টানে/g, "আহ্বানে");
+            }
+            if (
+              loadedGeneral.bannerSubtitleBengali?.includes("বীরভূম, বর্ধমান ও আউশগ্রামের গ্রামাঞ্চলে") ||
+              loadedGeneral.bannerSubtitleBengali?.includes("সমাজ")
+            ) {
+              loadedGeneral.bannerSubtitleBengali = "বাংলার গ্রামাঞ্চলে বিষমুক্ত জৈব চাষ, ৫৬ রকম দেশীয় ধানের প্রজাতি সংরক্ষণ, শিশুদের সহায়ক শিক্ষা কেন্দ্র ও প্রকৃতি সচেতনতা বিকাশে নিয়োজিত একটি অলাভজনক সংস্থা।";
+            }
+            if (loadedGeneral.statFamilies === "৩৫০+") {
+              loadedGeneral.statFamilies = "৫০+";
+            }
+
+            let loadedPillars = Array.isArray(data.data.pillars) &&
               data.data.pillars.length === 2 &&
               data.data.pillars[0]?.titleBn?.includes("পরিবেশ সংকটকালে")
                 ? data.data.pillars.slice(0, 2)
-                : defaultSiteData.pillars.slice(0, 2),
-            homepageVideo: data.data.homepageVideo ? { ...prev.homepageVideo, ...data.data.homepageVideo } : prev.homepageVideo,
-            members: Array.isArray(data.data.members) ? data.data.members : prev.members,
-            volunteersList: Array.isArray(data.data.volunteersList) ? data.data.volunteersList : prev.volunteersList,
-            gallery: Array.isArray(data.data.gallery) ? data.data.gallery : prev.gallery,
-            blogs: Array.isArray(data.data.blogs) ? data.data.blogs : prev.blogs,
-            work: Array.isArray(data.data.work) ? data.data.work : prev.work,
-          }));
+                : defaultSiteData.pillars.slice(0, 2);
+
+            loadedPillars = JSON.parse(
+              JSON.stringify(loadedPillars)
+                .replace(/যতটা কম সম্ভব/g, "যতটা সম্ভব কম")
+                .replace(/বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা/g, "ফল-সব্জির বিষমুক্ত চাষ")
+            );
+
+            return {
+              ...prev,
+              ...data.data,
+              general: loadedGeneral,
+              about: { ...prev.about, ...(data.data.about || {}) },
+              pillars: loadedPillars,
+              homepageVideo: data.data.homepageVideo ? { ...prev.homepageVideo, ...data.data.homepageVideo } : prev.homepageVideo,
+              members: Array.isArray(data.data.members) ? data.data.members : prev.members,
+              volunteersList: Array.isArray(data.data.volunteersList) ? data.data.volunteersList : prev.volunteersList,
+              gallery: Array.isArray(data.data.gallery) ? data.data.gallery : prev.gallery,
+              blogs: Array.isArray(data.data.blogs) ? data.data.blogs : prev.blogs,
+              work: Array.isArray(data.data.work) ? data.data.work : prev.work,
+            };
+          });
         }
       } catch (error) {
         console.warn("Using default site data:", error);
@@ -369,7 +427,9 @@ export const SiteProvider = ({ children }) => {
         refreshReports,
         reportsLoading,
         selectedReportId,
-        setSelectedReportId
+        setSelectedReportId,
+        selectedPillarId,
+        setSelectedPillarId
       }}
     >
       {children}

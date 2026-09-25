@@ -1,12 +1,7 @@
-// 7-Day Admin Session Storage Utility
-
 const SESSION_KEY = "jiyonkathi_admin_session";
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
 
-/**
- * Retrieve stored admin session if valid and not expired.
- * Automatically clears expired sessions.
- */
+// 7-Day Admin Session Storage Utility
 export function getStoredSession() {
   if (typeof window === "undefined") return null;
   try {
@@ -33,9 +28,6 @@ export function getStoredSession() {
   }
 }
 
-/**
- * Save admin session to localStorage with a 7-day expiration timestamp.
- */
 export function saveSession(user) {
   if (typeof window === "undefined") return;
   if (!user) {
@@ -57,9 +49,6 @@ export function saveSession(user) {
   }
 }
 
-/**
- * Clear admin session from localStorage.
- */
 export function clearSession() {
   if (typeof window === "undefined") return;
   try {
@@ -68,3 +57,9 @@ export function clearSession() {
     console.error("Error clearing admin session from localStorage:", err);
   }
 }
+
+export function getAuthToken() {
+  const session = getStoredSession();
+  return session?.token || null;
+}
+

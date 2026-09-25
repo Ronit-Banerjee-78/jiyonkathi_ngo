@@ -1,10 +1,3 @@
-/**
- * Jiyonkathi Database Seed Script
- * Run: node server/seedDatabase.js
- * Automatically populates PostgreSQL / Cloud SQL or SQLite tables with all static assets,
- * research reports, demo members, pillars, gallery records, and events.
- */
-
 import pool, { initDB, isDbConnected } from "./models/db.js";
 import fs from "fs";
 import path from "path";
@@ -19,7 +12,9 @@ async function seedDatabase() {
   await initDB();
 
   if (!isDbConnected) {
-    console.log("ℹ️ Database connection is in fallback mode. Seed records will persist in memory / JSON storage.");
+    console.log(
+      "ℹ️ Database connection is in fallback mode. Seed records will persist in memory / JSON storage.",
+    );
     return;
   }
 
@@ -29,10 +24,10 @@ async function seedDatabase() {
     const seedData = FULL_INITIAL_SITE_DATA;
 
     await client.query(
-      `INSERT INTO site_settings (id, data, updated_at) 
-       VALUES (1, $1, CURRENT_TIMESTAMP) 
+      `INSERT INTO site_settings (id, data, updated_at)
+       VALUES (1, $1, CURRENT_TIMESTAMP)
        ON CONFLICT (id) DO UPDATE SET data = EXCLUDED.data, updated_at = CURRENT_TIMESTAMP;`,
-      [JSON.stringify(seedData)]
+      [JSON.stringify(seedData)],
     );
 
     console.log("✅ Seed completed successfully!");
@@ -44,7 +39,9 @@ async function seedDatabase() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  seedDatabase().then(() => process.exit(0)).catch(() => process.exit(1));
+  seedDatabase()
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
 }
 
 export default seedDatabase;

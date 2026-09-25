@@ -21,9 +21,15 @@ import {
 } from "lucide-react";
 import { BENGALI_CONTENT } from "../data";
 
-export default function AboutSection({ setActiveTab = () => {}, initialPillarId = null }) {
-  const { siteData, language } = useContext(SiteContext);
-  const [selectedPillarId, setSelectedPillarId] = useState(initialPillarId);
+export default function AboutSection({ setActiveTab = () => { }, initialPillarId = null }) {
+  const { siteData, language, selectedPillarId: contextPillarId, setSelectedPillarId: contextSetSelectedPillarId } = useContext(SiteContext);
+  const [selectedPillarId, setSelectedPillarId] = useState(initialPillarId || contextPillarId || null);
+
+  React.useEffect(() => {
+    if (contextPillarId) {
+      setSelectedPillarId(contextPillarId);
+    }
+  }, [contextPillarId]);
 
   const cardItems = [
     {
@@ -33,7 +39,7 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
       titleEn: "Building a Sustainable Rural Platform in Environmental Crisis",
       taglineBn: "রাসায়নিক সার-কীটনাশকহীন চাষাবাদ, ভূগর্ভস্থ জল সুরক্ষা এবং পুনর্ব্যবহারযোগ্য শক্তির প্রয়োগ।",
       taglineEn: "Chemical-free agro-ecology, groundwater preservation, and renewable energy adoption.",
-      descBn: "পরিবেশ সংকটকালে একটি সুস্থায়ী গ্রামীণ প্ল্যাটফর্ম প্রস্তুত করার মাধ্যমে প্রকৃতিবান্ধব কৃষি, বিষমুক্ত ফল-সবজি ও খাদ্য নিরাপত্তা নিশ্চিত করা।",
+      descBn: "পরিবেশ সংকটকালে একটি সুস্থায়ী গ্রামীণ প্ল্যাটফর্ম প্রস্তুত করার মাধ্যমে প্রকৃতিবান্ধব কৃষি, ফল-সব্জির বিষমুক্ত চাষ ও খাদ্য নিরাপত্তা নিশ্চিত করা।",
       descEn: "Creating an ecologically sustainable rural platform to foster regenerative farming and chemical-free food security.",
       icon: "Leaf",
       colorTheme: "amber",
@@ -46,7 +52,7 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
           subPoints: [
             "রাসায়নিক সার ও কীটনাশক একবারে ব্যবহার না করা।",
             "মাটির তলার জল না তোলা।",
-            "যতটা কম সম্ভব জীবাশ্ম জ্বালানী ব্যবহার করা।"
+            "যতটা সম্ভব কম জীবাশ্ম জ্বালানী ব্যবহার করা।"
           ],
           subPointsEn: [
             "Complete avoidance of synthetic fertilizers and chemical pesticides.",
@@ -65,7 +71,7 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
         {
           id: "p1-t3",
           number: "৩",
-          titleBn: "বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা",
+          titleBn: "ফল-সব্জির বিষমুক্ত চাষ",
           titleEn: "Chemical-free horticulture and natural food security.",
           subPoints: [],
           subPointsEn: []
@@ -74,9 +80,9 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
       goals: [
         "রাসায়নিক সার ও কীটনাশক একবারে ব্যবহার না করা",
         "মাটির তলার জল না তোলা",
-        "যতটা কম সম্ভব জীবাশ্ম জ্বালানী ব্যবহার করা",
+        "যতটা সম্ভব কম জীবাশ্ম জ্বালানী ব্যবহার করা",
         "পুনর্ব্যবহারযোগ্য শক্তি কে নিজেদের কাজে ব্যবহার করা",
-        "বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা"
+        "ফল-সব্জির বিষমুক্ত চাষ"
       ],
       methodologyBn: "১. বৃষ্টির জল নির্ভর দেশীয় ধানের বীজতলা তৈরি ও জৈব সার প্রয়োগ।\n২. মাটির জৈব কার্বন বৃদ্ধি ও সৌরশক্তি চালিত মৃদু সেচ।\n৩. বহুমুখী বিষমুক্ত মাচায় সবজি ও দেশীয় ফলের বাগান সম্প্রসারণ।",
       linkedReportId: "rep-1"
@@ -137,89 +143,90 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
     siteData.pillars.length === 2 &&
     siteData.pillars[0]?.titleBn?.includes("পরিবেশ সংকটকালে") &&
     siteData.pillars[1]?.titleBn?.includes("DDMPBS");
-  const pillarsList = (hasValidPillars ? siteData.pillars : cardItems).slice(0, 2);
+  const rawPillarsList = (hasValidPillars ? siteData.pillars : cardItems).slice(0, 2);
+  const pillarsList = JSON.parse(
+    JSON.stringify(rawPillarsList)
+      .replace(/যতটা কম সম্ভব/g, "যতটা সম্ভব কম")
+      .replace(/বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা/g, "ফল-সব্জির বিষমুক্ত চাষ")
+  );
+  const aboutIntroBn = (siteData?.about?.intro || BENGALI_CONTENT.about.intro)
+    .replace(/বীরভূম,\s*বর্ধমান\s*ও\s*আউশগ্রামের\s*গ্রামাঞ্চলে/g, "বাংলার গ্রামাঞ্চলে")
+    .replace(/একটি অলাভজনক সমাজ/g, "একটি অলাভজনক সংস্থা");
   const activePillar = pillarsList.find((p) => p.id === selectedPillarId) || null;
 
   return (
-    <div id="about-mission-section" className="bg-[#faf7f0] min-h-screen py-10 sm:py-16">
+    <div id="about-mission-section" className="bg-stone-50 min-h-screen py-8 sm:py-14">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12 sm:space-y-16">
 
         {/* 1. Header & Vision Statement */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-stone-200/90 pb-6">
-          <div className="space-y-2 max-w-3xl">
-            <span className="text-amber-700 font-black text-xs uppercase tracking-wider">
-              {language === "bn" ? "আমাদের পরিচিতি ও মূল চালিকাশক্তি" : "Our Story & Core Mission"}
-            </span>
-            <h1 className="text-3xl sm:text-4xl font-black text-stone-900 tracking-tight">
-              {language === "bn"
-                ? "জিয়নকাঠি: আমাদের কথা ও মূল লক্ষ্য"
-                : "Jiyonkathi: About Us & Our Mission"}
-            </h1>
-            <p className="text-sm sm:text-base text-stone-600 font-medium leading-relaxed">
-              {siteData?.about?.intro || BENGALI_CONTENT.about.intro}
-            </p>
-          </div>
 
-          <button
-            onClick={() => setActiveTab("reports")}
-            className="inline-flex items-center space-x-2 bg-white hover:bg-amber-50 text-amber-900 border border-amber-300 font-bold text-xs px-5 py-3 rounded-2xl shadow-2xs transition-all w-fit cursor-pointer shrink-0"
-          >
-            <FileText className="w-4 h-4 text-amber-700" />
-            <span>{language === "bn" ? "আমাদের কাজ ও গবেষণা দেখুন" : "View Works & Reports"}</span>
-          </button>
+        <div className="text-center max-w-3xl mx-auto space-y-3">
+
+          <h1 className="text-3xl sm:text-4xl font-bold text-stone-900 tracking-tight">
+            {language === "bn"
+              ? "জিয়নকাঠি: আমাদের কথা ও মূল লক্ষ্য"
+              : "Jiyonkathi: About Us & Our Mission"}
+          </h1>
+          <p className="text-sm sm:text-base text-stone-700 leading-relaxed">
+            {language === "bn" ? aboutIntroBn : (siteData?.about?.introEnglish || "Dedicated to pesticide-free organic farming, conserving 56 types of indigenous heirloom rice varieties, rural auxiliary education centers, and environmental awareness in Bengal.")}
+          </p>
         </div>
+
+
 
         {/* 2. THE 2 GUIDING PILLARS SECTION */}
         <div id="guiding-pillars" className="space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-stone-200 pb-4">
             <div className="space-y-1">
-              <span className="text-amber-700 font-black text-xs uppercase tracking-wider">
+              <span className="text-amber-800 font-bold text-xs uppercase tracking-wider">
                 {language === "bn" ? "মৌলিক আদর্শ ও কর্মপরিকল্পনা" : "Guiding Philosophy"}
               </span>
-              <h2 className="text-2xl sm:text-3xl font-black text-stone-900 tracking-tight">
+              <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
                 {language === "bn" ? "জিয়নকাঠির ২টি মূল স্তম্ভ ও লক্ষ্য" : "Our 2 Guiding Pillars"}
               </h2>
             </div>
 
             {activePillar && (
               <button
-                onClick={() => setSelectedPillarId(null)}
-                className="inline-flex items-center space-x-2 text-xs font-black text-stone-700 hover:text-amber-800 bg-stone-100 hover:bg-amber-50 px-4 py-2 rounded-xl transition-all cursor-pointer w-fit"
+                onClick={() => {
+                  setSelectedPillarId(null);
+                  if (contextSetSelectedPillarId) contextSetSelectedPillarId(null);
+                }}
+                className="inline-flex items-center space-x-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-white border border-stone-300 px-3 py-1.5 rounded-md transition-colors w-fit"
               >
                 <ChevronLeft className="w-4 h-4" />
-                <span>{language === "bn" ? "সকল স্তম্ভের সংক্ষিপ্ত তালিকায় ফিরে যান" : "Back to Pillars Overview"}</span>
+                <span>{language === "bn" ? "ফিরে যান" : "Previous"}</span>
               </button>
             )}
           </div>
 
           {/* If No Pillar Selected: Show 2-Column Overview Cards with Topics */}
           {!activePillar ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {pillarsList.map((pillar, idx) => {
                 const isPillar2 = idx === 1 || pillar.id === "pillar-2";
                 return (
                   <div
                     key={pillar.id || idx}
                     onClick={() => setSelectedPillarId(pillar.id)}
-                    className="bg-white rounded-3xl p-7 sm:p-8 border border-stone-200/90 shadow-2xs hover:shadow-lg hover:border-amber-400 transition-all cursor-pointer group flex flex-col justify-between space-y-6"
+                    className="bg-white rounded-lg p-6 sm:p-7 border border-stone-200 hover:border-amber-700 transition-colors cursor-pointer group flex flex-col justify-between space-y-5"
                   >
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <div
-                          className={`w-14 h-14 rounded-2xl flex items-center justify-center font-black text-xl ${
-                            isPillar2 ? "bg-orange-100 text-orange-800" : "bg-amber-100 text-amber-800"
-                          }`}
+                          className={`w-10 h-10 rounded-md flex items-center justify-center font-bold text-base ${isPillar2 ? "bg-orange-50 text-orange-800 border border-orange-200" : "bg-amber-50 text-amber-800 border border-amber-200"
+                            }`}
                         >
-                          {isPillar2 ? <Users className="w-7 h-7" /> : <Leaf className="w-7 h-7" />}
+                          {isPillar2 ? <Users className="w-5 h-5" /> : <Leaf className="w-5 h-5" />}
                         </div>
 
-                        <span className="bg-amber-50 text-amber-900 border border-amber-200 text-xs font-black px-3 py-1 rounded-full uppercase tracking-wider">
+                        <span className="bg-stone-100 text-stone-800 border border-stone-200 text-xs font-semibold px-2.5 py-0.5 rounded uppercase tracking-wider">
                           {language === "bn" ? `স্তম্ভ ০${idx + 1}` : `Pillar 0${idx + 1}`}
                         </span>
                       </div>
 
-                      <div className="space-y-2">
-                        <h3 className="text-xl sm:text-2xl font-black text-stone-900 group-hover:text-amber-700 transition-colors leading-snug">
+                      <div className="space-y-1.5">
+                        <h3 className="text-lg sm:text-xl font-bold text-stone-900 group-hover:text-amber-800 transition-colors leading-snug">
                           {language === "bn" ? pillar.titleBn : pillar.titleEn}
                         </h3>
                       </div>
@@ -229,17 +236,17 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
                         <div className="space-y-3 pt-3 border-t border-stone-100 text-xs text-stone-700">
                           {pillar.topics.map((t, tIdx) => (
                             <div key={t.id || tIdx} className="space-y-1">
-                              <div className="font-bold text-stone-900 flex items-start space-x-1.5">
-                                <span className="text-amber-700 font-black shrink-0">{t.number || tIdx + 1})</span>
+                              <div className="font-semibold text-stone-900 flex items-start space-x-1.5">
+                                <span className="text-amber-800 font-bold shrink-0">{t.number || tIdx + 1})</span>
                                 <span className="leading-snug">{language === "bn" ? t.titleBn : t.titleEn}</span>
                               </div>
                               {t.descriptionBn && (
-                                <p className="pl-4 text-[11px] text-stone-600 font-medium">
+                                <p className="pl-4 text-xs text-stone-600 font-normal">
                                   {language === "bn" ? t.descriptionBn : t.descriptionEn}
                                 </p>
                               )}
                               {Array.isArray(t.subPoints) && t.subPoints.length > 0 && (
-                                <ul className="pl-5 space-y-0.5 list-disc text-[11px] text-stone-600 font-medium">
+                                <ul className="pl-5 space-y-0.5 list-disc text-xs text-stone-600 font-normal">
                                   {(language === "bn" ? t.subPoints : (t.subPointsEn || t.subPoints)).map((sp, sIdx) => (
                                     <li key={sIdx} className="leading-relaxed">{sp}</li>
                                   ))}
@@ -251,11 +258,11 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
                       )}
                     </div>
 
-                    <div className="pt-4 border-t border-stone-100 flex items-center justify-between text-xs font-black text-amber-700 group-hover:text-amber-800">
-                      <span className="bg-amber-100/60 px-3 py-1.5 rounded-xl">
+                    <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-amber-800 group-hover:text-amber-900">
+                      <span className="bg-amber-50 border border-amber-200 text-amber-800 px-2.5 py-1 rounded-md">
                         {language === "bn" ? "স্তম্ভের বিস্তারিত ও পদ্ধতি দেখতে ক্লিক করুন" : "Click to view full pillar details"}
                       </span>
-                      <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1.5 transition-transform" />
+                      <ArrowRight className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
                 );
@@ -263,27 +270,21 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
             </div>
           ) : (
             /* Dedicated Interactive Full Pillar Detail View */
-            <div className="bg-white rounded-3xl border border-stone-200 p-6 sm:p-10 space-y-8 shadow-sm">
-              <div className="flex items-center justify-between border-b border-stone-200 pb-5">
-                <button
-                  onClick={() => setSelectedPillarId(null)}
-                  className="inline-flex items-center space-x-2 text-xs font-black text-stone-700 hover:text-amber-800 bg-stone-100 hover:bg-amber-50 px-4 py-2 rounded-xl transition-all cursor-pointer"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                  <span>{language === "bn" ? "সকল স্তম্ভের তালিকায় ফিরে যান" : "Back to All Pillars"}</span>
-                </button>
+            <div className="bg-white rounded-lg border border-stone-200 p-6 sm:p-8 space-y-6 shadow-sm">
+              <div className="flex items-center justify-between border-b border-stone-200 pb-4">
 
-                <span className="text-xs font-black text-amber-800 bg-amber-100 px-3 py-1 rounded-full uppercase tracking-wider">
+
+                <span className="text-xs font-semibold text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-0.5 rounded uppercase tracking-wider">
                   {language === "bn" ? `স্তম্ভ ০${activePillar.number || (pillarsList.indexOf(activePillar) + 1)}` : "Core Guiding Pillar"}
                 </span>
               </div>
 
               {/* Pillar Header */}
-              <div className="space-y-3">
-                <h2 className="text-2xl sm:text-4xl font-black text-stone-900 tracking-tight">
+              <div className="space-y-2">
+                <h2 className="text-2xl sm:text-3xl font-bold text-stone-900 tracking-tight">
                   {language === "bn" ? activePillar.titleBn : activePillar.titleEn}
                 </h2>
-                <p className="text-base text-stone-600 font-medium leading-relaxed max-w-4xl">
+                <p className="text-sm sm:text-base text-stone-700 leading-relaxed max-w-4xl">
                   {language === "bn" ? activePillar.descBn : activePillar.descEn}
                 </p>
               </div>
@@ -291,22 +292,22 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
               {/* Core Topics & Field Workstreams */}
               {Array.isArray(activePillar.topics) && activePillar.topics.length > 0 && (
                 <div className="space-y-4 pt-4 border-t border-stone-100">
-                  <h3 className="text-lg font-black text-stone-900">
+                  <h3 className="text-base font-bold text-stone-900">
                     {language === "bn" ? "স্তম্ভের মূল বিষয়সমূহ ও মাঠ পর্যায়ের কার্যক্রম" : "Core Topics & Field Workstreams"}
                   </h3>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     {activePillar.topics.map((t, tIdx) => (
-                      <div key={t.id || tIdx} className="bg-[#faf8f5] p-5 sm:p-6 rounded-2xl border border-stone-200/90 space-y-3">
+                      <div key={t.id || tIdx} className="bg-stone-50 p-4 sm:p-5 rounded-lg border border-stone-200 space-y-2.5">
                         <div className="flex items-start space-x-3">
-                          <span className="w-7 h-7 rounded-xl bg-amber-200/80 text-amber-950 font-black text-xs sm:text-sm flex items-center justify-center shrink-0 mt-0.5">
+                          <span className="w-6 h-6 rounded bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
                             {t.number || tIdx + 1}
                           </span>
                           <div>
-                            <h4 className="text-base sm:text-lg font-black text-stone-900 leading-snug">
+                            <h4 className="text-base font-bold text-stone-900 leading-snug">
                               {language === "bn" ? t.titleBn : t.titleEn}
                             </h4>
                             {t.descriptionBn && (
-                              <p className="mt-1 text-xs sm:text-sm text-stone-600 font-medium leading-relaxed">
+                              <p className="mt-1 text-xs sm:text-sm text-stone-600 leading-relaxed">
                                 {language === "bn" ? t.descriptionBn : t.descriptionEn}
                               </p>
                             )}
@@ -314,9 +315,9 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
                         </div>
 
                         {Array.isArray(t.subPoints) && t.subPoints.length > 0 && (
-                          <div className="pl-10 space-y-2 pt-1 border-t border-stone-100/80">
+                          <div className="pl-9 space-y-1.5 pt-2 border-t border-stone-200">
                             {(language === "bn" ? t.subPoints : (t.subPointsEn || t.subPoints)).map((sp, sIdx) => (
-                              <div key={sIdx} className="flex items-start space-x-2.5 text-xs sm:text-sm font-semibold text-stone-700">
+                              <div key={sIdx} className="flex items-start space-x-2 text-xs sm:text-sm text-stone-700">
                                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
                                 <span className="leading-relaxed">{sp}</span>
                               </div>
@@ -331,15 +332,15 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
 
               {/* Pillar Goals Grid */}
               {activePillar.goals && (
-                <div className="space-y-4 pt-4 border-t border-stone-100">
-                  <h3 className="text-lg font-black text-stone-900">
+                <div className="space-y-3 pt-4 border-t border-stone-100">
+                  <h3 className="text-base font-bold text-stone-900">
                     {language === "bn" ? "প্রধান লক্ষ্য ও কর্মপরিকল্পনা" : "Key Goals & Objectives"}
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {activePillar.goals.map((g, i) => (
-                      <div key={i} className="flex items-start space-x-3 bg-stone-50 p-4 rounded-2xl border border-stone-200/80">
-                        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                        <span className="text-xs sm:text-sm font-bold text-stone-800 leading-snug">{g}</span>
+                      <div key={i} className="flex items-start space-x-2.5 bg-stone-50 p-3 rounded-lg border border-stone-200">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                        <span className="text-xs sm:text-sm font-medium text-stone-800 leading-snug">{g}</span>
                       </div>
                     ))}
                   </div>
@@ -348,33 +349,33 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
 
               {/* Methodology */}
               {activePillar.methodologyBn && (
-                <div className="bg-amber-50/80 p-6 rounded-2xl border border-amber-200/80 space-y-2">
-                  <h4 className="text-xs font-black uppercase tracking-wider text-amber-900">
+                <div className="bg-amber-50/70 p-5 rounded-lg border-l-4 border-amber-700 space-y-1.5">
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-amber-800">
                     {language === "bn" ? "মাঠ পর্যায়ের প্রয়োগ পদ্ধতি" : "Field Implementation Methodology"}
                   </h4>
-                  <p className="text-xs sm:text-sm text-amber-950 font-medium leading-relaxed">
+                  <p className="text-xs sm:text-sm text-stone-700 leading-relaxed whitespace-pre-line">
                     {activePillar.methodologyBn}
                   </p>
                 </div>
               )}
 
               {/* Direct Linkage to Research Reports */}
-              <div className="bg-gradient-to-r from-amber-600 to-orange-600 rounded-2xl p-6 sm:p-8 text-white flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="bg-stone-900 rounded-lg p-6 text-white border border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="space-y-1 text-center sm:text-left">
-                  <div className="font-black text-base sm:text-lg">
-                    {language === "bn" ? "এই স্তম্ভ সম্পর্কিত গবেষণা প্রতিবেদন পড়ুন" : "Read Research Report on this Pillar"}
+                  <div className="font-bold text-base sm:text-lg">
+                    {language === "bn" ? "এই স্তম্ভ সম্পর্কিত অন্বেষণ প্রতিবেদন পড়ুন" : "Read Research Report on this Pillar"}
                   </div>
-                  <div className="text-xs text-amber-100 font-medium">
+                  <div className="text-xs text-stone-300">
                     {language === "bn"
-                      ? "মাঠ গবেষণা, সার বিশ্লেষণ ও ফলনের বাস্তব তথ্য বিস্তারিত জানুন।"
+                      ? "মাঠ অন্বেষণ, সার বিশ্লেষণ ও ফলনের বাস্তব তথ্য বিস্তারিত জানুন।"
                       : "Access empirical field data, soil analysis, and yield records."}
                   </div>
                 </div>
                 <button
                   onClick={() => setActiveTab("reports")}
-                  className="bg-white text-amber-950 hover:bg-amber-50 font-black text-xs px-6 py-3 rounded-xl shadow-xs transition-all shrink-0 cursor-pointer"
+                  className="bg-amber-700 hover:bg-amber-800 text-white font-semibold text-xs px-4 py-2 rounded-md transition-colors shrink-0"
                 >
-                  {language === "bn" ? "গবেষণা রিপোর্টে যান" : "Go to Research Report"}
+                  {language === "bn" ? "অন্বেষণ রিপোর্টে যান" : "Go to Research Report"}
                 </button>
               </div>
             </div>
@@ -384,28 +385,28 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
         {/* 3. Authentic Photographic Field Archive */}
         <div className="space-y-6 pt-4 border-t border-stone-200">
           <div className="space-y-1">
-            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider">
+            <span className="text-xs font-bold text-amber-800 uppercase tracking-wider">
               {language === "bn" ? "মাঠের চিত্রশালা" : "Field Archive"}
             </span>
-            <h2 className="text-2xl font-black text-stone-900">
+            <h2 className="text-2xl font-bold text-stone-900">
               {language === "bn" ? "জিয়নকাঠির বাস্তব ক্ষেত্র কার্যক্রম" : "Authentic Field Documentation"}
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-2xs group">
-              <div className="h-52 overflow-hidden bg-stone-100">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 cursor-pointer">
+            <div className="bg-white rounded-lg border border-stone-200 overflow-hidden shadow-sm group">
+              <div className="h-48 overflow-hidden bg-stone-100">
                 <img
                   src="/images/farming-collage.jpg"
                   alt="Indigenous Organic Farming Operations"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <div className="p-5">
-                <h3 className="font-black text-stone-900 text-sm">
+              <div className="p-4 space-y-1">
+                <h3 className="font-bold text-stone-900 text-sm">
                   {language === "bn" ? "দেশীয় ধান ও বীজ সংরক্ষণ প্রক্রিয়া" : "Indigenous Paddy & Seed Processing"}
                 </h3>
-                <p className="text-xs text-stone-600 mt-1 font-medium leading-relaxed">
+                <p className="text-xs text-stone-600 leading-relaxed">
                   {language === "bn"
                     ? "বীজতলা, নিড়ানো, ধান কাটা, ঢেঁকিতে প্রক্রিয়াজাতকরণ ও প্রজাতি সংরক্ষণ।"
                     : "Traditional seedbed management, zero-chemical weeding, and cultivar preservation."}
@@ -413,19 +414,19 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-2xs group">
-              <div className="h-52 overflow-hidden bg-stone-100">
+            <div className="bg-white rounded-lg border border-stone-200 overflow-hidden shadow-sm group">
+              <div className="h-48 overflow-hidden bg-stone-100">
                 <img
                   src="/images/community-collage.jpg"
                   alt="Community Education & Cultural Events"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <div className="p-5">
-                <h3 className="font-black text-stone-900 text-sm">
+              <div className="p-4 space-y-1">
+                <h3 className="font-bold text-stone-900 text-sm">
                   {language === "bn" ? "সামাজিক শিক্ষা ও সাংস্কৃতিক মেলবন্ধন" : "Community Education & Festival"}
                 </h3>
-                <p className="text-xs text-stone-600 mt-1 font-medium leading-relaxed">
+                <p className="text-xs text-stone-600 leading-relaxed">
                   {language === "bn"
                     ? "সহায়ক শিক্ষা কেন্দ্র, বসন্ত উৎসব, সর্প সচেতনতা ও স্বাস্থ্য শিবির।"
                     : "Auxiliary village education center, nature study, and local cultural gatherings."}
@@ -433,19 +434,19 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
               </div>
             </div>
 
-            <div className="bg-white rounded-3xl border border-stone-200 overflow-hidden shadow-2xs group">
-              <div className="h-52 overflow-hidden bg-stone-100">
+            <div className="bg-white rounded-lg border border-stone-200 overflow-hidden shadow-sm group">
+              <div className="h-48 overflow-hidden bg-stone-100">
                 <img
                   src="/images/ecology-collage.jpg"
                   alt="Ecology & Biodiversity Yield"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <div className="p-5">
-                <h3 className="font-black text-stone-900 text-sm">
+              <div className="p-4 space-y-1">
+                <h3 className="font-bold text-stone-900 text-sm">
                   {language === "bn" ? "বিষমুক্ত ফসল ও প্রাকৃতিক জীববৈচিত্র্য" : "Organic Produce & Biodiversity"}
                 </h3>
-                <p className="text-xs text-stone-600 mt-1 font-medium leading-relaxed">
+                <p className="text-xs text-stone-600 leading-relaxed">
                   {language === "bn"
                     ? "বিষমুক্ত ফল, বীজ সংরক্ষণের কাঁচের বোতল, স্থানীয় মৎস্য ও বাস্তুতন্ত্র।"
                     : "Pesticide-free fruits, botanical glass preservation banks, and local ecology."}
@@ -456,18 +457,18 @@ export default function AboutSection({ setActiveTab = () => {}, initialPillarId 
         </div>
 
         {/* 4. Institutional Partnership Banner (DDBMPBS Society) */}
-        <div className="bg-white rounded-3xl p-8 sm:p-10 border border-amber-200/90 shadow-2xs space-y-3">
-          <div className="flex items-center space-x-2.5 text-amber-800">
-            <ShieldCheck className="w-5 h-5 text-amber-600" />
-            <h3 className="text-base sm:text-lg font-black uppercase tracking-wider">
+        <div className="bg-orange-100 rounded-lg p-6 sm:p-8 border border-stone-300 cursor-pointer space-y-2.5">
+          <div className="flex items-center space-x-2 text-amber-800">
+            <ShieldCheck className="w-5 h-5 text-amber-700" />
+            <h3 className="text-base font-bold uppercase tracking-wider">
               {language === "bn" ? "সহযোগিতা ও প্রাতিষ্ঠানিক অংশীদারিত্ব" : "Institutional Partnership"}
             </h3>
           </div>
-          <p className="text-xs sm:text-sm text-stone-700 leading-relaxed font-medium">
+          <p className="text-xs sm:text-sm text-stone-700 leading-relaxed">
             {language === "bn" ? (
               <>
                 বিগত দুই বছর ধরে এই কাজগুলি এবং দেশীয় বীজ সংরক্ষণের কাজ সম্পন্ন করার লক্ষ্যে জিয়নকাঠির পাশে এসে দাঁড়িয়েছে{" "}
-                <strong className="text-amber-900">“দুর্গাপুর দক্ষিণবঙ্গীয় মানবিক প্রাকৃতিক বিকাশ সোসাইটি (DDBMPBS)”</strong>। যৌথ প্রচেষ্টায় জিয়নকাঠি ও DDBMPBS বৃহত্তর গ্রামীণ বিকাশ ও টেকসই পরিবেশ গড়ে তোলার লক্ষ্যে নিয়োজিত।
+                <strong className="text-amber-900">“দুর্গাপুর দক্ষিণবঙ্গীয় মানবিক প্রাকৃতিক বিকাশ সোসাইটি (DDBMPBS)”</strong>। বৃহত্তর গ্রামীণ বিকাশ ও টেকসই পরিবেশ গড়ে তোলার লক্ষ্যে যৌথ ভাবে নিয়োজিত “জিয়নকাঠি ও DDBMPBS”।
               </>
             ) : (
               <>

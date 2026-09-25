@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { SiteContext } from "../context/SiteContext";
 import {
   Image as ImageIcon,
@@ -11,13 +11,34 @@ import {
   Sparkles,
   Video,
   Calendar,
-  Layers
+  Layers,
+  Share2,
+  CheckCircle2
 } from "lucide-react";
+import { getShareUrl, shareContent } from "../utils/urlUtils";
 
-export default function GallerySection() {
+const GALLERY_CATEGORIES = [
+  { id: "all", labelBn: "সকল", labelEn: "All", heading: "সকল ছবি ও ভিডিও (All Media)" },
+  { id: "pkhira", labelBn: "জিয়নকাঠির পখিরা", labelEn: "Jiyonkathir Pkhira", heading: "জিয়নকাঠির পখিরা (Jiyonkathir Pkhira)" },
+  { id: "ragi", labelBn: "জিয়নকাঠির রাগি চাষ", labelEn: "Jiyonkathir Ragi Chas", heading: "জিয়নকাঠির রাগি চাষ (Jiyonkathir Ragi Chas)" },
+  { id: "dhan", labelBn: "জিয়নকাঠির ধান চাষ ও সংরক্ষণ", labelEn: "Jiyonkathir Dhan chass o Sonrokkhon", heading: "জিয়নকাঠির ধান চাষ ও সংরক্ষণ (Jiyonkathir Dhan chass o Sonrokkhon)" },
+  { id: "joll", labelBn: "জল সংরক্ষণ", labelEn: "Joll Sonrokkhon", heading: "জল সংরক্ষণ (Joll Sonrokkhon)" },
+];
+
+const normalizeCategory = (cat) => {
+  if (!cat) return "dhan";
+  if (cat === "pkhira" || cat === "events" || cat === "education") return "pkhira";
+  if (cat === "ragi") return "ragi";
+  if (cat === "dhan" || cat === "farming" || cat === "seeds" || cat === "impact") return "dhan";
+  if (cat === "joll" || cat === "campaigns" || cat === "water") return "joll";
+  return cat;
+};
+
+export default function GallerySection({ targetImageId = null, onSelectImage = null, onClearTarget = null }) {
   const { siteData, language } = useContext(SiteContext);
   const [activeCategory, setActiveCategory] = useState("all");
   const [selectedImageIdx, setSelectedImageIdx] = useState(null);
+  const [copiedLink, setCopiedLink] = useState(false);
 
   const rawGallery = siteData.gallery || [];
 
@@ -30,63 +51,101 @@ export default function GallerySection() {
   });
 
   const filteredItems = visibleItems.filter((item) => {
-    const itemCat = item.category || "events";
+    const itemCat = normalizeCategory(item.category);
     return activeCategory === "all" || itemCat === activeCategory;
   });
 
+  // Handle opening targeted image from deep link or direct URL
+  useEffect(() => {
+    if (targetImageId && filteredItems.length > 0) {
+      const targetStr = String(targetImageId).toLowerCase();
+      const foundIdx = filteredItems.findIndex(
+        (item) => String(item.id || "").toLowerCase() === targetStr
+      );
+      if (foundIdx !== -1) {
+        setSelectedImageIdx(foundIdx);
+      }
+    }
+  }, [targetImageId, filteredItems]);
+
+  const handleSelectImage = (idx) => {
+    setSelectedImageIdx(idx);
+    const item = filteredItems[idx];
+    if (item?.id && onSelectImage) {
+      onSelectImage(item.id);
+    }
+  };
+
+  const handleCloseModal = () => {
+    setSelectedImageIdx(null);
+    if (onClearTarget) {
+      onClearTarget();
+    }
+  };
+
   const handlePrev = (e) => {
     e?.stopPropagation();
-    if (selectedImageIdx !== null) {
-      setSelectedImageIdx((prev) =>
-        prev !== null && prev > 0 ? prev - 1 : filteredItems.length - 1
-      );
+    if (selectedImageIdx !== null && filteredItems.length > 0) {
+      const nextIdx = selectedImageIdx > 0 ? selectedImageIdx - 1 : filteredItems.length - 1;
+      setSelectedImageIdx(nextIdx);
+      const item = filteredItems[nextIdx];
+      if (item?.id && onSelectImage) {
+        onSelectImage(item.id);
+      }
     }
   };
 
   const handleNext = (e) => {
     e?.stopPropagation();
-    if (selectedImageIdx !== null) {
-      setSelectedImageIdx((prev) =>
-        prev !== null && prev < filteredItems.length - 1 ? prev + 1 : 0
-      );
+    if (selectedImageIdx !== null && filteredItems.length > 0) {
+      const nextIdx = selectedImageIdx < filteredItems.length - 1 ? selectedImageIdx + 1 : 0;
+      setSelectedImageIdx(nextIdx);
+      const item = filteredItems[nextIdx];
+      if (item?.id && onSelectImage) {
+        onSelectImage(item.id);
+      }
+    }
+  };
+
+  const handleShareImage = async (item) => {
+    if (!item) return;
+    const shareUrl = getShareUrl(`/image/${item.id}`);
+    const shareTitle = item.title || "জিয়নকাঠি চিত্রশালা";
+    const shareText = item.description || shareTitle;
+    const res = await shareContent({
+      title: shareTitle,
+      text: shareText,
+      url: shareUrl,
+    });
+    if (res.copied) {
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
     }
   };
 
   return (
-    <div id="gallery-section" className="py-16 sm:py-20 bg-[#faf7f0] min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-12">
+    <div id="gallery-section" className="py-10 sm:py-16 bg-stone-50 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8 sm:space-y-10">
         {/* Header */}
-        <div className="text-center max-w-3xl mx-auto space-y-4">
-          {/* <div className="inline-flex items-center space-x-2 bg-amber-50 text-amber-800 border border-amber-200 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wide">
-            <ImageIcon className="w-3.5 h-3.5 text-amber-600" />
-            <span>{language === "bn" ? "ফটোগ্রাফি ও ভিডিও স্মৃতি" : "Visual Archive & Moments"}</span>
-          </div> */}
+        <div className="border-b border-stone-200 pb-6 text-center max-w-3xl mx-auto space-y-3">
 
-          <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-stone-900 tracking-tight">
+
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-stone-900 tracking-tight">
             {language === "bn" ? "জিয়নকাঠি চিত্রশালা" : "Our Media Gallery"}
           </h1>
 
-          <p className="text-base sm:text-lg text-stone-600 max-w-2xl mx-auto leading-relaxed font-medium">
-            {language === "bn"
-              ? "দেশীয় ধান বীজতলা, রোপণ, ফসল কাটা, সহায়ক শিক্ষা কেন্দ্র ও গ্রামীণ উৎসবের সচিত্র মুহূর্ত।"
-              : "A photographic and cinematic archive of our agro-ecological milestones, seed nursery, and community gatherings."}
-          </p>
+
         </div>
 
-        {/* Categories Filter Tabs */}
-        <div className="flex flex-wrap justify-center items-center gap-2 max-w-lg mx-auto bg-white p-2 rounded-2xl border border-stone-200 shadow-2xs">
-          {[
-            { id: "all", labelBn: "সকল ছবি ও ভিডিও", labelEn: "All Media" },
-            { id: "campaigns", labelBn: "কৃষি ও পরিবেশ", labelEn: "Ecology & Farming" },
-            { id: "events", labelBn: "সামাজিক উৎসব", labelEn: "Events" },
-            { id: "impact", labelBn: "শিক্ষা ও মাঠ পর্যায়", labelEn: "Impact & Education" },
-          ].map((cat) => (
+        {/* Categories Filter Tabs with Both English & Bengali Headings */}
+        <div className="flex flex-wrap justify-center items-center gap-2 w-full mx-auto bg-white p-2 border-b border-stone-200">
+          {GALLERY_CATEGORIES.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
-              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all ${activeCategory === cat.id
+              className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${activeCategory === cat.id
                   ? "bg-amber-600 text-white shadow-2xs"
-                  : "text-stone-600 hover:bg-stone-50 hover:text-amber-700"
+                  : "bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-amber-700"
                 }`}
             >
               {language === "bn" ? cat.labelBn : cat.labelEn}
@@ -96,18 +155,18 @@ export default function GallerySection() {
 
         {/* Media Grid */}
         {filteredItems.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredItems.map((item, idx) => (
               <div
                 key={item.id || idx}
-                onClick={() => setSelectedImageIdx(idx)}
-                className="group relative bg-white rounded-3xl overflow-hidden shadow-xs hover:shadow-lg cursor-pointer transition-all border border-stone-200/90 flex flex-col justify-between"
+                onClick={() => handleSelectImage(idx)}
+                className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:border-amber-700 cursor-pointer transition-colors border border-stone-200 flex flex-col justify-between"
               >
                 <div className="aspect-4/3 overflow-hidden relative bg-stone-100">
                   {item.type === "Video" || item.url?.endsWith(".mp4") ? (
                     <video
                       src={item.url}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       muted
                       loop
                       playsInline
@@ -117,31 +176,36 @@ export default function GallerySection() {
                     <img
                       src={item.url}
                       alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                       referrerPolicy="no-referrer"
                     />
                   )}
 
-                  <div className="absolute top-3 left-3">
-                    <span className="bg-stone-900/70 backdrop-blur-xs text-white text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">
-                      {item.category || "events"}
-                    </span>
+                  <div className="absolute top-2.5 left-2.5">
+                    {(() => {
+                      const matchedCat = GALLERY_CATEGORIES.find((c) => c.id === normalizeCategory(item.category));
+                      return (
+                        <span className="bg-stone-900/85 backdrop-blur-xs text-white text-[11px] font-bold px-2 py-0.5 rounded-md border border-stone-700/50">
+                          {matchedCat ? `${matchedCat.labelBn} • ${matchedCat.labelEn}` : item.category}
+                        </span>
+                      );
+                    })()}
                   </div>
                 </div>
 
-                <div className="p-5 space-y-2">
-                  <h3 className="text-base font-extrabold text-stone-900 line-clamp-1 group-hover:text-amber-700 transition-colors">
+                <div className="p-4 space-y-2">
+                  <h3 className="text-sm font-bold text-stone-900 line-clamp-1 group-hover:text-amber-700 transition-colors">
                     {item.title}
                   </h3>
                   <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
                     {item.description}
                   </p>
-                  <div className="pt-2 flex items-center justify-between text-xs font-bold text-amber-700">
+                  <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-amber-700">
                     <span className="flex items-center space-x-1">
                       <Eye className="w-3.5 h-3.5" />
                       <span>{language === "bn" ? "পূর্ণাঙ্গ ভিউ দেখুন" : "View Full Size"}</span>
                     </span>
-                    <span className="text-[11px] text-stone-400 font-normal">
+                    <span className="text-xs text-stone-400 font-normal">
                       {item.publishedAt ? new Date(item.publishedAt).toLocaleDateString() : ""}
                     </span>
                   </div>
@@ -150,9 +214,9 @@ export default function GallerySection() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-20 bg-white rounded-3xl border border-stone-200 space-y-3 max-w-xl mx-auto shadow-2xs">
-            <ImageIcon className="w-12 h-12 text-stone-300 mx-auto" />
-            <h3 className="text-base font-bold text-stone-800">
+          <div className="text-center py-16 bg-white rounded-lg border border-stone-200 space-y-3 max-w-lg mx-auto shadow-sm">
+            <ImageIcon className="w-10 h-10 text-stone-300 mx-auto" />
+            <h3 className="text-sm font-bold text-stone-800">
               {language === "bn" ? "কোনো ছবি বা ভিডিও পাওয়া যায়নি।" : "No media found in this category."}
             </h3>
             <p className="text-xs text-stone-500">
@@ -165,42 +229,50 @@ export default function GallerySection() {
       {/* Lightbox / Modal Viewer */}
       {selectedImageIdx !== null && filteredItems[selectedImageIdx] && (
         <div
-          onClick={() => setSelectedImageIdx(null)}
+          onClick={handleCloseModal}
           className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-stone-950/80 backdrop-blur-xs"
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-white rounded-3xl overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl relative"
+            className="bg-white rounded-lg overflow-hidden max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl relative border border-stone-200"
           >
             {/* Modal Top Bar */}
-            <div className="p-4 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
+            <div className="p-3.5 bg-stone-50 border-b border-stone-200 flex items-center justify-between">
               <div className="space-y-0.5">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                <span className="text-xs font-semibold uppercase tracking-wider text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
                   {filteredItems[selectedImageIdx].category || "events"}
                 </span>
-                <h4 className="font-extrabold text-stone-900 text-sm sm:text-base line-clamp-1">
+                <h4 className="font-bold text-stone-900 text-sm sm:text-base line-clamp-1">
                   {filteredItems[selectedImageIdx].title}
                 </h4>
               </div>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1.5">
+                <button
+                  onClick={() => handleShareImage(filteredItems[selectedImageIdx])}
+                  className="p-1.5 rounded-md bg-white border border-stone-200 text-stone-700 hover:bg-stone-100 transition-colors flex items-center space-x-1 text-xs font-semibold cursor-pointer"
+                  title="Share image"
+                >
+                  <Share2 className="w-4 h-4 text-stone-500" />
+                  <span className="hidden sm:inline">{copiedLink ? (language === "bn" ? "কপি হয়েছে!" : "Copied!") : (language === "bn" ? "শেয়ার" : "Share")}</span>
+                </button>
                 <button
                   onClick={handlePrev}
-                  className="p-2 rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-amber-50 transition-colors"
+                  className="p-1.5 rounded-md bg-white border border-stone-200 text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
                   title="Previous"
                 >
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <button
                   onClick={handleNext}
-                  className="p-2 rounded-xl bg-white border border-stone-200 text-stone-700 hover:bg-amber-50 transition-colors"
+                  className="p-1.5 rounded-md bg-white border border-stone-200 text-stone-700 hover:bg-stone-100 transition-colors cursor-pointer"
                   title="Next"
                 >
                   <ChevronRight className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setSelectedImageIdx(null)}
-                  className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors ml-2"
+                  onClick={handleCloseModal}
+                  className="p-1.5 rounded-md bg-stone-100 hover:bg-stone-200 text-stone-700 transition-colors ml-2 cursor-pointer"
                   title="Close"
                 >
                   <X className="w-4 h-4" />
@@ -227,11 +299,11 @@ export default function GallerySection() {
             </div>
 
             {/* Modal Caption */}
-            <div className="p-5 bg-white border-t border-stone-100 space-y-1">
+            <div className="p-4 bg-white border-t border-stone-100 space-y-1">
               <p className="text-xs sm:text-sm text-stone-700 leading-relaxed">
                 {filteredItems[selectedImageIdx].description}
               </p>
-              <div className="text-[11px] text-stone-400 font-medium">
+              <div className="text-xs text-stone-500 font-medium">
                 {selectedImageIdx + 1} / {filteredItems.length}
               </div>
             </div>

@@ -1,13 +1,8 @@
-/**
- * Application Constants & Metadata Config
- * Clean Architecture Layer: Configuration
- */
-
 export const APP_CONFIG = {
   name: "Jiyonkathi",
   bengaliName: "জিয়নকাঠি",
   tagline: "A Sustainable Living Community",
-  bengaliTagline: "প্রাণ-প্রকৃতি-পরিবেশ ও টেকসই জীবনযাপনের সমাজ",
+  bengaliTagline: "প্রাণ-প্রকৃতি-পরিবেশ ও টেকসই জীবনযাপনের সংস্থা",
   orgDetails: {
     address: {
       title: "Jiyonkathi, (জিয়নকাঠি)",
@@ -19,5 +14,5 @@ export const APP_CONFIG = {
     },
     phone: "+91 94332 87654 / +91 98301 23456",
     email: "contact@jiyonkathi.org",
-  }
+  },
 };

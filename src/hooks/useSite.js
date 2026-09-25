@@ -1,8 +1,3 @@
-/**
- * useSite Custom Hook
- * Clean Architecture Layer: Hooks / State Adapter
- */
-
 import { useContext } from "react";
 import { SiteContext } from "../context/SiteContext";
 
