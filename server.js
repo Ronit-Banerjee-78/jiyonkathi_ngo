@@ -5,12 +5,21 @@ import fs from "fs";
 import { fileURLToPath } from "url";
 import { createServer as createViteServer } from "vite";
 import { projectRoutes } from "./server/controllers/projectController.js";
-import { settingsRoutes, getGalleryItemById } from "./server/controllers/settingsController.js";
+import {
+  settingsRoutes,
+  getGalleryItemById,
+} from "./server/controllers/settingsController.js";
 import { uploadRoutes } from "./server/controllers/uploadController.js";
 import { volunteerRoutes } from "./server/controllers/volunteerController.js";
 import { eventRoutes } from "./server/controllers/eventController.js";
-import { reportRoutes, getReportById } from "./server/controllers/reportController.js";
-import { blogCommentRoutes, getBlogByIdOrSlug } from "./server/controllers/blogCommentController.js";
+import {
+  reportRoutes,
+  getReportById,
+} from "./server/controllers/reportController.js";
+import {
+  blogCommentRoutes,
+  getBlogByIdOrSlug,
+} from "./server/controllers/blogCommentController.js";
 import { authRoutes } from "./server/controllers/authController.js";
 import {
   initDB,
@@ -33,7 +42,11 @@ const __dirname = path.dirname(__filename);
 
 async function getInjectedHtml(html, req) {
   try {
-    const siteUrl = (process.env.SITE_URL || process.env.APP_URL || `${req.protocol}://${req.get("host")}`).replace(/\/+$/, "");
+    const siteUrl = (
+      process.env.SITE_URL ||
+      process.env.APP_URL ||
+      `${req.protocol}://${req.get("host")}`
+    ).replace(/\/+$/, "");
     let meta = null;
 
     if (req.path.startsWith("/blog/")) {
@@ -42,8 +55,15 @@ async function getInjectedHtml(html, req) {
       if (blog) {
         meta = {
           title: `${blog.title} - Jiyonkathi (জিয়নকাঠি) Blog`,
-          description: (blog.excerpt || blog.excerptBengali || blog.content || "").slice(0, 200),
-          image: blog.image?.startsWith("http") ? blog.image : `${siteUrl}${blog.image || "/images/farming-collage.jpg"}`,
+          description: (
+            blog.excerpt ||
+            blog.excerptBengali ||
+            blog.content ||
+            ""
+          ).slice(0, 200),
+          image: blog.image?.startsWith("http")
+            ? blog.image
+            : `${siteUrl}${blog.image || "/images/farming-collage.jpg"}`,
           url: `${siteUrl}/blog/${blog.id}`,
         };
       }
@@ -53,19 +73,33 @@ async function getInjectedHtml(html, req) {
       if (report) {
         meta = {
           title: `${report.title} - Jiyonkathi (জিয়নকাঠি) অন্বেষণ প্রতিবেদন`,
-          description: (report.summary || report.summaryEnglish || report.content || "").slice(0, 200),
-          image: report.image?.startsWith("http") ? report.image : `${siteUrl}${report.image || "/images/farming-collage.jpg"}`,
+          description: (
+            report.summary ||
+            report.summaryEnglish ||
+            report.content ||
+            ""
+          ).slice(0, 200),
+          image: report.image?.startsWith("http")
+            ? report.image
+            : `${siteUrl}${report.image || "/images/farming-collage.jpg"}`,
           url: `${siteUrl}/report/${report.id}`,
         };
       }
-    } else if (req.path.startsWith("/image/") || req.path.startsWith("/gallery/")) {
+    } else if (
+      req.path.startsWith("/image/") ||
+      req.path.startsWith("/gallery/")
+    ) {
       const id = req.path.replace(/^\/(image|gallery)\//, "").split("/")[0];
       const item = await getGalleryItemById(id);
       if (item) {
         meta = {
           title: `${item.title || "ফটোগ্রাফিক রেকর্ড"} - Jiyonkathi (জিয়নকাঠি) চিত্রশালা`,
-          description: (item.description || "জিয়নকাঠি চিত্রশালা থেকে সংগ্রহ").slice(0, 200),
-          image: item.url?.startsWith("http") ? item.url : `${siteUrl}${item.url || "/images/community-collage.jpg"}`,
+          description: (
+            item.description || "জিয়নকাঠি চিত্রশালা থেকে সংগ্রহ"
+          ).slice(0, 200),
+          image: item.url?.startsWith("http")
+            ? item.url
+            : `${siteUrl}${item.url || "/images/community-collage.jpg"}`,
           url: `${siteUrl}/image/${item.id}`,
         };
       }
@@ -82,9 +116,18 @@ async function getInjectedHtml(html, req) {
 
     let injected = html
       .replace(/<title>.*?<\/title>/i, `<title>${safeTitle}</title>`)
-      .replace(/<meta property="og:title" content=".*?" \/>/i, `<meta property="og:title" content="${safeTitle}" />`)
-      .replace(/<meta property="og:description" content=".*?" \/>/i, `<meta property="og:description" content="${safeDesc}" />`)
-      .replace(/<meta name="description" content=".*?" \/>/i, `<meta name="description" content="${safeDesc}" />`);
+      .replace(
+        /<meta property="og:title" content=".*?" \/>/i,
+        `<meta property="og:title" content="${safeTitle}" />`,
+      )
+      .replace(
+        /<meta property="og:description" content=".*?" \/>/i,
+        `<meta property="og:description" content="${safeDesc}" />`,
+      )
+      .replace(
+        /<meta name="description" content=".*?" \/>/i,
+        `<meta name="description" content="${safeDesc}" />`,
+      );
 
     const extraTags = `
     <meta property="og:url" content="${safeUrl}" />
@@ -176,40 +219,12 @@ async function startServer() {
           const rawHtml = fs.readFileSync(indexFile, "utf-8");
           const finalHtml = await getInjectedHtml(rawHtml, req);
           return res.send(finalHtml);
-        } else {
-  const distPath = path.join(process.cwd(), "dist");
-  
-  console.log("=== DIST CHECK ===");
-  console.log("distPath:", distPath);
-  console.log("dist exists:", fs.existsSync(distPath));
-  if (fs.existsSync(distPath)) {
-    console.log("Files in dist:", fs.readdirSync(distPath));
-  }
-
-  app.use(express.static(distPath, { index: false }));
-
-  app.get("*", async (req, res) => {
-    try {
-      const indexFile = path.join(distPath, "index.html");
-
-      if (!fs.existsSync(indexFile)) {
-        return res.status(404).send(`
-          <h1>dist folder problem</h1>
-          <p><b>distPath:</b> ${distPath}</p>
-          <p><b>dist exists:</b> ${fs.existsSync(distPath)}</p>
-          <p><b>Files in dist:</b> ${fs.existsSync(distPath) ? fs.readdirSync(distPath).join(", ") : "Folder missing"}</p>
-        `);
+        }
+      } catch (err) {
+        console.warn("Error serving static index:", err);
       }
-
-      const rawHtml = fs.readFileSync(indexFile, "utf-8");
-      const finalHtml = await getInjectedHtml(rawHtml, req);
-      return res.status(200).send(finalHtml);
-    } catch (err) {
-      console.error(err);
-      res.status(500).send("Error: " + err.message);
-    }
-  });
-
+      res.sendFile(path.join(distPath, "index.html"));
+    });
   }
 
   server.listen(PORT, "0.0.0.0", () => {
