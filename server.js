@@ -176,7 +176,7 @@ async function startServer() {
           const rawHtml = fs.readFileSync(indexFile, "utf-8");
           const finalHtml = await getInjectedHtml(rawHtml, req);
           return res.send(finalHtml);
-        }} else {
+        } else {
   const distPath = path.join(process.cwd(), "dist");
   
   console.log("=== DIST CHECK ===");
