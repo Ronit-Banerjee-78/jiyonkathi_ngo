@@ -176,12 +176,40 @@ async function startServer() {
           const rawHtml = fs.readFileSync(indexFile, "utf-8");
           const finalHtml = await getInjectedHtml(rawHtml, req);
           return res.send(finalHtml);
-        }
-      } catch (err) {
-        console.warn("Error serving static index:", err);
+        }} else {
+  const distPath = path.join(process.cwd(), "dist");
+  
+  console.log("=== DIST CHECK ===");
+  console.log("distPath:", distPath);
+  console.log("dist exists:", fs.existsSync(distPath));
+  if (fs.existsSync(distPath)) {
+    console.log("Files in dist:", fs.readdirSync(distPath));
+  }
+
+  app.use(express.static(distPath, { index: false }));
+
+  app.get("*", async (req, res) => {
+    try {
+      const indexFile = path.join(distPath, "index.html");
+
+      if (!fs.existsSync(indexFile)) {
+        return res.status(404).send(`
+          <h1>dist folder problem</h1>
+          <p><b>distPath:</b> ${distPath}</p>
+          <p><b>dist exists:</b> ${fs.existsSync(distPath)}</p>
+          <p><b>Files in dist:</b> ${fs.existsSync(distPath) ? fs.readdirSync(distPath).join(", ") : "Folder missing"}</p>
+        `);
       }
-      res.sendFile(path.join(distPath, "index.html"));
-    });
+
+      const rawHtml = fs.readFileSync(indexFile, "utf-8");
+      const finalHtml = await getInjectedHtml(rawHtml, req);
+      return res.status(200).send(finalHtml);
+    } catch (err) {
+      console.error(err);
+      res.status(500).send("Error: " + err.message);
+    }
+  });
+
   }
 
   server.listen(PORT, "0.0.0.0", () => {
