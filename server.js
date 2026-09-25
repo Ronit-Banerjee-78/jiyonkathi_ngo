@@ -212,7 +212,7 @@ async function startServer() {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath, { index: false }));
     // Serve index.html with SSR Open Graph injection for all non-API SPA routes
-    app.get("/*splat", async (req, res) => {
+    app.get("/{*splat}", async (req, res) => {
       try {
         const indexFile = path.join(distPath, "index.html");
         if (fs.existsSync(indexFile)) {
