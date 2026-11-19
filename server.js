@@ -8,11 +8,26 @@ import { projectRoutes } from "./server/controllers/projectController.js";
 import {
   settingsRoutes,
   getGalleryItemById,
+<<<<<<< HEAD
   getAllGalleryItems,
+=======
+>>>>>>> d889a668428306d8417a35ed24ee4da091cf23e9
 } from "./server/controllers/settingsController.js";
 import { uploadRoutes } from "./server/controllers/uploadController.js";
 import { volunteerRoutes } from "./server/controllers/volunteerController.js";
 import { eventRoutes } from "./server/controllers/eventController.js";
+<<<<<<< HEAD
+=======
+import {
+  reportRoutes,
+  getReportById,
+} from "./server/controllers/reportController.js";
+import {
+  blogCommentRoutes,
+  getBlogByIdOrSlug,
+} from "./server/controllers/blogCommentController.js";
+import { authRoutes } from "./server/controllers/authController.js";
+>>>>>>> d889a668428306d8417a35ed24ee4da091cf23e9
 import {
   reportRoutes,
   getReportById,
@@ -63,8 +78,11 @@ async function getInjectedHtml(html, req) {
       process.env.APP_URL ||
       `${req.protocol}://${req.get("host")}`
     ).replace(/\/+$/, "");
+<<<<<<< HEAD
 
     const pathname = req.path.toLowerCase().replace(/\/+$/, "") || "/";
+=======
+>>>>>>> d889a668428306d8417a35ed24ee4da091cf23e9
     let meta = null;
 
     // 1. Private administrative routes -> block indexing
@@ -96,6 +114,7 @@ async function getInjectedHtml(html, req) {
           : `${siteUrl}${blog.image || "/images/community-collage.jpg"}`;
         const pageUrl = `${siteUrl}/blog/${encodeURIComponent(blog.id)}`;
         meta = {
+<<<<<<< HEAD
           title: `${blog.title} - জিয়নকাঠি (Jiyonkathi) Blog`,
           description: desc,
           image: img,
@@ -122,6 +141,19 @@ async function getInjectedHtml(html, req) {
             },
             mainEntityOfPage: pageUrl,
           },
+=======
+          title: `${blog.title} - Jiyonkathi (জিয়নকাঠি) Blog`,
+          description: (
+            blog.excerpt ||
+            blog.excerptBengali ||
+            blog.content ||
+            ""
+          ).slice(0, 200),
+          image: blog.image?.startsWith("http")
+            ? blog.image
+            : `${siteUrl}${blog.image || "/images/farming-collage.jpg"}`,
+          url: `${siteUrl}/blog/${blog.id}`,
+>>>>>>> d889a668428306d8417a35ed24ee4da091cf23e9
         };
       }
     }
@@ -144,6 +176,7 @@ async function getInjectedHtml(html, req) {
           : `${siteUrl}${report.image || "/images/seedbed.jpg"}`;
         const pageUrl = `${siteUrl}/report/${encodeURIComponent(report.id)}`;
         meta = {
+<<<<<<< HEAD
           title: `${report.title} - জিয়নকাঠি (Jiyonkathi) অন্বেষণ প্রতিবেদন`,
           description: desc,
           image: img,
@@ -180,6 +213,26 @@ async function getInjectedHtml(html, req) {
       (pathname.startsWith("/gallery/") && pathname !== "/gallery")
     ) {
       const id = req.path.replace(/^\/(?:image|gallery)\//, "").split("/")[0];
+=======
+          title: `${report.title} - Jiyonkathi (জিয়নকাঠি) অন্বেষণ প্রতিবেদন`,
+          description: (
+            report.summary ||
+            report.summaryEnglish ||
+            report.content ||
+            ""
+          ).slice(0, 200),
+          image: report.image?.startsWith("http")
+            ? report.image
+            : `${siteUrl}${report.image || "/images/farming-collage.jpg"}`,
+          url: `${siteUrl}/report/${report.id}`,
+        };
+      }
+    } else if (
+      req.path.startsWith("/image/") ||
+      req.path.startsWith("/gallery/")
+    ) {
+      const id = req.path.replace(/^\/(image|gallery)\//, "").split("/")[0];
+>>>>>>> d889a668428306d8417a35ed24ee4da091cf23e9
       const item = await getGalleryItemById(id);
       if (item) {
         const desc = (
@@ -191,6 +244,7 @@ async function getInjectedHtml(html, req) {
           : `${siteUrl}${item.url || "/images/community-collage.jpg"}`;
         const pageUrl = `${siteUrl}/image/${encodeURIComponent(item.id)}`;
         meta = {
+<<<<<<< HEAD
           title: `${item.title || "আলোকচিত্র সংগ্রহ"} - জিয়নকাঠি (Jiyonkathi) চিত্রশালা`,
           description: desc,
           image: img,
@@ -207,6 +261,16 @@ async function getInjectedHtml(html, req) {
               name: "Jiyonkathi (জিয়নকাঠি)",
             },
           },
+=======
+          title: `${item.title || "ফটোগ্রাফিক রেকর্ড"} - Jiyonkathi (জিয়নকাঠি) চিত্রশালা`,
+          description: (
+            item.description || "জিয়নকাঠি চিত্রশালা থেকে সংগ্রহ"
+          ).slice(0, 200),
+          image: item.url?.startsWith("http")
+            ? item.url
+            : `${siteUrl}${item.url || "/images/community-collage.jpg"}`,
+          url: `${siteUrl}/image/${item.id}`,
+>>>>>>> d889a668428306d8417a35ed24ee4da091cf23e9
         };
       }
     }
@@ -334,6 +398,7 @@ async function getInjectedHtml(html, req) {
     let injected = html
       .replace(/<title>.*?<\/title>/i, `<title>${safeTitle}</title>`)
       .replace(
+<<<<<<< HEAD
         /<meta\s+name="description"\s+content=".*?"\s*\/?>/i,
         `<meta name="description" content="${safeDesc}" />`,
       )
@@ -368,6 +433,18 @@ async function getInjectedHtml(html, req) {
       .replace(
         /<meta\s+name="twitter:image"\s+content=".*?"\s*\/?>/i,
         `<meta name="twitter:image" content="${safeImage}" />`,
+=======
+        /<meta property="og:title" content=".*?" \/>/i,
+        `<meta property="og:title" content="${safeTitle}" />`,
+      )
+      .replace(
+        /<meta property="og:description" content=".*?" \/>/i,
+        `<meta property="og:description" content="${safeDesc}" />`,
+      )
+      .replace(
+        /<meta name="description" content=".*?" \/>/i,
+        `<meta name="description" content="${safeDesc}" />`,
+>>>>>>> d889a668428306d8417a35ed24ee4da091cf23e9
       );
 
     let extraTags = "";
