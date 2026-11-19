@@ -82,7 +82,7 @@ export default function MembersSection({ setActiveTab }) {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true, margin: "-50px" }}
                 transition={{ duration: 0.4, ease: "easeOut" }}
-                className={`flex flex-col lg:flex-row items-center gap-6 lg:gap-10 bg-white p-6 sm:p-8 rounded-lg border border-stone-200 shadow-sm hover:border-amber-700 transition-colors ${isEven ? "" : "lg:flex-row-reverse"
+                className={`flex flex-col lg:flex-row items-center gap-6 lg:gap-10 bg-white p-6 sm:p-8 rounded-4xl cursor-pointer border border-stone-200 shadow-sm hover:border-amber-700 transition-colors ${isEven ? "" : "lg:flex-row-reverse"
                   }`}
               >
                 {/* Photo Side */}

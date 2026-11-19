@@ -1,5 +1,6 @@
 import express from "express";
 import crypto from "crypto";
+import { authLimiter } from "../middlewares/rateLimiterMiddleware.js";
 
 const router = express.Router();
 
@@ -55,8 +56,8 @@ export function verifyToken(token) {
   }
 }
 
-// POST /api/auth/login
-router.post("/login", (req, res) => {
+// POST /api/auth/login (Rate limited to 5 attempts per 15 mins)
+router.post("/login", authLimiter, (req, res) => {
   try {
     const { email, password } = req.body || {};
 

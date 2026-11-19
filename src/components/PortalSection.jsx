@@ -52,26 +52,7 @@ export default function PortalSection({
         setError(data.error || "ভুল ইমেইল বা পাসওয়ার্ড");
       }
     } catch (err) {
-      if (
-        (email === "admin@jiyonkathi.org" && password === "admin123") ||
-        (email === "admin" && password === "admin123")
-      ) {
-        setUserSession({
-          role: "admin",
-          name: "জিয়নকাঠি অ্যাডমিনিস্ট্রেটর",
-          username: "admin@jiyonkathi.org",
-          email: "admin@jiyonkathi.org",
-          token: "offline-admin-token",
-        });
-        setSuccessMsg("প্রশাসনিক এক্সেস সফলভাবে অনুমোদিত!");
-        if (navigate) {
-          navigate("/admin");
-        } else {
-          setActiveTab("admin");
-        }
-      } else {
-        setError("লগইন ত্রুটি: " + err.message);
-      }
+      setError("লগইন ত্রুটি: " + (err.message || "সার্ভারের সাথে সংযোগ বিচ্ছিন্ন"));
     } finally {
       setLoading(false);
     }
@@ -189,22 +170,9 @@ export default function PortalSection({
               </div>
 
               <div className="space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <label className="text-xs font-bold text-stone-700 block">
-                    পাসওয়ার্ড (Password)
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail("admin@jiyonkathi.org");
-                      setPassword("admin123");
-                      setError("");
-                    }}
-                    className="text-[11px] font-bold text-amber-700 hover:underline"
-                  >
-                    অটোফিল ডেমো একাউন্ট
-                  </button>
-                </div>
+                <label className="text-xs font-bold text-stone-700 block">
+                  পাসওয়ার্ড (Password)
+                </label>
                 <div className="relative">
                   <Lock className="absolute left-3.5 top-3.5 w-4 h-4 text-stone-400" />
                   <input

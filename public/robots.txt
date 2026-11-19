@@ -1,0 +1,9 @@
+# Robots.txt for Jiyonkathi NGO (https://jiyonkathi.org)
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /portal
+Disallow: /login
+Disallow: /api/
+
+Sitemap: https://jiyonkathi.org/sitemap.xml

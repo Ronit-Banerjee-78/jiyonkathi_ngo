@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Image as ImageIcon, Upload, Search, X, Check, Eye, Plus, Sparkles, FolderOpen } from 'lucide-react';
 import { STATIC_IMAGES_MANIFEST } from '../../utils/databaseUploadSeeds';
+import { getAuthToken } from '../../utils/session';
 
 /**
  * ImageSelectorField
@@ -88,8 +89,11 @@ export default function ImageSelectorField({
         formData.append('file', file);
 
         try {
+            const token = getAuthToken();
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
             const res = await fetch('/api/files', {
                 method: 'POST',
+                headers,
                 body: formData,
             });
             const json = await res.json();

@@ -152,15 +152,15 @@ const defaultSiteData = {
   },
   mission: BENGALI_CONTENT.mission,
   members: [
-    { id: 1, name: "Lorem Ipsum (Lead Conservator)", role: "Lead Farmer & Seed Conservator", bio: "Dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.", image: "/images/paddy-planting.jpg" },
-    { id: 2, name: "Amet Consectetur (Education Lead)", role: "Auxiliary Education Coordinator", bio: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.", image: "/images/education-center.jpg" },
-    { id: 3, name: "Adipiscing Elit (Ecology Lead)", role: "Sustainability & Ecological Energy Lead", bio: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur.", image: "/images/farming-collage.jpg" }
+    { id: 1, name: "অরিন্দম মুখোপাধ্যায়", role: "প্রধান গবেষক ও বীজ সংরক্ষণ সমন্বয়ক", bio: "তেরো বছরের বেশি সময় ধরে দেশীয় ধানের প্রজাতি সংরক্ষণ, জৈব কৃষি বিস্তার এবং কৃষক যোগাযোগে সক্রিয় কর্মী।", image: "/images/paddy-planting.jpg" },
+    { id: 2, name: "সুস্মিতা সেনগুপ্ত", role: "সহায়ক শিক্ষা কেন্দ্র সমন্বয়কারী", bio: "গ্রামীণ শিশুদের লোকসংস্কৃতি, প্রকৃতি পাঠ ও প্রাথমিক জীবনশৈলী শিক্ষাদানে নিবেদিতপ্রাণ।", image: "/images/education-center.jpg" },
+    { id: 3, name: "দেবাশীষ ঘোষ", role: "টেকসই শক্তি ও পরিবেশ পরামর্শক", bio: "পুনর্ব্যবহারযোগ্য সৌরবিদ্যুৎ প্রয়োগ ও প্রাকৃতিক জল সংরক্ষণ অবকাঠামো পরিচালনায় অভিজ্ঞ।", image: "/images/farming-collage.jpg" }
   ],
   volunteersList: [
-    { id: "v-1", name: "Volunteer Alpha (Lorem Ipsum)", designation: "Auxiliary Education Volunteer Teacher", location: "Purba Bardhaman, WB", image: "/images/education-center.jpg", bio: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor.", isDdbmpbs: true },
-    { id: "v-2", name: "Volunteer Beta (Dolor Sit)", designation: "Organic Farming & Soil Testing Volunteer", location: "Purba Bardhaman, WB", image: "/images/seedbed.jpg", bio: "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi.", isDdbmpbs: false },
-    { id: "v-3", name: "Volunteer Gamma (Amet Consectetur)", designation: "Nature Awareness & Community Organizer", location: "Purba Bardhaman, WB", image: "/images/community-collage.jpg", bio: "Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore.", isDdbmpbs: true },
-    { id: "v-4", name: "Volunteer Delta (Adipiscing Elit)", designation: "Eco-farming & Bio-fertilizer Field Lead", location: "Purba Bardhaman, WB", image: "/images/paddy-harvesting.jpg", bio: "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.", isDdbmpbs: false }
+    { id: "v-1", name: "অরিত্র চ্যাটার্জি", designation: "সহায়ক শিক্ষা কেন্দ্রের স্বেচ্ছাসেবী শিক্ষক", location: "পূর্ব বর্ধমান, পশ্চিমবঙ্গ", image: "/images/education-center.jpg", bio: "গ্রামীণ শিশুদের প্রকৃতি পাঠ ও সাধারণ শিক্ষায় সহায়তা করা।", isDdbmpbs: true },
+    { id: "v-2", name: "প্রণব বিশ্বাস", designation: "জৈব কৃষি ও মৃত্তিকা পরীক্ষা সহযোগী", location: "আউশগ্রাম, পূর্ব বর্ধমান", image: "/images/seedbed.jpg", bio: "দেশীয় বীজতলা প্রস্তুতি ও রাসায়নিকমুক্ত মাটির উর্বরতা পর্যবেক্ষণ।", isDdbmpbs: false },
+    { id: "v-3", name: "মৌসুমী মন্ডল", designation: "প্রকৃতি সচেতনতা ও সমাজকর্মী", location: "বীরভূম, পশ্চিমবঙ্গ", image: "/images/community-collage.jpg", bio: "গ্রামীণ নারী ও শিশুদের পরিবেশ ও স্বাস্থ্য সচেতনতা শিবিরের সমন্বয়।", isDdbmpbs: true },
+    { id: "v-4", name: "কল্যাণ চক্রবর্তী", designation: "সৌরশক্তি ও টেকসই কৃষি সহকারী", location: "পূর্ব বর্ধমান, পশ্চিমবঙ্গ", image: "/images/paddy-harvesting.jpg", bio: "কৃষি ক্ষেত্রে মৃদু সেচ ও পরিবেশবান্ধব জ্বালানি ব্যবহারে সহায়তা।", isDdbmpbs: false }
   ],
   gallery: [
     ...DEFAULT_VIDEOS.filter(v => v.showInGallery).map((v, i) => ({

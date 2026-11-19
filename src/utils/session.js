@@ -15,7 +15,6 @@ export function getStoredSession() {
     }
 
     if (Date.now() > data.expiresAt) {
-      console.log("Admin session expired (7 days elapsed).");
       localStorage.removeItem(SESSION_KEY);
       return null;
     }

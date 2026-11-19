@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "node server.js",
     "build": "vite build",
-    "start": "NODE_ENV=production node server.js",
+    "start": "node server.js",
+    "pm2:start": "pm2 start ecosystem.config.cjs --env production",
+    "pm2:stop": "pm2 stop ecosystem.config.cjs",
+    "pm2:restart": "pm2 restart ecosystem.config.cjs",
+    "pm2:logs": "pm2 logs jiyonkathi-ngo",
     "lint": "eslint src"
   },
   "dependencies": {
@@ -19,7 +23,6 @@
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "multer": "^2.2.0",
-    "next": "^16.3.0",
     "pg": "^8.22.0",
     "pngjs": "^7.0.0",
     "postcss": "^8.4",
@@ -33,7 +36,6 @@
     "detype": "^2.0.8",
     "esbuild": "^0.25.0",
     "eslint": "^9.0.0",
-    "eslint-config-next": "^16.3.0",
     "tailwindcss": "^4.1.14",
     "vite": "^6.2.3"
   }

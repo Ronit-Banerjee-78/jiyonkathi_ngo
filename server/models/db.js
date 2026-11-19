@@ -149,6 +149,12 @@ export const initDB = async () => {
         );
         ALTER TABLE research_reports ADD COLUMN IF NOT EXISTS embedded_images JSONB;
         ALTER TABLE research_reports ADD COLUMN IF NOT EXISTS download_url TEXT;
+
+
+        CREATE TABLE IF NOT EXISTS keep_alive (
+  id SERIAL PRIMARY KEY,
+  pinged_at TIMESTAMPTZ DEFAULT now()
+);
       `);
 
       // Seed / Sync research reports into DB
@@ -177,10 +183,10 @@ export const initDB = async () => {
                 image = EXCLUDED.image,
                 methodology = EXCLUDED.methodology,
                 findings = EXCLUDED.findings,
-                embedded_images = CASE 
-                  WHEN research_reports.embedded_images IS NULL OR research_reports.embedded_images = '[]'::jsonb 
-                  THEN EXCLUDED.embedded_images 
-                  ELSE research_reports.embedded_images 
+                embedded_images = CASE
+                  WHEN research_reports.embedded_images IS NULL OR research_reports.embedded_images = '[]'::jsonb
+                  THEN EXCLUDED.embedded_images
+                  ELSE research_reports.embedded_images
                 END,
                 download_url = COALESCE(research_reports.download_url, EXCLUDED.download_url)`,
               [
@@ -217,19 +223,26 @@ export const initDB = async () => {
         const settingsRes = await client.query(
           "SELECT id, data FROM site_settings ORDER BY id DESC LIMIT 1",
         );
-        const { FULL_INITIAL_SITE_DATA, DEFAULT_PILLARS_DATA } = await import("./seedData.js");
+        const { FULL_INITIAL_SITE_DATA, DEFAULT_PILLARS_DATA } =
+          await import("./seedData.js");
         if (settingsRes.rows.length === 0) {
           await client.query(
             "INSERT INTO site_settings (data) VALUES ($1::jsonb)",
             [JSON.stringify(FULL_INITIAL_SITE_DATA)],
           );
-          console.log("Seeded initial site_settings with complete database package.");
+          console.log(
+            "Seeded initial site_settings with complete database package.",
+          );
         } else {
           // If settings exist, ensure pillars and other core fields are populated
           const currentData = settingsRes.rows[0].data || {};
           let needsUpdate = false;
           let mergedData = { ...FULL_INITIAL_SITE_DATA, ...currentData };
-          if (!currentData.pillars || currentData.pillars.length !== 2 || !currentData.pillars[0]?.titleBn?.includes("পরিবেশ সংকটকালে")) {
+          if (
+            !currentData.pillars ||
+            currentData.pillars.length !== 2 ||
+            !currentData.pillars[0]?.titleBn?.includes("পরিবেশ সংকটকালে")
+          ) {
             mergedData.pillars = DEFAULT_PILLARS_DATA.slice(0, 2);
             needsUpdate = true;
           }
@@ -248,13 +261,25 @@ export const initDB = async () => {
             rawStr.includes("বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা")
           ) {
             const cleanStr = rawStr
-              .replace(/প্রাণ-প্রকৃতি-পরিবেশের টানে/g, "প্রাণ-প্রকৃতি-পরিবেশের আহ্বানে")
+              .replace(
+                /প্রাণ-প্রকৃতি-পরিবেশের টানে/g,
+                "প্রাণ-প্রকৃতি-পরিবেশের আহ্বানে",
+              )
               .replace(/টানে/g, "আহ্বানে")
               .replace(/৩৫০\+/g, "৫০+")
-              .replace(/বীরভূম,\s*বর্ধমান\s*ও\s*আউশগ্রামের\s*গ্রামাঞ্চলে/g, "বাংলার গ্রামাঞ্চলে")
-              .replace(/নিয়োজিত একটি অলাভজনক সমাজ/g, "নিয়োজিত একটি অলাভজনক সংস্থা")
+              .replace(
+                /বীরভূম,\s*বর্ধমান\s*ও\s*আউশগ্রামের\s*গ্রামাঞ্চলে/g,
+                "বাংলার গ্রামাঞ্চলে",
+              )
+              .replace(
+                /নিয়োজিত একটি অলাভজনক সমাজ/g,
+                "নিয়োজিত একটি অলাভজনক সংস্থা",
+              )
               .replace(/যতটা কম সম্ভব/g, "যতটা সম্ভব কম")
-              .replace(/বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা/g, "ফল-সব্জির বিষমুক্ত চাষ");
+              .replace(
+                /বিষমুক্ত ফল-সবজি চাষ ও প্রাকৃতিক খাদ্য নিরাপত্তা/g,
+                "ফল-সব্জির বিষমুক্ত চাষ",
+              );
             mergedData = JSON.parse(cleanStr);
             needsUpdate = true;
           }
@@ -286,10 +311,15 @@ export const initDB = async () => {
               [p.title, p.target_amount],
             );
           }
-          console.log(`Seeded ${DEFAULT_PROJECTS_DATA.length} initial projects into DB.`);
+          console.log(
+            `Seeded ${DEFAULT_PROJECTS_DATA.length} initial projects into DB.`,
+          );
         }
       } catch (projSeedErr) {
-        console.warn("Could not seed default projects into DB:", projSeedErr.message);
+        console.warn(
+          "Could not seed default projects into DB:",
+          projSeedErr.message,
+        );
       }
 
       isDbConnected = true;

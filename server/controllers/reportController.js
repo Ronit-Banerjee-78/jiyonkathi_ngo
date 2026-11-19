@@ -425,6 +425,38 @@ router.get("/", async (req, res) => {
 });
 
 /**
+ * Fetch all reports for sitemap, SEO, and navigation
+ */
+export async function getAllReports() {
+  await ensureDbConnected();
+  if (isDbConnected) {
+    try {
+      const result = await pool.query(
+        "SELECT id, title, title_english, topic, topic_english, author, published_date, summary, summary_english, image, created_at FROM research_reports ORDER BY published_date DESC, id DESC"
+      );
+      if (result.rows && result.rows.length > 0) {
+        return result.rows.map((r) => ({
+          id: r.id,
+          title: r.title,
+          titleEnglish: r.title_english,
+          topic: r.topic,
+          topicEnglish: r.topic_english,
+          author: r.author,
+          publishedDate: r.published_date,
+          summary: r.summary,
+          summaryEnglish: r.summary_english,
+          image: r.image,
+          createdAt: r.created_at,
+        }));
+      }
+    } catch (err) {
+      console.warn("DB query for all reports failed, using memory fallback:", err.message);
+    }
+  }
+  return memoryReports;
+}
+
+/**
  * Fetch single report by ID or slug
  */
 export async function getReportById(id) {

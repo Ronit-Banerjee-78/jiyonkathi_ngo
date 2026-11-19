@@ -6,6 +6,7 @@ import {
   removeEvent,
   promoteEventToWork,
 } from "../services/eventService.js";
+import { adminAuthMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ router.get("/", async (req, res) => {
 });
 
 // POST /api/events
-router.post("/", async (req, res) => {
+router.post("/", adminAuthMiddleware, async (req, res) => {
   try {
     const newEvent = await createNewEvent(req.body);
     res.status(201).json({ success: true, event: newEvent });
@@ -32,7 +33,7 @@ router.post("/", async (req, res) => {
 });
 
 // PUT /api/events/:id
-router.put("/:id", async (req, res) => {
+router.put("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const updated = await editEvent(req.params.id, req.body);
     if (!updated) {
@@ -46,7 +47,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE /api/events/:id
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     await removeEvent(req.params.id);
     res.json({ success: true, message: "Event deleted successfully" });
@@ -57,7 +58,7 @@ router.delete("/:id", async (req, res) => {
 });
 
 // POST /api/events/:id/promote
-router.post("/:id/promote", async (req, res) => {
+router.post("/:id/promote", adminAuthMiddleware, async (req, res) => {
   try {
     const result = await promoteEventToWork(req.params.id, req.body);
     res.json({ success: true, data: result });

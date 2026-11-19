@@ -4,11 +4,6 @@ import { verifyToken } from "../controllers/authController.js";
  * Protects administrative routes by requiring a valid admin signed token
  */
 export function adminAuthMiddleware(req, res, next) {
-  // Allow health/status/get routes without auth
-  if (req.method === "GET") {
-    return next();
-  }
-
   const authHeader = req.headers.authorization || req.headers["x-admin-token"];
   const token = authHeader?.startsWith("Bearer ")
     ? authHeader.slice(7).trim()

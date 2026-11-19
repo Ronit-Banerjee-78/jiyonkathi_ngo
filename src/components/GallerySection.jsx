@@ -144,8 +144,8 @@ export default function GallerySection({ targetImageId = null, onSelectImage = n
               key={cat.id}
               onClick={() => setActiveCategory(cat.id)}
               className={`px-4 py-2 rounded-xl font-bold text-xs transition-all cursor-pointer ${activeCategory === cat.id
-                  ? "bg-amber-600 text-white shadow-2xs"
-                  : "bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-amber-700"
+                ? "bg-amber-600 text-white shadow-2xs"
+                : "bg-stone-100 text-stone-600 hover:bg-stone-200 hover:text-amber-700"
                 }`}
             >
               {language === "bn" ? cat.labelBn : cat.labelEn}
@@ -160,7 +160,7 @@ export default function GallerySection({ targetImageId = null, onSelectImage = n
               <div
                 key={item.id || idx}
                 onClick={() => handleSelectImage(idx)}
-                className="group relative bg-white rounded-lg overflow-hidden shadow-sm hover:border-amber-700 cursor-pointer transition-colors border border-stone-200 flex flex-col justify-between"
+                className="group relative bg-white rounded-lg cursor-pointer overflow-hidden shadow-sm hover:border-amber-700 transition-colors border border-stone-200 flex flex-col justify-between"
               >
                 <div className="aspect-4/3 overflow-hidden relative bg-stone-100">
                   {item.type === "Video" || item.url?.endsWith(".mp4") ? (

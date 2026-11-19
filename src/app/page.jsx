@@ -13,16 +13,28 @@ import MembersSection from "../components/MembersSection";
 import PortalSection from "../components/PortalSection";
 import ResearchReportsSection from "../components/ResearchReportsSection";
 import { motion, AnimatePresence } from "motion/react";
+import { SiteContext } from "../context/SiteContext";
+import { useSEO } from "../hooks/useSEO";
 
 export default function Page({
   activeTab = "home",
-  setActiveTab = () => {},
+  setActiveTab = () => { },
   targetItemId = null,
-  setTargetItemId = () => {},
+  setTargetItemId = () => { },
   userSession = null,
-  setUserSession = () => {},
-  navigate = () => {},
+  setUserSession = () => { },
+  navigate = () => { },
 }) {
+  const { siteData, language } = React.useContext(SiteContext);
+
+  // Synchronize client-side document.title, meta tags, and structured data on navigation
+  useSEO({
+    activeTab,
+    targetItemId,
+    siteData,
+    language,
+  });
+
   React.useEffect(() => {
     window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     if (typeof document !== "undefined") {
@@ -75,9 +87,7 @@ export default function Page({
         return <HomeSection setActiveTab={setActiveTab} />;
       case "members":
         return <MembersSection setActiveTab={setActiveTab} />;
-      case "login":
-      case "portal":
-      case "admin":
+      case "dashboard":
         return (
           <PortalSection
             userSession={userSession}

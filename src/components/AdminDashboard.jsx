@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useContext } from "react";
 import { SiteContext } from "../context/SiteContext";
 import ImageSelectorField from "./common/ImageSelectorField";
+import { getAuthToken } from "../utils/session";
 import {
   BarChart3,
   BookOpen,
@@ -132,10 +133,22 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
     }
   };
 
+  // Admin Auth Headers Helper
+  const getAdminAuthHeaders = (extraHeaders = {}) => {
+    const token = userSession?.token || getAuthToken();
+    const headers = { ...extraHeaders };
+    if (token) {
+      headers["Authorization"] = `Bearer ${token}`;
+    }
+    return headers;
+  };
+
   // Fetch Volunteers
   const fetchVolunteers = async () => {
     try {
-      const res = await fetch("/api/volunteers");
+      const res = await fetch("/api/volunteers", {
+        headers: getAdminAuthHeaders(),
+      });
       const json = await res.json();
       if (json.success && Array.isArray(json.volunteers)) {
         setVolunteers(json.volunteers);
@@ -158,7 +171,9 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
       })
       .catch((err) => console.error("Error fetching reports:", err));
 
-    fetch("/api/volunteers")
+    fetch("/api/volunteers", {
+      headers: getAdminAuthHeaders(),
+    })
       .then((res) => res.json())
       .then((json) => {
         if (isMounted && json.success && Array.isArray(json.volunteers)) {
@@ -195,6 +210,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
     try {
       const res = await fetch("/api/files", {
         method: "POST",
+        headers: getAdminAuthHeaders(),
         body: formData,
       });
       const json = await res.json();
@@ -310,6 +326,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
     try {
       const res = await fetch("/api/reports/extract-pdf", {
         method: "POST",
+        headers: getAdminAuthHeaders(),
         body: formData,
       });
       clearInterval(progressInterval);
@@ -468,7 +485,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
 
       const res = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(editingReport),
       });
 
@@ -495,7 +512,10 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
   const handleDeleteReport = async (id) => {
     if (!confirm("Are you sure you want to permanently delete this research report?")) return;
     try {
-      const res = await fetch(`/api/reports/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/reports/${id}`, {
+        method: "DELETE",
+        headers: getAdminAuthHeaders(),
+      });
       const json = await res.json();
       if (json.success) {
         setReports(reports.filter((r) => r.id !== id));
@@ -580,7 +600,10 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
     // Remove from volunteer applicants / normal members if promoted
     if (targetVolId) {
       try {
-        await fetch(`/api/volunteers/${targetVolId}`, { method: "DELETE" });
+        await fetch(`/api/volunteers/${targetVolId}`, {
+          method: "DELETE",
+          headers: getAdminAuthHeaders(),
+        });
         setVolunteers((prev) => prev.filter((v) => v.id !== targetVolId));
       } catch (err) {
         console.error("Error deleting promoted volunteer from DB:", err);
@@ -593,7 +616,10 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
     );
     if (matchingVol && matchingVol.id) {
       try {
-        await fetch(`/api/volunteers/${matchingVol.id}`, { method: "DELETE" });
+        await fetch(`/api/volunteers/${matchingVol.id}`, {
+          method: "DELETE",
+          headers: getAdminAuthHeaders(),
+        });
         setVolunteers((prev) => prev.filter((v) => v.id !== matchingVol.id));
       } catch (err) { }
     }
@@ -626,7 +652,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
       try {
         const res = await fetch("/api/volunteers", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             name: member.name,
             email: member.email || `${member.name.replace(/\s+/g, "").toLowerCase()}@jiyonkathi.org`,
@@ -754,7 +780,7 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
 
       const res = await fetch(`/api/volunteers/${id}`, {
         method: "PUT",
-        headers: { "Content-Type": "application/json" },
+        headers: getAdminAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify(payload),
       });
       const json = await res.json();
@@ -772,7 +798,10 @@ export default function AdminDashboard({ userSession, setUserSession, onLogout, 
   const handleDeleteVolunteer = async (id) => {
     if (!confirm("Delete this volunteer application permanently?")) return;
     try {
-      const res = await fetch(`/api/volunteers/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/volunteers/${id}`, {
+        method: "DELETE",
+        headers: getAdminAuthHeaders(),
+      });
       const json = await res.json();
       if (json.success) {
         setVolunteers((prev) => prev.filter((v) => v.id !== id));

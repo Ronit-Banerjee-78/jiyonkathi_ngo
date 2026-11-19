@@ -1,9 +1,22 @@
 import express from "express";
 import pool, { isDbConnected, ensureDbConnected } from "../models/db.js";
+import { adminAuthMiddleware } from "../middlewares/authMiddleware.js";
+import { verifyToken } from "./authController.js";
 
 const router = express.Router();
 
 let memoryVolunteers = [];
+
+// Helper to check if caller has valid admin session
+const isAdminCaller = (req) => {
+  const authHeader = req.headers.authorization || req.headers["x-admin-token"];
+  const token = authHeader?.startsWith("Bearer ")
+    ? authHeader.slice(7).trim()
+    : authHeader;
+  if (!token) return false;
+  const payload = verifyToken(token);
+  return payload && payload.role === "admin";
+};
 
 // Helper: Auto-cleanup rejected volunteers older than 7 days
 const cleanupExpiredRejections = () => {
@@ -16,14 +29,32 @@ const cleanupExpiredRejections = () => {
   });
 };
 
-// GET /api/volunteers
+// Helper: Sanitize public volunteer record (strictly omit PII like email, phone, motivation, skills)
+const sanitizePublicVolunteer = (v) => ({
+  id: v.id,
+  name: v.name,
+  program: v.program,
+  location: v.location,
+  status: "approved",
+  isDdbmpbs: Boolean(v.isDdbmpbs || v.is_ddbmpbs),
+  createdAt: v.createdAt || v.created_at,
+});
+
+// GET /api/volunteers (Admin gets all records with PII; Public gets ONLY approved volunteers with PII stripped)
 router.get("/", async (req, res) => {
   try {
+    const isAdmin = isAdminCaller(req);
     cleanupExpiredRejections();
     await ensureDbConnected();
 
     if (!isDbConnected) {
-      return res.json({ success: true, volunteers: memoryVolunteers });
+      if (isAdmin) {
+        return res.json({ success: true, volunteers: memoryVolunteers });
+      }
+      const publicVols = memoryVolunteers
+        .filter((v) => v.status === "approved")
+        .map(sanitizePublicVolunteer);
+      return res.json({ success: true, volunteers: publicVols });
     }
 
     try {
@@ -36,34 +67,76 @@ router.get("/", async (req, res) => {
         [sevenDaysAgo],
       );
 
+      if (isAdmin) {
+        const result = await pool.query(
+          "SELECT * FROM volunteers ORDER BY created_at DESC",
+        );
+        const mapped = result.rows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          email: r.email,
+          phone: r.phone,
+          program: r.program,
+          location: r.location,
+          availability: r.availability,
+          skills: r.skills,
+          motivation: r.motivation,
+          status: r.status || "pending",
+          isDdbmpbs: Boolean(r.is_ddbmpbs),
+          rejectedAt: r.rejected_at,
+          createdAt: r.created_at,
+        }));
+        return res.json({ success: true, volunteers: mapped });
+      }
+
+      // Public caller: ONLY approved volunteers, strictly NO sensitive PII
       const result = await pool.query(
-        "SELECT * FROM volunteers ORDER BY created_at DESC",
+        "SELECT id, name, program, location, is_ddbmpbs, created_at FROM volunteers WHERE status = 'approved' ORDER BY created_at DESC",
       );
-      const mapped = result.rows.map((r) => ({
-        id: r.id,
-        name: r.name,
-        email: r.email,
-        phone: r.phone,
-        program: r.program,
-        location: r.location,
-        availability: r.availability,
-        skills: r.skills,
-        motivation: r.motivation,
-        status: r.status || "pending",
-        isDdbmpbs: Boolean(r.is_ddbmpbs),
-        rejectedAt: r.rejected_at,
-        createdAt: r.created_at,
-      }));
+      const mapped = result.rows.map(sanitizePublicVolunteer);
       res.json({ success: true, volunteers: mapped });
     } catch (dbErr) {
       console.warn(
         "DB query failed for volunteers, using memory fallback:",
         dbErr.message,
       );
-      res.json({ success: true, volunteers: memoryVolunteers });
+      if (isAdmin) {
+        return res.json({ success: true, volunteers: memoryVolunteers });
+      }
+      const publicVols = memoryVolunteers
+        .filter((v) => v.status === "approved")
+        .map(sanitizePublicVolunteer);
+      res.json({ success: true, volunteers: publicVols });
     }
   } catch (error) {
     console.error("Error fetching volunteers:", error.message);
+    res.status(500).json({ success: false, error: "Server error" });
+  }
+});
+
+// GET /api/volunteers/public - Explicit public endpoint for approved volunteers
+router.get("/public", async (req, res) => {
+  try {
+    await ensureDbConnected();
+    if (!isDbConnected) {
+      const publicVols = memoryVolunteers
+        .filter((v) => v.status === "approved")
+        .map(sanitizePublicVolunteer);
+      return res.json({ success: true, volunteers: publicVols });
+    }
+
+    try {
+      const result = await pool.query(
+        "SELECT id, name, program, location, is_ddbmpbs, created_at FROM volunteers WHERE status = 'approved' ORDER BY created_at DESC",
+      );
+      res.json({ success: true, volunteers: result.rows.map(sanitizePublicVolunteer) });
+    } catch (dbErr) {
+      const publicVols = memoryVolunteers
+        .filter((v) => v.status === "approved")
+        .map(sanitizePublicVolunteer);
+      res.json({ success: true, volunteers: publicVols });
+    }
+  } catch (error) {
     res.status(500).json({ success: false, error: "Server error" });
   }
 });
@@ -161,8 +234,8 @@ router.post("/", async (req, res) => {
   }
 });
 
-// PUT /api/volunteers/:id
-router.put("/:id", async (req, res) => {
+// PUT /api/volunteers/:id (Admin only)
+router.put("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     const { status, isDdbmpbs } = req.body;
@@ -212,8 +285,8 @@ router.put("/:id", async (req, res) => {
   }
 });
 
-// DELETE /api/volunteers/:id
-router.delete("/:id", async (req, res) => {
+// DELETE /api/volunteers/:id (Admin only)
+router.delete("/:id", adminAuthMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
     memoryVolunteers = memoryVolunteers.filter((v) => v.id !== id);

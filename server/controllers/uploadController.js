@@ -10,6 +10,7 @@ import {
   uploadToCloudinary,
 } from "../services/cloudinaryService.js";
 import { strictUploadLimiter } from "../middlewares/rateLimiterMiddleware.js";
+import { adminAuthMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 const upload = multer({
@@ -94,6 +95,7 @@ export async function storeUploadedFile({ originalname, mimetype, buffer }) {
 
 router.post(
   "/",
+  adminAuthMiddleware,
   strictUploadLimiter,
   (req, res, next) => {
     upload.single("file")(req, res, (err) => {

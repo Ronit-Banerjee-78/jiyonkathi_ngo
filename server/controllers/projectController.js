@@ -1,5 +1,6 @@
 import express from 'express';
 import { fetchProjectsList, createNewProject } from '../services/projectService.js';
+import { adminAuthMiddleware } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
@@ -15,7 +16,7 @@ router.get('/', async (req, res) => {
 });
 
 // POST /api/projects
-router.post('/', async (req, res) => {
+router.post('/', adminAuthMiddleware, async (req, res) => {
   try {
     const newProject = await createNewProject(req.body);
     res.status(201).json({ success: true, data: newProject });

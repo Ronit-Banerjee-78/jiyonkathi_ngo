@@ -3,6 +3,7 @@ import { SiteProvider } from "./context/SiteContext";
 import { useLocationTab } from "./hooks/useLocationTab";
 import RootLayout from "./app/layout";
 import RootPage from "./app/page";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { getStoredSession, saveSession, clearSession } from "./utils/session";
 
 export default function App() {
@@ -37,24 +38,26 @@ export default function App() {
   }, [activeTab]);
 
   return (
-    <SiteProvider>
-      <RootLayout
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        userSession={userSession}
-        setUserSession={handleSetUserSession}
-        navigate={navigate}
-      >
-        <RootPage
+    <ErrorBoundary>
+      <SiteProvider>
+        <RootLayout
           activeTab={activeTab}
           setActiveTab={setActiveTab}
-          targetItemId={targetItemId}
-          setTargetItemId={setTargetItemId}
           userSession={userSession}
           setUserSession={handleSetUserSession}
           navigate={navigate}
-        />
-      </RootLayout>
-    </SiteProvider>
+        >
+          <RootPage
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            targetItemId={targetItemId}
+            setTargetItemId={setTargetItemId}
+            userSession={userSession}
+            setUserSession={handleSetUserSession}
+            navigate={navigate}
+          />
+        </RootLayout>
+      </SiteProvider>
+    </ErrorBoundary>
   );
 }
