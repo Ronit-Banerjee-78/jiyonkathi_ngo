@@ -71,7 +71,8 @@ async function getInjectedHtml(html, req) {
     if (
       pathname === "/admin" ||
       pathname === "/portal" ||
-      pathname === "/login"
+      pathname === "/login" ||
+      pathname === "/dashboard"
     ) {
       meta = {
         title: "প্রশাসনিক লগইন ও নিয়ন্ত্রণ প্যানেল - জিয়নকাঠি",
@@ -491,6 +492,7 @@ async function startServer() {
       "Disallow: /admin",
       "Disallow: /portal",
       "Disallow: /login",
+      "Disallow: /dashboard",
       "Disallow: /api/",
       "",
       `Sitemap: ${siteUrl}/sitemap.xml`,

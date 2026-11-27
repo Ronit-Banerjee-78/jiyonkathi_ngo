@@ -87,6 +87,9 @@ export default function Page({
         return <HomeSection setActiveTab={setActiveTab} />;
       case "members":
         return <MembersSection setActiveTab={setActiveTab} />;
+      case "admin":
+      case "login":
+      case "portal":
       case "dashboard":
         return (
           <PortalSection

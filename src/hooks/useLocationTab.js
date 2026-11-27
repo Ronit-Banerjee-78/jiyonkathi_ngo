@@ -60,7 +60,7 @@ export function parseRoute(pathname = "/") {
   if (clean === "/login") {
     return { tab: "login", itemId: null };
   }
-  if (clean === "/admin" || clean === "/portal") {
+  if (clean === "/admin" || clean === "/portal" || clean === "/dashboard") {
     if (isAdmin) {
       return { tab: "admin", itemId: null };
     }
@@ -91,7 +91,7 @@ export function getRoutePath(tab, itemId = null) {
   if (tab === "members") return "/members";
   if (tab === "contact") return "/contact";
   if (tab === "login") return "/login";
-  if (tab === "admin") return "/admin";
+  if (tab === "admin" || tab === "portal" || tab === "dashboard") return "/admin";
   return "/";
 }
 
@@ -105,12 +105,13 @@ export const useLocationTab = (defaultTab = "home") => {
 
   const navigate = useCallback((path, { replace = false } = {}) => {
     if (typeof window === "undefined") return;
-    if (replace) {
-      window.history.replaceState(null, "", path);
-    } else {
-      window.history.pushState(null, "", path);
-    }
     const parsed = parseRoute(path);
+    const finalPath = parsed.shouldRedirect || path;
+    if (replace) {
+      window.history.replaceState(null, "", finalPath);
+    } else {
+      window.history.pushState(null, "", finalPath);
+    }
     setActiveTabState(parsed.tab);
     setTargetItemIdState(parsed.itemId);
   }, []);
